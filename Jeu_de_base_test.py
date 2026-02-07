@@ -1,6 +1,4 @@
-from random import randint
-from random import sample
-
+from random import randint,sample
 class Player:
     def __init__(self,game=None):
         self.game = game
@@ -9,7 +7,7 @@ class Player:
 
     @property
     def nb_games(self):
-        pass # à réfléchir 
+      return self.nb_wins + self.nb_loses
 
     @staticmethod
     def play():
@@ -23,7 +21,7 @@ class Player:
 
 class Human(Player):
     def __init__(self,game):
-        super().__init__(game,0,0)    
+        super().__init__(game,0,0) 
 
     @staticmethod
     def play():
@@ -36,14 +34,14 @@ class Game:
         self.player1 = player1
         self.player2 = player2
         self.displayable = displayable
-        self.shuffle(self.player1 ,self.player2)
+        self.shuffle()
 
     def shuffle(self):
-        sample(self.player1,self.player2,len(self.player1,self.player2))
+        sample((self.player1,self.player2),2)
 
     def reset(self):
         self.nb_matches = self.original_nb
-        self.shuffle(self.player1,self.player2)
+        self.shuffle((self.player1,self.player2))
 
     def display(self):
         pass
