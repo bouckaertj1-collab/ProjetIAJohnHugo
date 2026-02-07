@@ -1,20 +1,18 @@
-# human.py
 from model.player import Player
 
 class Human(Player):
     """
-    Joueur humain.
-    Le choix est fait via l'interface graphique (Tkinter),
-    puis transmis par le contrôleur.
+    Joueur humain pour Tkinter.
+    Le choix est fourni par la Vue/Contrôleur via l'attribut next_action.
     """
 
-    def play(self, choice):
-        """
-        Retourne le choix fait par l'utilisateur.
+    def __init__(self, name, game=None):
+        super().__init__(name, game)
+        self.next_action = None  # la Vue/Contrôleur mettra 1/2/3 ici
 
-        Paramètre :
-        - choice : int (nombre d'allumettes choisi dans l'interface)
-
-        La validation (1, 2, 3, etc.) sera faite par la classe Game.
+    def play(self):
         """
-        return choice
+        Retourne le choix de l'utilisateur.
+        En Tkinter, on ne demande pas via input(); on récupère ce que l'UI a mis.
+        """
+        return self.next_action
