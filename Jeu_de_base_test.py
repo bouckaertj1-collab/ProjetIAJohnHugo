@@ -22,8 +22,8 @@ class Player:
         self.nb_loses += 1
 
 class Human(Player):
-    def __init__(self, nb_wins=0, nb_loses=0):
-        super().__init__(nb_wins, nb_loses)    
+    def __init__(self,game):
+        super().__init__(game,0,0)    
 
     @staticmethod
     def play():
