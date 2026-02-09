@@ -81,7 +81,7 @@ class GameView(tk.Tk):
         stick_w = 6     # tige fine
         stick_h = 46
         head_r = 7      # rayon de la tête
-        gap = 25
+        gap = 20
 
         for i in range(nb):
             row = i // per_row
