@@ -67,7 +67,7 @@ class GameView(tk.Tk):
         stick_w = 6     
         stick_h = 46
         head_r = 7
-        gap = 30
+        gap = 20
 
         for i in range(nb):
             row = i // per_row
