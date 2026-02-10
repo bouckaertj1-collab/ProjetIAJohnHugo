@@ -1,35 +1,27 @@
 # view/game_view.py
 import tkinter as tk
-
 class GameView(tk.Tk):
-    """
-    Vue Tkinter. Elle ne lit PAS le modèle directement.
-    Elle demande tout au contrôleur.
-    """
 
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
-
-        # Fenêtre un peu plus agréable
         self.title("Jeu des allumettes")
         self.resizable(False, False)
         self.configure(padx=14, pady=14)
 
-        # message (tour de qui / gagnant)
         self.message_label = tk.Label(self, text="", font=("Arial", 12, "bold"))
         self.message_label.pack(pady=(0, 10))
 
-        # canvas (dessin des allumettes) + fond plus doux
+      
         self.canvas = tk.Canvas(self, width=520, height=240, bg="#f5f5f5", highlightthickness=0)
         self.canvas.pack(pady=(0, 12))
 
-        # frame boutons
+        
         self.buttons_frame = tk.Frame(self)
         self.buttons_frame.pack()
 
-        # Boutons 1/2/3 (liés au contrôleur) : plus gros + espacés
         btn_kwargs = {"width": 12, "height": 2}
+
         self.btn1 = tk.Button(
             self.buttons_frame, text="Prendre 1",
             command=lambda: self.controller.handle_human_move(1),
@@ -49,8 +41,6 @@ class GameView(tk.Tk):
         self.btn1.pack(side=tk.LEFT, padx=8)
         self.btn2.pack(side=tk.LEFT, padx=8)
         self.btn3.pack(side=tk.LEFT, padx=8)
-
-        # première mise à jour
         self.update_view()
 
     def update_view(self):
@@ -66,22 +56,18 @@ class GameView(tk.Tk):
         # message
         self.message_label.config(text=self.controller.get_status_message())
 
-        # si fin -> UI spéciale
         if self.controller.model.is_game_over():
             self.end_game()
 
     def draw_matches(self, nb):
-        """
-        Dessine nb allumettes 
 
-        """
         per_row = 25
         x0, y0 = 20, 24
 
-        stick_w = 6     # tige fine
+        stick_w = 6     
         stick_h = 46
-        head_r = 7      # rayon de la tête
-        gap = 20
+        head_r = 7
+        gap = 30
 
         for i in range(nb):
             row = i // per_row
@@ -110,11 +96,7 @@ class GameView(tk.Tk):
                 outline="#2f2f2f"
             )
 
-
     def end_game(self):
-        """
-        Remplace les boutons 1/2/3 par un bouton Recommencer
-        """
         for widget in self.buttons_frame.winfo_children():
             widget.destroy()
 

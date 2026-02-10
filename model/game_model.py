@@ -1,10 +1,12 @@
 # model/game_model.py
-import random
+from random import sample
 
 class GameModel:
     """
     Modèle du jeu des allumettes (logique + état).
-    Règle: le joueur qui prend la dernière allumette perd.
+    Règle: 
+        - Le joueur qui prend la dernière allumette perd.
+        - Le joueur doit prendre 1 allumette minimum et 3 maximum par tour
     """
 
     def __init__(self, total_matches, player1, player2, displayable=True):
@@ -15,12 +17,10 @@ class GameModel:
         self.player1 = player1
         self.player2 = player2
 
-        # on "attache" la partie aux joueurs
         self.player1.game = self
         self.player2.game = self
 
-        # 0 => player1, 1 => player2 (comme dans l'énoncé)
-        self.current_player = 0
+        self.current_player = None
 
         self._is_over = False
         self._winner = None
@@ -29,13 +29,9 @@ class GameModel:
         self.shuffle()
 
     def shuffle(self):
-        """Mélange les joueurs et choisit qui commence."""
-        players = [self.player1, self.player2]
-        random.shuffle(players)
-        self.player1, self.player2 = players[0], players[1]
-
-        # IMPORTANT: le tour repart sur player1 après mélange
-        self.current_player = 0
+        """Mélange les joueurs"""
+        self.player1, self.player2 = sample([self.player1, self.player2],2)
+        self.current_player = self.player1
 
     def reset(self):
         """Remet la partie à 0 et mélange les joueurs."""
@@ -49,22 +45,6 @@ class GameModel:
         """Affiche l'état du jeu en console si displayable=True."""
         if self.displayable:
             print(f"Allumettes restantes: {self.nb}")
-
-    def switch_player(self):
-        """Change le joueur actuel."""
-        self.current_player = 1 - self.current_player
-
-    def is_game_over(self):
-        return self._is_over
-
-    def get_current_player(self):
-        return self.player1 if self.current_player == 0 else self.player2
-
-    def get_winner(self):
-        return self._winner
-
-    def get_loser(self):
-        return self._loser
 
     def step(self, action):
         """
@@ -83,10 +63,55 @@ class GameModel:
         # applique le coup
         self.nb -= action
 
-        # fin de partie: celui qui a joué perd si nb == 0
         if self.nb == 0:
             self._is_over = True
-            self._loser = self.get_current_player()
-            # gagnant = l'autre joueur
-            other = self.player2 if self.current_player == 0 else self.player1
-            self._winner = other
+            self._loser = self.current_player
+            self._winner = self.player2 if self._loser == self.player1 else self.player1
+
+    def play(self):
+        """
+        Joue une partie complète (utile pour tests / IA / console).
+        """
+        self.reset()
+
+        while not self.is_over:
+            self.display()
+
+            action = self.current_player.play()
+
+            
+            if action is None:
+                raise RuntimeError(
+                    "Human.play() a retourné None. "
+                    "En Tkinter, utilise Game.step(action) depuis le contrôleur."
+                )
+
+            try:
+                self.step(action)
+            except ValueError:
+                # si action invalide, on redemande un coup
+                continue
+
+        self.winner.win()
+        self.loser.lose()
+
+        self.display()
+        return self.winner
+
+    def switch_player(self):
+        """Change le joueur actuel."""
+        self.current_player = self.player1 if self.current_player == self.player2 else self.player2
+
+    def is_game_over(self):
+        return self._is_over
+
+    def get_current_player(self):
+        return self.current_player
+
+    def get_winner(self):
+        return self._winner
+
+    def get_loser(self):
+        return self._loser
+
+
