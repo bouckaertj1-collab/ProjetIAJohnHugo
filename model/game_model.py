@@ -1,92 +1,142 @@
-# model/game_model.py
+"""
+game_model.py
+
+Game model for the matchstick game.
+
+Rule:
+    The player who takes the last match loses.
+"""
+
 import random
+from typing import Optional
+
+from model.player import Player
+
 
 class GameModel:
     """
-    Modèle du jeu des allumettes (logique + état).
-    Règle: le joueur qui prend la dernière allumette perd.
+    Store the game state and enforce the rules.
+
+    Attributes:
+        original_nb: Initial number of matches at the start of each game.
+        nb: Current number of matches remaining.
+        players: List of two players.
+        current_player: Index (0 or 1) of the current player in `players`.
     """
 
-    def __init__(self, total_matches, player1, player2, displayable=True):
-        self.nb = total_matches
+    def __init__(self, total_matches: int, player1: Player, player2: Player) -> None:
+        """
+        Initialize the model.
+
+        Args:
+            total_matches: Initial number of matches (> 0 recommended).
+            player1: First player.
+            player2: Second player.
+
+        Postconditions:
+            - nb is set to total_matches.
+            - players are shuffled to randomize who starts.
+            - each player's `game` reference points to this model.
+        """
         self.original_nb = total_matches
-        self.displayable = displayable
+        self.nb = total_matches
 
-        self.player1 = player1
-        self.player2 = player2
+        self.players = [player1, player2]
+        for p in self.players:
+            p.game = self
 
-        # on "attache" la partie aux joueurs
-        self.player1.game = self
-        self.player2.game = self
-
-        # 0 => player1, 1 => player2 (comme dans l'énoncé)
         self.current_player = 0
-
-        self._is_over = False
-        self._winner = None
-        self._loser = None
-
         self.shuffle()
 
-    def shuffle(self):
-        """Mélange les joueurs et choisit qui commence."""
-        players = [self.player1, self.player2]
-        random.shuffle(players)
-        self.player1, self.player2 = players[0], players[1]
+    def shuffle(self) -> None:
+        """
+        Randomize player order and reset current player index.
 
-        # IMPORTANT: le tour repart sur player1 après mélange
+        Postconditions:
+            - players order may change.
+            - current_player is set to 0.
+        """
+        random.shuffle(self.players)
         self.current_player = 0
 
-    def reset(self):
-        """Remet la partie à 0 et mélange les joueurs."""
+    def reset(self) -> None:
+        """
+        Reset the game to its initial state.
+
+        Postconditions:
+            - nb is restored to original_nb.
+            - players are shuffled again.
+        """
         self.nb = self.original_nb
-        self._is_over = False
-        self._winner = None
-        self._loser = None
         self.shuffle()
 
-    def display(self):
-        """Affiche l'état du jeu en console si displayable=True."""
-        if self.displayable:
-            print(f"Allumettes restantes: {self.nb}")
-
-    def switch_player(self):
-        """Change le joueur actuel."""
-        self.current_player = 1 - self.current_player
-
-    def is_game_over(self):
-        return self._is_over
-
-    def get_current_player(self):
-        return self.player1 if self.current_player == 0 else self.player2
-
-    def get_winner(self):
-        return self._winner
-
-    def get_loser(self):
-        return self._loser
-
-    def step(self, action):
+    def step(self, action: int) -> None:
         """
-        Applique un coup: retirer 1, 2 ou 3 allumettes.
-        NOTE: ne change PAS de joueur ici (le contrôleur le fait).
+        Apply one move: remove matches from the pile.
+
+        Args:
+            action: Number of matches to remove (must be 1..3 and <= nb).
+
+        Raises:
+            ValueError: If action is not in [1, 3] or action > nb.
+
+        Postconditions:
+            - nb is decreased by `action`.
         """
-        if self._is_over:
-            raise ValueError("Partie déjà terminée.")
-
-        if action not in (1, 2, 3):
-            raise ValueError("Action invalide: il faut 1, 2 ou 3.")
-
+        if action < 1 or action > 3:
+            raise ValueError("Invalid action: must be 1, 2 or 3.")
         if action > self.nb:
-            raise ValueError("Action invalide: pas assez d'allumettes restantes.")
-
-        # applique le coup
+            raise ValueError("Invalid action: not enough matches remaining.")
         self.nb -= action
 
-        # fin de partie: celui qui a joué perd si nb == 0
-        if self.nb == 0:
-            self._is_over = True
-            self._loser = self.get_current_player()
-            # gagnant = l'autre joueur
-            other = self.player2 if self.current_player == 0 else self.player1
-            self._winner = other
+    def switch_player(self) -> None:
+        """
+        Switch to the other player.
+
+        Postconditions:
+            - current_player becomes 1 - current_player.
+        """
+        self.current_player = 1 - self.current_player
+
+    def is_game_over(self) -> bool:
+        """
+        Check if the game is finished.
+
+        Returns:
+            True if no matches remain, else False.
+        """
+        return self.nb == 0
+
+    def get_current_player(self) -> Player:
+        """
+        Get the player whose turn it is.
+
+        Returns:
+            The current Player instance.
+        """
+        return self.players[self.current_player]
+
+    def get_winner(self) -> Optional[Player]:
+        """
+        Get the winner if the game is over.
+
+        Since taking the last match loses, the winner is the player who is NOT
+        the current player once nb reaches 0.
+
+        Returns:
+            The winner Player if game over, otherwise None.
+        """
+        if not self.is_game_over():
+            return None
+        return self.players[1 - self.current_player]
+
+    def get_loser(self) -> Optional[Player]:
+        """
+        Get the loser if the game is over.
+
+        Returns:
+            The loser Player if game over, otherwise None.
+        """
+        if not self.is_game_over():
+            return None
+        return self.players[self.current_player]

@@ -1,18 +1,21 @@
+"""
+human.py
+
+Human player for the Tkinter GUI.
+
+Important:
+    In a GUI project, we must not use console input(). The human action is
+    provided by the controller when the user clicks a button.
+"""
+
 from model.player import Player
 
-class Human(Player):
+class HumanGUI(Player):
     """
-    Joueur humain pour Tkinter.
-    Le choix est fourni par la Vue/Contrôleur via l'attribut next_action.
+    Human player for the Tkinter GUI.
+
+    This player does not choose actions through `play()`. Actions come from
+    the controller when the user clicks a button.
     """
-
-    def __init__(self, name, game=None):
-        super().__init__(name, game)
-        self.next_action = None  # la Vue/Contrôleur mettra 1/2/3 ici
-
-    def play(self):
-        """
-        Retourne le choix de l'utilisateur.
-        En Tkinter, on ne demande pas via input(); on récupère ce que l'UI a mis.
-        """
-        return self.next_action
+    
+    pass
