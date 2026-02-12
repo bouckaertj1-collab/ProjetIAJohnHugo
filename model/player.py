@@ -1,10 +1,17 @@
+"""
+Define base player classes and simple AI players.
+"""
+
 import random
-from typing import Optional
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from model.game_model import GameModel
 
 
 class Player:
     """
-    Base class for a player.
+    class for a player.
 
     Attributes:
         name: Display name of the player.
@@ -13,7 +20,7 @@ class Player:
         nb_loses: Number of losses.
     """
 
-    def __init__(self, name: str, game: Optional[object] = None) -> None:
+    def __init__(self, name: str, game: "GameModel | None" = None) -> None:
         """
         Initialize a player.
 
@@ -38,16 +45,13 @@ class Player:
 
     def play(self) -> int:
         """
-        Choose an action (number of matches to take).
+        Prevent automatic play for players that do not support it.
 
-        This must be implemented by AI players. Human GUI players do not use this
-        method (their action comes from button clicks in the controller).
-
-        Returns:
-            An integer action.
+        This method raises an error if called on a player that cannot
+        choose an action automatically (a human player).
 
         Raises:
-            NotImplementedError: If not implemented by a subclass.
+            NotImplementedError: If the player cannot choose an action.
         """
         raise NotImplementedError("This player cannot choose an action automatically.")
 
@@ -68,7 +72,7 @@ class RandomAI(Player):
     """
     Simple AI player that picks a random number of matches (1 to 3).
 
-    The controller may clamp this value if fewer than 3 matches remain.
+    The controller may limit this value when fewer than three matches remain.
     """
 
     def play(self) -> int:

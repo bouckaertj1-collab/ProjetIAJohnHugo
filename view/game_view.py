@@ -1,6 +1,4 @@
 """
-game_view.py
-
 Tkinter view for the matchstick game.
 
 Design choice:
@@ -61,7 +59,6 @@ class GameView(tk.Tk):
         self.btn2.pack(side=tk.LEFT, padx=8)
         self.btn3.pack(side=tk.LEFT, padx=8)
 
-        # première mise à jour
         self.update_view()
 
     def update_view(self) -> None:
@@ -102,20 +99,18 @@ class GameView(tk.Tk):
         gap = 23
 
         for i in range(nb):
-            row = i // per_row  # division entière
+            row = i // per_row  
             col = i % per_row
 
             x = x0 + col * gap
             y = y0 + row * (stick_h + 20)
 
-            # tête
             self.canvas.create_oval(
                 x - head_r, y - head_r,
                 x + head_r, y + head_r,
                 fill="#d9534f", outline="#b13f3b"
             )
 
-            # tige
             self.canvas.create_rectangle(
                 x - stick_w // 2, y,
                 x + stick_w // 2, y + stick_h,

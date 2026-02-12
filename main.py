@@ -1,6 +1,4 @@
 """
-main.py
-
 Entry point for the matchstick game (Tkinter GUI).
 """
 

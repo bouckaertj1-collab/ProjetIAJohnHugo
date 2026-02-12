@@ -1,2 +1,2 @@
-
-
+# Ce projet n'utilise que des bibliothèques standard de Python.
+# Aucune dépendance externe n'est requise.

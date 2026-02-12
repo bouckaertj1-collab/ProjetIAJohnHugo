@@ -1,7 +1,5 @@
 """
-game_model.py
-
-Game model for the matchstick game.
+Game model for the matches game.
 
 Rule:
     The player who takes the last match loses.
@@ -15,7 +13,7 @@ from model.player import Player
 
 class GameModel:
     """
-    Store the game state and enforce the rules.
+    Store the game state and apply the game rules.
 
     Attributes:
         original_nb: Initial number of matches at the start of each game.
@@ -29,7 +27,7 @@ class GameModel:
         Initialize the model.
 
         Args:
-            total_matches: Initial number of matches (> 0 recommended).
+            total_matches: Initial number of matches (> 0).
             player1: First player.
             player2: Second player.
 

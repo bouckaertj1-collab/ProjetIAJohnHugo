@@ -1,11 +1,9 @@
 """
-game_controller.py
-
-Controller for the matchstick game (MVC).
+Controller for the matches game (MVC).
 
 Responsibilities:
-    - Bind GUI actions to game logic
-    - Coordinate model state changes and view updates
+    - Link GUI actions to game logic
+    - Update the game state and refresh the GUI
     - Trigger AI moves when it's not the human's turn
 """
 
@@ -137,7 +135,7 @@ class GameController:
 
         # If AI's turn, play after a short delay
         if not isinstance(self.model.get_current_player(), HumanGUI):
-            self.view.after(400, self.handle_ai_move)
+            self.view.after(800, self.handle_ai_move)
 
     def handle_ai_move(self) -> None:
         """

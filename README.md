@@ -46,22 +46,15 @@ project/
 |-- requirements.txt
 |
 |-- model/
-|   |-- __init__.py
 |   |-- game_model.py
 |   |-- player.py
 |   |-- human.py
 |
 |-- view/
-|   |-- __init__.py
 |   |-- game_view.py
 |
 |-- controller/
-|   |-- __init__.py
 |   |-- game_controller.py
-
-Note :
-Un fichier game.py (version console) peut être présent à titre pédagogique,
-mais il n’est pas utilisé par l’interface graphique.
 
 
 5. PRÉREQUIS
@@ -117,7 +110,7 @@ Une fenêtre graphique s’ouvre et le jeu peut commencer.
 10. SPÉCIFICATIONS ET BONNES PRATIQUES
 ---------------------------------
 - Toutes les classes, méthodes et fonctions sont documentées avec des docstrings.
-- Le code est rédigé en anglais, conformément aux consignes.
+- Le code est rédigé en anglais.
 - Les commentaires peuvent être en français.
 - Aucune entrée utilisateur n’est réalisée via la console (pas de input()).
 - Le projet respecte les principes de clean code et de programmation orientée
