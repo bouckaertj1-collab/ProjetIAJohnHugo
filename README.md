@@ -7,9 +7,6 @@ Ce projet est une implémentation du jeu des allumettes en Python avec une
 interface graphique réalisée à l’aide de la bibliothèque Tkinter.
 
 Le programme respecte une architecture MVC (Modèle – Vue – Contrôleur).
-Il s’agit d’un projet pédagogique mettant en pratique
-la programmation orientée objet et la séparation des responsabilités.
-
 
 2. RÈGLES DU JEU
 -------------
@@ -102,7 +99,7 @@ Une fenêtre graphique s’ouvre et le jeu peut commencer.
 -----------
 - Le joueur humain joue en cliquant sur les boutons :
   "Prendre 1", "Prendre 2" ou "Prendre 3".
-- L’ordinateur joue automatiquement après le tour du joueur humain.
+- L’ordinateur joue automatiquement après le tour du joueur humain et un court délai.
 - À la fin de la partie, un bouton "Recommencer" permet de relancer une nouvelle
   partie.
 

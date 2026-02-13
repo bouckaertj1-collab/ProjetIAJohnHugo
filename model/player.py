@@ -43,17 +43,12 @@ class Player:
         """
         return self.nb_wins + self.nb_loses
 
-    def play(self) -> int:
+    @staticmethod
+    def play() -> int:
         """
-        Prevent automatic play for players that do not support it.
-
-        This method raises an error if called on a player that cannot
-        choose an action automatically (a human player).
-
-        Raises:
-            NotImplementedError: If the player cannot choose an action.
+        Choose a random action between 1 and 3 (assignment requirement).
         """
-        raise NotImplementedError("This player cannot choose an action automatically.")
+        return random.randint(1, 3)
 
     def win(self) -> None:
         """Increment win counter."""
@@ -74,13 +69,6 @@ class RandomAI(Player):
 
     The controller may limit this value when fewer than three matches remain.
     """
-
-    def play(self) -> int:
-        """
-        Choose a random action between 1 and 3.
-
-        Returns:
-            A random integer in [1, 3].
-        """
-        return random.randint(1, 3)
+    
+    pass
 
