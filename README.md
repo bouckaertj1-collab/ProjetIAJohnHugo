@@ -56,7 +56,7 @@ project/
 
 5. PRÉREQUIS
 ---------
-- Python 3
+- Python >= 3.10
 - Tkinter (inclus par défaut avec Python)
 
 
@@ -102,7 +102,7 @@ Une fenêtre graphique s’ouvre et le jeu peut commencer.
 - L’ordinateur joue automatiquement après le tour du joueur humain et un court délai.
 - À la fin de la partie :
   - le bouton "Recommencer" permet de lancer une nouvelle partie,
-  - le bouton "Terminer" affiche les statistiques finales (victoires,     défaites, parties jouées pour chaque joueur) puis ferme l’application
+  - le bouton "Terminer" affiche les statistiques finales (victoires, défaites, parties jouées pour chaque joueur) puis ferme l’application
 
 10. SPÉCIFICATIONS ET BONNES PRATIQUES
 ---------------------------------
