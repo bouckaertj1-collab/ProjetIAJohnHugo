@@ -81,7 +81,7 @@ class GameController:
             A string describing whose turn it is, or the winner if game is over.
         """
         if not self.model.is_game_over():
-            return f"Au tour de : {self.model.get_current_player().name}"
+            return f"Au tour de : {self.model.get_current_player().name} | Allumettes restantes : {self.model.nb} "
         winner = self.model.get_winner()
         return f"Partie terminée — gagnant : {winner.name}"
 
