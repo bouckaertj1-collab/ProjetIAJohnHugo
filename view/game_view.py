@@ -80,9 +80,6 @@ class GameView(tk.Tk):
 
         self.message_label.config(text=self.controller.get_status_message())
 
-        if self.controller.model.is_game_over():
-            self.end_game()
-
     def draw_matches(self, nb: int) -> None:
         """
         Draw `nb` matches on the canvas.
