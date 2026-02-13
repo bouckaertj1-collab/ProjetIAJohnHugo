@@ -100,9 +100,9 @@ Une fenêtre graphique s’ouvre et le jeu peut commencer.
 - Le joueur humain joue en cliquant sur les boutons :
   "Prendre 1", "Prendre 2" ou "Prendre 3".
 - L’ordinateur joue automatiquement après le tour du joueur humain et un court délai.
-- À la fin de la partie, un bouton "Recommencer" permet de relancer une nouvelle
-  partie.
-
+- À la fin de la partie :
+  - le bouton "Recommencer" permet de lancer une nouvelle partie,
+  - le bouton "Terminer" affiche les statistiques finales (victoires,     défaites, parties jouées pour chaque joueur) puis ferme l’application
 
 10. SPÉCIFICATIONS ET BONNES PRATIQUES
 ---------------------------------
@@ -123,3 +123,7 @@ Bouckaert John / Hugo Fievet
 Cadre :
 Projet pédagogique – Python / Tkinter
 Année : 2025–2026
+
+12. LICENSE
+-------
+This project is licensed under the MIT License.
