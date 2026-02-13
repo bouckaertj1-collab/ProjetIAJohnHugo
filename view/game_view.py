@@ -34,7 +34,7 @@ class GameView(tk.Tk):
         self.controller = controller
 
         self.title("Jeu des allumettes")
-        self.resizable(False, False)  # on bloque le redimensionnement
+        self.resizable(False, False)  
         self.configure(padx=24, pady=24)
 
         # message (tour de qui / gagnant)
@@ -121,9 +121,15 @@ class GameView(tk.Tk):
         """
         Switch the UI to "end of game" mode.
 
+        This method updates the interface once the game is finished.
+        It removes the action buttons (take 1/2/3 matches) and replaces
+        them with:
+            - a "Restart" button to start a new game
+            - a "Terminate" button to display final statistics and exit
+
         Postconditions:
-            - Removes buttons 1/2/3
-            - Adds a single "Restart" button
+            - Action buttons are removed
+            - End-of-game control buttons are displayed
         """
         for widget in self.buttons_frame.winfo_children():
             widget.destroy()
@@ -135,8 +141,17 @@ class GameView(tk.Tk):
             width=18,
             height=2
         )
-        reset_btn.pack()
+        reset_btn.pack(side=tk.LEFT, padx=6)
 
+        terminate_btn = tk.Button(
+            self.buttons_frame,
+            text="Terminer",
+            command=self.controller.show_stats,
+            width=18,
+            height=2
+        )
+        terminate_btn.pack(side=tk.LEFT, padx=6)
+    
     def reset(self) -> None:
         """
         Restore the default UI (buttons 1/2/3).

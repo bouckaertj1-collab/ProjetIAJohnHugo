@@ -11,6 +11,7 @@ from model.human import HumanGUI
 from model.player import Player
 from model.game_model import GameModel
 from view.game_view import GameView
+import tkinter.messagebox as mb
 
 
 class GameController:
@@ -179,3 +180,18 @@ class GameController:
 
         self.view.update_view()
         self.view.end_game()
+
+    def show_stats(self) -> None:
+        """
+        Display final game statistics and terminate the application.
+
+        This method is called when the user clicks the "Terminate" button
+        at the end of a game. It shows a dialog window containing the
+        cumulative statistics (wins, losses, games played) for each player,
+        then closes the main application window.
+        """
+        p1, p2 = self.model.players
+        stats = f"Game statistics\n\n{p1}\n\n{p2}"
+        mb.showinfo("Statistics", stats)
+        self.view.destroy()
+

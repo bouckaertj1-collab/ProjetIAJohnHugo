@@ -60,7 +60,12 @@ class Player:
 
     def __str__(self) -> str:
         """Return a readable representation."""
-        return f"{self.name} (W:{self.nb_wins} L:{self.nb_loses})"
+        return (
+        f"{self.name}\n"
+        f"  Wins: {self.nb_wins}\n"
+        f"  Losses: {self.nb_loses}\n"
+        f"  Games played: {self.nb_games}"
+    )
 
 
 class RandomAI(Player):
@@ -69,6 +74,6 @@ class RandomAI(Player):
 
     The controller may limit this value when fewer than three matches remain.
     """
-    
+
     pass
 
