@@ -82,9 +82,9 @@ class GameController:
             A string describing whose turn it is, or the winner if game is over.
         """
         if not self.model.is_game_over():
-            return f"Au tour de : {self.model.get_current_player().name} | Allumettes restantes : {self.model.nb} "
+            return f"Current turn: {self.model.get_current_player().name} | Matches remaining: {self.model.nb} "
         winner = self.model.get_winner()
-        return f"Partie terminée — gagnant : {winner.name}"
+        return f"Game over — winner: {winner.name}"
 
     def reset_game(self) -> None:
         """
@@ -150,9 +150,8 @@ class GameController:
         """
         current = self.model.get_current_player()
 
-        action = current.play()          # expected 1..3
-        if action > self.model.nb:       # clamp to remaining matches
-            action = self.model.nb
+        max_take = min(3, self.model.nb)
+        action = current.play(max_take)
 
         self.model.step(action)
 

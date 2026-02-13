@@ -15,7 +15,7 @@ def main() -> None:
         - Creates players and controller
         - Starts the Tkinter event loop
     """
-    p1 = HumanGUI("Human")
+    p1 = HumanGUI("Me")
     p2 = RandomAI("Bot")
 
     controller = GameController(p1, p2, total_matches=21)

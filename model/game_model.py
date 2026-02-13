@@ -7,7 +7,6 @@ Rule:
 
 import random
 from typing import Optional
-
 from model.player import Player
 
 

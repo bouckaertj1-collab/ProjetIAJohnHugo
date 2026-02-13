@@ -133,7 +133,7 @@ class GameView(tk.Tk):
 
         reset_btn = tk.Button(
             self.buttons_frame,
-            text="Recommencer",
+            text="Restart",
             command=self.controller.reset_game,
             width=18,
             height=2
@@ -142,7 +142,7 @@ class GameView(tk.Tk):
 
         terminate_btn = tk.Button(
             self.buttons_frame,
-            text="Terminer",
+            text="End",
             command=self.controller.show_stats,
             width=18,
             height=2

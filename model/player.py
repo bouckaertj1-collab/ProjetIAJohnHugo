@@ -44,11 +44,17 @@ class Player:
         return self.nb_wins + self.nb_loses
 
     @staticmethod
-    def play() -> int:
+    def play(max_take: int = 3) -> int:
         """
-        Choose a random action between 1 and 3 (assignment requirement).
+        Choose a random action between 1 and `max_take`.
+
+        Args:
+            max_take: Maximum number of matches that can be taken this turn (>= 1).
+
+        Returns:
+            A random integer in [1, max_take].
         """
-        return random.randint(1, 3)
+        return random.randint(1, max_take)
 
     def win(self) -> None:
         """Increment win counter."""
