@@ -12,4 +12,5 @@ class HumanGUI(Player):
     the controller when the user clicks a button.
     """
     
-    pass
+    pass 
+    print('n')
