@@ -133,7 +133,7 @@ class GameController:
         self.view.update_view()
 
         if not isinstance(self.model.get_current_player(), HumanGUI):
-            self.view.after(800, self.handle_ai_move)
+            self.view.after(600, self.handle_ai_move)
 
     def handle_ai_move(self) -> None:
         """
