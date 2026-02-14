@@ -83,7 +83,7 @@ class GameView(tk.Tk):
         Args:
             nb: Number of matches to draw (>= 0).
         """
-        per_row = 25
+        per_row = 21
         x0, y0 = 20, 24
 
         stick_w = 6
