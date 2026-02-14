@@ -41,7 +41,6 @@ class GameController:
 
         self._bind_buttons()
 
-        # If AI starts, trigger it immediately
         if not isinstance(self.model.get_current_player(), HumanGUI):
             self.handle_ai_move()
 
@@ -121,7 +120,6 @@ class GameController:
         """
         current = self.model.get_current_player()
 
-        # Ignore clicks if it's not human's turn
         if not isinstance(current, HumanGUI):
             return
 
@@ -134,7 +132,6 @@ class GameController:
         self.model.switch_player()
         self.view.update_view()
 
-        # If AI's turn, play after a short delay
         if not isinstance(self.model.get_current_player(), HumanGUI):
             self.view.after(800, self.handle_ai_move)
 

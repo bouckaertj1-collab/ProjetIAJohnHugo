@@ -37,19 +37,15 @@ class GameView(tk.Tk):
         self.resizable(False, False)  
         self.configure(padx=24, pady=24)
 
-        # message (tour de qui / gagnant)
         self.message_label = tk.Label(self, text="", font=("Arial", 12, "bold"))
         self.message_label.pack(pady=(0, 10))
 
-        # canvas (zone pour dessiner les allumettes)
         self.canvas = tk.Canvas(self, width=520, height=240, bg="#f5f5f5", highlightthickness=0)
         self.canvas.pack(pady=(0, 12))
 
-        # frame boutons
         self.buttons_frame = tk.Frame(self)
         self.buttons_frame.pack()
 
-        # Boutons 1/2/3
         btn_size = {"width": 12, "height": 2}
         self.btn1 = tk.Button(self.buttons_frame, text="Prendre 1", command=lambda: None, **btn_size)
         self.btn2 = tk.Button(self.buttons_frame, text="Prendre 2", command=lambda: None, **btn_size)
