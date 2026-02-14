@@ -18,7 +18,7 @@ def main() -> None:
     p1 = HumanGUI("Me")
     p2 = RandomAI("Bot")
 
-    controller = GameController(p1, p2, total_matches=42)
+    controller = GameController(p1, p2, total_matches=21)
     controller.start()
 
 
