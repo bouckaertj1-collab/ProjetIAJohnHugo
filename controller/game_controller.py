@@ -146,10 +146,8 @@ class GameController:
             - Applies the AI move, checks end of game, switches player, updates view.
         """
         current = self.model.get_current_player()
-
         max_take = min(3, self.model.nb)
         action = current.play(max_take)
-
         self.model.step(action)
 
         if self.model.is_game_over():

@@ -9,8 +9,8 @@ import random
 from typing import Optional
 from model.player import Player
 
-
 class GameModel:
+    
     """
     Store the game state and apply the game rules.
 
@@ -137,3 +137,20 @@ class GameModel:
         if not self.is_game_over():
             return None
         return self.players[self.current_player]
+    
+    def play_game(self) -> None:
+        while not self.is_game_over():
+            current = self.get_current_player()
+            max_take = min(3, self.nb)
+            action = current.play(max_take)
+            self.step(action)
+
+            if self.is_game_over():
+                winner = self.get_winner()
+                loser = self.get_loser()
+                winner.win()
+                loser.lose()
+                return
+
+            self.switch_player()
+    

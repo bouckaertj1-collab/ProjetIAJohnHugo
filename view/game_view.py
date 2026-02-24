@@ -76,6 +76,7 @@ class GameView(tk.Tk):
 
         self.message_label.config(text=self.controller.get_status_message())
 
+
     def draw_matches(self, nb: int) -> None:
         """
         Draw `nb` matches on the canvas.
