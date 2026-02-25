@@ -5,19 +5,17 @@ from random import randint
 def training(ai1, ai2, nb_games, nb_epsilon):
     # Train the AIs @ai1 and @ai2 during @nb_games games
     # epsilon decrease every @nb_epsilon games
-        training_game = GameModel(randint(12,21), ai1, ai2,)
-        for i in range(0, nb_games):
-            if i % nb_epsilon == 0:
-                if type(ai1) == AI : ai1.next_epsilon()
-                if type(ai2) == AI : ai2.next_epsilon()
-                
 
-            training_game.play_game()
+    for i in range(nb_games):
+        if i % nb_epsilon == 0:
+            if type(ai1) == AI: ai1.next_epsilon()
+            if type(ai2) == AI: ai2.next_epsilon()
 
-            if type(ai1)==AI : ai1.train()
-            if type(ai2)==AI : ai2.train()
+        training_game = GameModel(randint(12, 21), ai1, ai2)
+        training_game.play_game()
 
-            training_game.reset()
+        if type(ai1) == AI: ai1.train()
+        if type(ai2) == AI: ai2.train()
 
 def compare_ai(*ais):
     # Print a comparison between the @ais
@@ -62,8 +60,11 @@ for _ in range(1000):
 
 
 training(alice, bob, 100000, 10)
-training(randy,randomAi,100000,10)
+
 compare_ai(alice, bob, randy)
+
+training(randy,randomAi,100000,10)
+
 bob.nb_wins = 0
 bob.nb_loses = 0
 
