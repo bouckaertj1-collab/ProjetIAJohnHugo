@@ -91,24 +91,38 @@ class AI(Player):
         self.previous_state = None
         self.v_function = {"win":1.0,"lose":-1.0}
 
-    def exploit(self,max_take:int):
+    def exploit(self, max_take: int) -> int:
+        nb = self.game.nb
+        best_value = -float("inf")
+        best_actions = []
 
-        state = self.game.nb
-        min_value = float("inf")
-        pairing_action_value : list[(int,float)] = []
+        for action in range(1, min(max_take, nb) + 1):
+            after_me = nb - action
 
-        for action in [a for a in [1,2,3] if a <= state]:
-            next_state = state - action
-            self.v_function.setdefault(next_state, 0)
-            pairing_action_value.append((action, self.v_function[next_state]))
+            if after_me == 0:
+                value = self.v_function["lose"]
+            else:
+                worst_for_me = float("inf")
+                for opp in range(1, min(max_take, after_me) + 1):
+                    after_opp = after_me - opp
+                    if after_opp == 0:
+                        worst_for_me = min(worst_for_me, self.v_function["win"])
+                    else:
+                        worst_for_me = min(
+                            worst_for_me,
+                            self.v_function.get(after_opp, 0.0)
+                        )
+                value = worst_for_me
 
-        min_value = min(value for ( _ , value) in pairing_action_value)
-
-        best_actions = [action for (action, value) in pairing_action_value if value == min_value]
+            if value > best_value:
+                best_value = value
+                best_actions = [action]
+            elif value == best_value:
+                best_actions.append(action)
 
         return random.choice(best_actions)
                 
-    def play(self,max_take:int=3):
+    def play(self, max_take:int=3):
 
         state = self.game.nb
 
@@ -118,7 +132,7 @@ class AI(Player):
         self.previous_state = state
 
         if random.random() < self.eps:
-           action = random.choice([action for action in [1,2,3] if action <= state])
+            action = random.randint(1, max_take)
         else:
             action = self.exploit(max_take)
 
@@ -149,7 +163,7 @@ class AI(Player):
 
         self.history.clear()
 
-    def next_epsilon(self,coef = 0.1,min_eps=0.05):
+    def next_epsilon(self,coef = 0.95,min_eps=0.05):
         
         self.eps = max(min_eps,self.eps*coef)
     

@@ -12,7 +12,7 @@ class Human(Player):
     The player is asked to choose a number of matches to take via standard input.
     """
 
-    def play(self) -> int:
+    def play(self, max_take: int = 3) -> int:
         """
         Ask the user to choose how many matches to take.
 
@@ -24,14 +24,14 @@ class Human(Player):
         """
         choice = None
 
-        while choice not in (1, 2, 3):
+        while choice not in range(1, max_take + 1):
             try:
-                choice = int(input(f"{self.name}, take 1 to 3 matches: "))
+                choice = int(input(f"{self.name}, take 1 to {max_take} matches: "))
             except ValueError:
                 choice = None
 
-            if choice not in (1, 2, 3):
-                print("Invalid choice. Please enter 1, 2, or 3.")
+            if choice not in range(1, max_take + 1):
+                print(f"Invalid choice. Please enter a number between 1 and {max_take}.")
 
         return choice
 
