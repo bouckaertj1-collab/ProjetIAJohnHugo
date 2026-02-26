@@ -91,7 +91,22 @@ class AI(Player):
         self.previous_state = None
         self.v_function = {"win":1.0,"lose":-1.0}
 
-    def exploit(self, max_take: int) -> int:
+    def exploit(self,max_take:int):
+        """
+        Selects the best action according to the learned value function (greedy strategy).
+
+        Iterates over all possible actions from the current state and picks the one
+        leading to the state with the minimum value (putting the opponent in the
+        worst possible position). In case of ties, one action is chosen randomly
+        among the best ones.
+
+        Args:
+            max_take (int): Maximum number of tokens that can be taken
+                            (not directly used here; actions are limited to [1, 2, 3]).
+
+        Returns:
+            int: The chosen action (number of tokens to take).
+        """
         nb = self.game.nb
         best_value = -float("inf")
         best_actions = []
@@ -122,8 +137,27 @@ class AI(Player):
 
         return random.choice(best_actions)
                 
-    def play(self, max_take:int=3):
+    def play(self,max_take:int=3):
+        """
+        Chooses an action according to an epsilon-greedy policy and updates history.
 
+        With probability `eps`, a random action is selected (exploration).
+        Otherwise, the `exploit` method is called to choose the best known action
+        (exploitation). The previous and current states are recorded in history
+        to support learning.
+
+        Args:
+            max_take (int, optional): Maximum number of tokens that can be taken.
+                                  Defaults to 3.
+
+        Returns:
+            int: The chosen action (number of tokens to take).
+
+        Side effects:
+            - Updates `self.history` with the tuple (previous_state, current_state)
+                if a previous state exists.
+            - Updates `self.previous_state` to the current state.
+        """
         state = self.game.nb
 
         if self.previous_state is not None:
@@ -167,6 +201,7 @@ class AI(Player):
         
         self.eps = max(min_eps,self.eps*coef)
     
+
     def upload(self, filename: str) -> None:
         data = {
             "epsilon": self.eps,
