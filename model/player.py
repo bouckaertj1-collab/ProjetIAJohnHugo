@@ -151,12 +151,11 @@ class AI(Player):
             raise RuntimeError("AI has no game attached (self.game is None).")
 
         matches_when_ai_turn = self.game.nb
-        allowed_ai_take = min(max_take, matches_when_ai_turn)
 
         best_score_for_ai = -float("inf")
         best_actions: list[int] = []
 
-        for ai_move in range(1, allowed_ai_take + 1):
+        for ai_move in range(1, max_take + 1):
             matches_after_ai_move = matches_when_ai_turn - ai_move
 
             if matches_after_ai_move == 0:
@@ -212,11 +211,10 @@ class AI(Player):
 
         self.previous_state = state
 
-        allowed_take = min(max_take, state)
         if random.random() < self.eps:
-            return random.randint(1, allowed_take)
+            return random.randint(1, max_take)
 
-        return self.exploit(allowed_take)
+        return self.exploit(max_take)
 
     def win(self) -> None:
         """
