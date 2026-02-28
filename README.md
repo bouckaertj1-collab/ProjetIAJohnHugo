@@ -37,7 +37,6 @@ Le projet est structuré selon le modèle MVC :
   Fait le lien entre le modèle et la vue, gère les tours de jeu et la logique
   générale.
 
-
 4. ARBORESCENCE DU PROJET
 ----------------------
 project/
@@ -61,12 +60,10 @@ project/
 |-- controller/
 |   |-- game_controller.py
 
-
 5. PRÉREQUIS
 ---------
 - Python >= 3.10
 - Tkinter (inclus par défaut avec Python)
-
 
 6. ENVIRONNEMENT VIRTUEL (RECOMMANDÉ)
 ---------------------------------
@@ -82,7 +79,6 @@ Windows :
 Linux / macOS :
     source env/bin/activate
 
-
 7. INSTALLATION DES DÉPENDANCES
 ----------------------------
 Installer les dépendances avec :
@@ -93,7 +89,6 @@ Remarque :
 Tkinter fait partie de la bibliothèque standard Python et ne nécessite pas
 d’installation supplémentaire.
 
-
 8. LANCEMENT DU PROGRAMME
 ----------------------
 Depuis la racine du projet, exécuter :
@@ -101,7 +96,6 @@ Depuis la racine du projet, exécuter :
     python main.py
 
 Une fenêtre graphique s’ouvre et le jeu peut commencer.
-
 
 9. UTILISATION
 -----------

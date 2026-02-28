@@ -1,5 +1,10 @@
 """
-Define base player classes and simple AI players.
+Define player classes for the matches game.
+
+This module contains:
+- The base Player class
+- A RandomAI player
+- A reinforcement learning AI player
 """
 
 import json
