@@ -26,10 +26,10 @@ class Player:
             name (str): Player display name.
             game (GameModel | None, optional): Associated game model.
         """
-        self.name = name
-        self.game = game
-        self.nb_wins = 0
-        self.nb_loses = 0
+        self.name: str = name
+        self.game: GameModel = game
+        self.nb_wins: int = 0
+        self.nb_loses: int = 0
 
     @property
     def nb_games(self) -> int:
@@ -68,7 +68,7 @@ class Player:
         Return a human-readable summary of the player's statistics.
 
         Returns:
-            str: Formatted player information.
+            str: Formatted player informations.
         """
         return (
         f"{self.name}\n"
@@ -105,14 +105,14 @@ class AI(Player):
         previous_state (int | None): Last observed state.
         v_function (dict): Estimated value of states and terminal outcomes.
     """
-    def __init__(self,name,game :"GameModel | None" = None):
+    def __init__(self,name: str,game :"GameModel | None" = None):
         
         super().__init__(name,game)
-        self.eps = 0.9
-        self.lr = 0.01
-        self.history = []
-        self.previous_state = None
-        self.v_function = {"win":1.0,"lose":-1.0}
+        self.eps: float = 0.9
+        self.lr: float = 0.01
+        self.history: list[tuple] = []
+        self.previous_state: int = None
+        self.v_function: dict[str|int,float] = {"win":1.0,"lose":-1.0}
 
     def exploit(self, max_take: int) -> int:
         """
@@ -126,10 +126,10 @@ class AI(Player):
             is chosen uniformly at random.
 
         Args:
-            max_take (int): Maximum number of tokens that can be taken.
+            max_take (int): Maximum number of matches that can be taken.
 
         Returns:
-            int: Number of tokens to take.
+            int: Number of matches to take.
         """
 
         matches_when_ai_turn = self.game.nb
@@ -175,7 +175,7 @@ class AI(Player):
                 best_possible_actions.append(ai_move)
 
         return random.choice(best_possible_actions)
-    def play(self,max_take:int=3):
+    def play(self,max_take:int=3) -> int :
         """
         Chooses an action according to an epsilon-greedy policy and updates history.
 
@@ -185,11 +185,12 @@ class AI(Player):
         to support learning.
 
         Args:
-            max_take (int, optional): Maximum number of tokens that can be taken.
-                                  Defaults to 3.
+            max_take (int, optional): 
+                Maximum number of matches that can be taken.
+                Defaults to 3.
 
         Returns:
-            int: The chosen action (number of tokens to take).
+            int: The chosen action (number of matches to take).
 
         Side effects:
             - Updates `self.history` with the tuple (previous_state, current_state)
@@ -210,33 +211,39 @@ class AI(Player):
 
         return action
     
-    def win(self):
+    def win(self) -> None:
+        """
+            Record a win and finalize the current episode.
+
+            Adds a terminal transition to the history if a previous
+            state exists, then resets the internal state tracker.
+        """
         super().win()
         if self.previous_state is not None :
             self.history.append((self.previous_state,"win"))
         
         self.previous_state = None
 
-    def lose(self):
+    def lose(self) -> None:
         """
         Record a loss and finalize the current episode.
 
         Adds a terminal transition to the history if a previous
         state exists, then resets the internal state tracker.
-    """
+        """
         super().lose()
         if self.previous_state is not None :
             self.history.append((self.previous_state,"lose"))
 
         self.previous_state = None
 
-    def train(self):
+    def train(self) -> None:
         """
         Update the value function using the recorded history.
 
         The method performs a backward update over the stored
         state transitions using a temporal-difference style rule.
-        After updating, the history buffer is cleared.
+        After updating, the history is cleared.
 
         Side Effects:
             - Modifies `self.v_function`
@@ -252,7 +259,7 @@ class AI(Player):
 
         self.history.clear()
 
-    def next_epsilon(self,coef = 0.95,min_eps=0.05):
+    def next_epsilon(self,coef:float = 0.95,min_eps:float=0.05) -> None:
         """
         Decay the exploration rate.
 
@@ -262,8 +269,7 @@ class AI(Player):
 
         Side Effects:
             Updates `self.eps`.
-    """
-        
+        """
         self.eps = max(min_eps,self.eps*coef)
     
 
