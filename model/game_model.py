@@ -6,11 +6,13 @@ Rule:
 """
 
 import random
-from typing import Optional
-from model.player import Player
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from model.player import Player
+
 
 class GameModel:
-    
     """
     Store the game state and apply the game rules.
 
@@ -21,7 +23,7 @@ class GameModel:
         current_player: Index (0 or 1) of the current player in `players`.
     """
 
-    def __init__(self, total_matches, player1, player2, displayable=True):
+    def __init__(self, total_matches: int, player1: "Player", player2: "Player", displayable: bool = True) -> None:
         """
         Initialize the model.
 
@@ -38,8 +40,8 @@ class GameModel:
         self.displayable = displayable
         self.original_nb = total_matches
         self.nb = total_matches
-
-        self.players = [player1, player2]
+        self.players: list["Player"] = [player1, player2]
+        
         for p in self.players:
             p.game = self
 
@@ -105,7 +107,7 @@ class GameModel:
         """
         return self.nb == 0
 
-    def get_current_player(self) -> Player:
+    def get_current_player(self) -> "Player":
         """
         Get the player whose turn it is.
 
@@ -114,7 +116,7 @@ class GameModel:
         """
         return self.players[self.current_player]
 
-    def get_winner(self) -> Optional[Player]:
+    def get_winner(self) -> "Player | None":
         """
         Get the winner if the game is over.
 
@@ -128,7 +130,7 @@ class GameModel:
             return None
         return self.players[1 - self.current_player]
 
-    def get_loser(self) -> Optional[Player]:
+    def get_loser(self) -> "Player | None":
         """
         Get the loser if the game is over.
 
@@ -140,18 +142,30 @@ class GameModel:
         return self.players[self.current_player]
     
     def play_game(self) -> None:
+        """
+        Play a full game until the ends.
+
+        The model repeatedly asks the current player for an action,
+        applies it, and switches the turn until the pile is empty.
+        When the game ends, win/lose counters are updated.
+
+        Side effects:
+            - Updates nb during the game.
+            - Calls winner.win() and loser.lose() at the end of the game.
+            - Leaves current_player as the player who took the last match (loser).
+        """
         while not self.is_game_over():
             current = self.get_current_player()
             max_take = min(3, self.nb)
             action = current.play(max_take)
+
             self.step(action)
 
             if self.is_game_over():
                 winner = self.get_winner()
                 loser = self.get_loser()
-                winner.win()
-                loser.lose()
+                winner.win()  
+                loser.lose()  
                 return
 
             self.switch_player()
-    
