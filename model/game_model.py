@@ -21,7 +21,7 @@ class GameModel:
         current_player: Index (0 or 1) of the current player in `players`.
     """
 
-    def __init__(self, total_matches: int, player1: Player, player2: Player) -> None:
+    def __init__(self, total_matches, player1, player2, displayable=True):
         """
         Initialize the model.
 
@@ -35,6 +35,7 @@ class GameModel:
             - players are shuffled to randomize who starts.
             - each player's `game` reference points to this model.
         """
+        self.displayable = displayable
         self.original_nb = total_matches
         self.nb = total_matches
 

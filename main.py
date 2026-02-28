@@ -22,7 +22,7 @@ def main() -> None:
     alice.eps = 0.
     randy.eps = 0.
 
-    controller = GameController(p1, bob,12)
+    controller = GameController(p1, bob,15)
     controller.start()
 
 if __name__ == "__main__":

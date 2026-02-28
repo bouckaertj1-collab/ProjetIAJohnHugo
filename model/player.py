@@ -92,35 +92,53 @@ class AI(Player):
         self.v_function = {"win":1.0,"lose":-1.0}
 
     def exploit(self, max_take: int) -> int:
-        nb = self.game.nb
-        best_value = -float("inf")
-        best_actions = []
+        # Nombre d'allumettes quand l'IA a la main (c'est l'état s)
+        matches_when_ai_turn = self.game.nb
 
-        for action in range(1, min(max_take, nb) + 1):
-            after_me = nb - action
+        # On veut choisir l'action qui maximise la valeur finale pour l'IA
+        best_score_for_ai = -float("inf")
+        best_possible_actions = []
 
-            if after_me == 0:
-                value = self.v_function["lose"]
+        # On teste toutes les actions possibles de l'IA
+        for ai_move in range(1, min(max_take, matches_when_ai_turn) + 1):
+
+            # Etat après le coup de l'IA (c'est maintenant au tour de l'adversaire)
+            matches_after_ai_move = matches_when_ai_turn - ai_move
+
+            # Si l'IA prend la dernière allumette, elle perd
+            if matches_after_ai_move == 0:
+                score_for_this_move = self.v_function["lose"]
+
             else:
-                worst_for_me = float("inf")
-                for opp in range(1, min(max_take, after_me) + 1):
-                    after_opp = after_me - opp
-                    if after_opp == 0:
-                        worst_for_me = min(worst_for_me, self.v_function["win"])
+                # On suppose que l'adversaire va jouer le coup le plus défavorable pour l'IA
+                worst_state_value_for_ai = float("inf")
+
+                # On teste tous les coups possibles de l'adversaire
+                for opponent_move in range(1, min(max_take, matches_after_ai_move) + 1):
+
+                    # Etat après le coup de l'adversaire
+                    # C'est ici que l'IA récupère la main (c'est s')
+                    matches_when_ai_plays_again = matches_after_ai_move - opponent_move
+
+                    # Si l'adversaire prend la dernière allumette, il perd
+                    if matches_when_ai_plays_again == 0:
+                        state_value = self.v_function["win"]
                     else:
-                        worst_for_me = min(
-                            worst_for_me,
-                            self.v_function.get(after_opp, 0.0)
-                        )
-                value = worst_for_me
+                        state_value = self.v_function.get(matches_when_ai_plays_again, 0.0)
 
-            if value > best_value:
-                best_value = value
-                best_actions = [action]
-            elif value == best_value:
-                best_actions.append(action)
+                    # L'adversaire choisit le pire état pour l'IA
+                    worst_state_value_for_ai = min(worst_state_value_for_ai, state_value)
 
-        return random.choice(best_actions)
+                score_for_this_move = worst_state_value_for_ai
+
+            # On garde l'action qui maximise la valeur pour l'IA
+            if score_for_this_move > best_score_for_ai:
+                best_score_for_ai = score_for_this_move
+                best_possible_actions = [ai_move]
+            elif score_for_this_move == best_score_for_ai:
+                best_possible_actions.append(ai_move)
+
+        return random.choice(best_possible_actions)
                 
     def play(self, max_take:int=3):
 

@@ -5,6 +5,21 @@ from random import randint
 def training(ai1, ai2, nb_games, nb_epsilon):
     # Train the AIs @ai1 and @ai2 during @nb_games games
     # epsilon decrease every @nb_epsilon games
+    training_game = GameModel(12, ai1, ai2, displayable = False)
+    for i in range(0, nb_games):
+        if i % nb_epsilon == 0:
+            if type(ai1)==AI : ai1.next_epsilon()
+            if type(ai2)==AI : ai2.next_epsilon()
+
+        training_game.play_game()
+        if type(ai1)==AI : ai1.train()
+        if type(ai2)==AI : ai2.train()
+
+        training_game.reset()
+
+def training2(ai1, ai2, nb_games, nb_epsilon):
+    # Train the AIs @ai1 and @ai2 during @nb_games games
+    # epsilon decrease every @nb_epsilon games
 
     for i in range(nb_games):
         if i % nb_epsilon == 0:
@@ -41,45 +56,34 @@ def compare_ai(*ais):
                     print(f"{value:^15.3f}", end='')
             print()
 
+if __name__ == "__main__":
+    basic_player = RandomAI("Basic")
+    alice = AI("Alice")
+    bob = AI("Bob")
+    randy = AI("Randy")
 
-alice = AI("Alice")
-bob = AI("Bob")
-randy = AI("Randy")
-randomAi = RandomAI("randomAI")
+    training(alice, bob, 1000, 10)
+    training(randy, basic_player, 1000, 10)
 
-training(alice, bob, 1000, 10)
-training(randy, randomAi, 1000, 10)
+    bob.nb_wins = 0
+    bob.nb_loses = 0
 
-bob.nb_wins = 0
-bob.nb_loses = 0
+    test_game = GameModel(12, bob, basic_player, displayable=False)
+    for _ in range(1000):
+        test_game.play_game()
+        test_game.reset()
 
-test_game = GameModel(12, bob, randomAi)
-for _ in range(1000):
-    test_game.play_game()
-    test_game.reset()
+    compare_ai(alice, bob, randy)
 
+    training(alice, bob, 100000, 10)
+    training(randy, basic_player, 100000, 10)
 
-training(alice, bob, 100000, 10)
+    bob.nb_wins = 0
+    bob.nb_loses = 0
 
-compare_ai(alice, bob, randy)
+    test_game = GameModel(12, bob, basic_player, displayable=False)
+    for _ in range(100000):
+        test_game.play_game()
+        test_game.reset()
 
-training(randy,randomAi,100000,10)
-
-bob.nb_wins = 0
-bob.nb_loses = 0
-
-saved_eps = bob.eps
-bob.eps = 0.0  # exploitation pure
-
-test_game = GameModel(12, bob, randomAi)
-for _ in range(100000):
-    test_game.play_game()
-    test_game.reset()
-
-bob.eps = saved_eps
-
-compare_ai(alice, bob, randy) 
-
-alice.upload("alice_training.json")
-bob.upload("bob_training.json")
-randy.upload("randy_training.json")
+    compare_ai(alice, bob, randy)
