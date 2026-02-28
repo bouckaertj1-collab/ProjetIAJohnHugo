@@ -182,7 +182,6 @@ class AI(Player):
         self.history.clear()
 
     def next_epsilon(self,coef = 0.95,min_eps=0.05):
-        
         self.eps = max(min_eps,self.eps*coef)
     
     def upload(self, filename: str) -> None:
