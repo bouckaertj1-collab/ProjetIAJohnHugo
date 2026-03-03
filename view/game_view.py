@@ -34,22 +34,18 @@ class GameView(tk.Tk):
         self.controller = controller
 
         self.title("Jeu des allumettes")
-        self.resizable(False, False)  # on bloque le redimensionnement
+        self.resizable(False, False)  
         self.configure(padx=24, pady=24)
 
-        # message (tour de qui / gagnant)
         self.message_label = tk.Label(self, text="", font=("Arial", 12, "bold"))
         self.message_label.pack(pady=(0, 10))
 
-        # canvas (zone pour dessiner les allumettes)
         self.canvas = tk.Canvas(self, width=520, height=240, bg="#f5f5f5", highlightthickness=0)
         self.canvas.pack(pady=(0, 12))
 
-        # frame boutons
         self.buttons_frame = tk.Frame(self)
         self.buttons_frame.pack()
 
-        # Boutons 1/2/3
         btn_size = {"width": 12, "height": 2}
         self.btn1 = tk.Button(self.buttons_frame, text="Prendre 1", command=lambda: None, **btn_size)
         self.btn2 = tk.Button(self.buttons_frame, text="Prendre 2", command=lambda: None, **btn_size)
@@ -80,8 +76,6 @@ class GameView(tk.Tk):
 
         self.message_label.config(text=self.controller.get_status_message())
 
-        if self.controller.model.is_game_over():
-            self.end_game()
 
     def draw_matches(self, nb: int) -> None:
         """
@@ -90,7 +84,7 @@ class GameView(tk.Tk):
         Args:
             nb: Number of matches to draw (>= 0).
         """
-        per_row = 25
+        per_row = 21
         x0, y0 = 20, 24
 
         stick_w = 6
@@ -121,22 +115,37 @@ class GameView(tk.Tk):
         """
         Switch the UI to "end of game" mode.
 
+        This method updates the interface once the game is finished.
+        It removes the action buttons (take 1/2/3 matches) and replaces
+        them with:
+            - a "Restart" button to start a new game
+            - a "Terminate" button to display final statistics and exit
+
         Postconditions:
-            - Removes buttons 1/2/3
-            - Adds a single "Restart" button
+            - Action buttons are removed
+            - End-of-game control buttons are displayed
         """
         for widget in self.buttons_frame.winfo_children():
             widget.destroy()
 
         reset_btn = tk.Button(
             self.buttons_frame,
-            text="Recommencer",
+            text="Restart",
             command=self.controller.reset_game,
             width=18,
             height=2
         )
-        reset_btn.pack()
+        reset_btn.pack(side=tk.LEFT, padx=6)
 
+        terminate_btn = tk.Button(
+            self.buttons_frame,
+            text="End",
+            command=self.controller.show_stats,
+            width=18,
+            height=2
+        )
+        terminate_btn.pack(side=tk.LEFT, padx=6)
+    
     def reset(self) -> None:
         """
         Restore the default UI (buttons 1/2/3).

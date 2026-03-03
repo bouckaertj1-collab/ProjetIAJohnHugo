@@ -1,26 +1,34 @@
 """
 Entry point for the matchstick game (Tkinter GUI).
+Play Human vs trained Bob (AI).
 """
-
+import random
 from model.human import HumanGUI
-from model.player import RandomAI
+from model.player import AI
 from controller.game_controller import GameController
-
 
 def main() -> None:
     """
-    Start the application.
+    Launch the Tkinter GUI for the matches game.
 
-    Postconditions:
-        - Creates players and controller
-        - Starts the Tkinter event loop
+    This entry point initializes the players, creates the controller,
+    and starts the Tkinter main loop.
     """
-    p1 = HumanGUI("Human")
-    p2 = RandomAI("Bot")
+    p1 = HumanGUI("Me")
+    bob = AI("AI  Bob")
+    randy = AI("randy")
+    alice = AI("Alice")
 
-    controller = GameController(p1, p2, total_matches=21)
+    bob.download("bob_training.json")
+    alice.download("alice_training.json")
+    randy.download("randy_training.json")
+    
+    bob.eps = 0.
+    alice.eps = 0.
+    randy.eps = 0.
+
+    controller = GameController(p1, bob, random.randint(12, 21))
     controller.start()
-
 
 if __name__ == "__main__":
     main()

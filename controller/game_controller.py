@@ -11,6 +11,7 @@ from model.human import HumanGUI
 from model.player import Player
 from model.game_model import GameModel
 from view.game_view import GameView
+import tkinter.messagebox as mb
 
 
 class GameController:
@@ -40,7 +41,6 @@ class GameController:
 
         self._bind_buttons()
 
-        # If AI starts, trigger it immediately
         if not isinstance(self.model.get_current_player(), HumanGUI):
             self.handle_ai_move()
 
@@ -81,9 +81,9 @@ class GameController:
             A string describing whose turn it is, or the winner if game is over.
         """
         if not self.model.is_game_over():
-            return f"Au tour de : {self.model.get_current_player().name} | Allumettes restantes : {self.model.nb} "
+            return f"Current turn: {self.model.get_current_player().name} | Matches remaining: {self.model.nb} "
         winner = self.model.get_winner()
-        return f"Partie terminée — gagnant : {winner.name}"
+        return f"Game over — winner: {winner.name}"
 
     def reset_game(self) -> None:
         """
@@ -120,7 +120,6 @@ class GameController:
         """
         current = self.model.get_current_player()
 
-        # Ignore clicks if it's not human's turn
         if not isinstance(current, HumanGUI):
             return
 
@@ -133,9 +132,8 @@ class GameController:
         self.model.switch_player()
         self.view.update_view()
 
-        # If AI's turn, play after a short delay
         if not isinstance(self.model.get_current_player(), HumanGUI):
-            self.view.after(800, self.handle_ai_move)
+            self.view.after(600, self.handle_ai_move)
 
     def handle_ai_move(self) -> None:
         """
@@ -148,11 +146,8 @@ class GameController:
             - Applies the AI move, checks end of game, switches player, updates view.
         """
         current = self.model.get_current_player()
-
-        action = current.play()          # expected 1..3
-        if action > self.model.nb:       # clamp to remaining matches
-            action = self.model.nb
-
+        max_take = min(3, self.model.nb)
+        action = current.play(max_take)
         self.model.step(action)
 
         if self.model.is_game_over():
@@ -179,3 +174,18 @@ class GameController:
 
         self.view.update_view()
         self.view.end_game()
+
+    def show_stats(self) -> None:
+        """
+        Display final game statistics and terminate the application.
+
+        This method is called when the user clicks the "Terminate" button
+        at the end of a game. It shows a dialog window containing the
+        cumulative statistics (wins, losses, games played) for each player,
+        then closes the main application window.
+        """
+        p1, p2 = self.model.players
+        stats = f"Game statistics\n\n{p1}\n\n{p2}"
+        mb.showinfo("Statistics", stats)
+        self.view.destroy()
+
