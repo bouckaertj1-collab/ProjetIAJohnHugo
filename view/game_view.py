@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from controller.game_controller import GameController
 
 
-class GameView(tk.Tk):
+class GameView(tk.Toplevel):
     """
     Tkinter GUI window.
 
@@ -23,16 +23,16 @@ class GameView(tk.Tk):
         - Delegate all game logic to the controller
     """
 
-    def __init__(self, controller: "GameController") -> None:
+    def __init__(self,parent,controller: "GameController") -> None:
         """
-        Create the main window and widgets.
+        Create the window for the game of matches and widgets.
 
         Args:
             controller: The controller that coordinates model/view.
         """
-        super().__init__()
+        super().__init__(parent)
         self.controller = controller
-
+    
         self.title("Jeu des allumettes")
         self.resizable(False, False)  
         self.configure(padx=24, pady=24)

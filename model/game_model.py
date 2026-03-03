@@ -142,45 +142,18 @@ class GameModel:
         return self.players[self.current_player]
     
     def play_game(self) -> None:
-<<<<<<< HEAD
-=======
-        """
-        Play a full game until the ends.
-
-        The model repeatedly asks the current player for an action,
-        applies it, and switches the turn until the pile is empty.
-        When the game ends, win/lose counters are updated.
-
-        Side effects:
-            - Updates nb during the game.
-            - Calls winner.win() and loser.lose() at the end of the game.
-            - Leaves current_player as the player who took the last match (loser).
-        """
->>>>>>> 0a4b8dd452205ac123ab69ef9191de4263ca3c3f
         while not self.is_game_over():
             current = self.get_current_player()
             max_take = min(3, self.nb)
             action = current.play(max_take)
-<<<<<<< HEAD
-=======
-
->>>>>>> 0a4b8dd452205ac123ab69ef9191de4263ca3c3f
             self.step(action)
 
             if self.is_game_over():
                 winner = self.get_winner()
                 loser = self.get_loser()
-<<<<<<< HEAD
                 winner.win()
                 loser.lose()
                 return
 
             self.switch_player()
     
-=======
-                winner.win()  
-                loser.lose()  
-                return
-
-            self.switch_player()
->>>>>>> 0a4b8dd452205ac123ab69ef9191de4263ca3c3f

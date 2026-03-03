@@ -13,6 +13,8 @@ from view.game_view import GameView
 import tkinter.messagebox as mb
 
 
+
+
 class GameController:
     """
     Connects the GameModel and GameView.
@@ -20,7 +22,7 @@ class GameController:
     This controller also manages turn switching and end-of-game handling.
     """
 
-    def __init__(self, p1: Player, p2: Player, total_matches: int) -> None:
+    def __init__(self, p1: Player, p2: Player, total_matches: int,parent) -> None:
         """
         Initialize controller, model, and view.
 
@@ -36,10 +38,8 @@ class GameController:
             raise ValueError("GUI requires at least one human player (HumanGUI).")
 
         self.model = GameModel(total_matches, p1, p2)
-        self.view = GameView(self)
-
-        self._bind_buttons()
-
+        self.view = GameView(parent,self)
+        
         if not isinstance(self.model.get_current_player(), HumanGUI):
             self.handle_ai_move()
 
@@ -56,12 +56,20 @@ class GameController:
 
     def start(self) -> None:
         """
-        Start the Tkinter main loop.
+        Start the matches game interface .
 
         Postconditions:
             - The GUI event loop runs until the window is closed.
         """
-        self.view.mainloop()
+        self.view
+        self.view.reset()
+        self._bind_buttons()
+        self.view.update_view()
+
+        if not isinstance(self.model.get_current_player(),HumanGUI):
+            self.handle_ai_move()
+
+        
 
     def get_nb_matches(self) -> int:
         """

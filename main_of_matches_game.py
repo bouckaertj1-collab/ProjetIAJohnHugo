@@ -3,7 +3,7 @@ Entry point for the matchstick game (Tkinter GUI).
 Play Human vs trained Bob (AI).
 """
 import random
-from model.player import AI, HumanGUI
+from model.player import AI, HumanGUI,RandomAI
 from controller.game_controller import GameController
 
 """ 
@@ -14,11 +14,17 @@ Implement functions to :
     - start a game human player vs human player 
 """
 
-def start_match_stick(parent):
+def start_match_stick(parent_window):
     ai = AI("AI")
-    random_ai = random_ai("random AI")
+    random_ai = RandomAI("random AI")
     human_player = HumanGUI("Hugo")
-    controller =  GameController(ai,human_player,12)
+    controller =  GameController(human_player,ai,12,parent_window)
     controller.start()
+    game_window = controller.view
+    game_window.grab_set()
+    game_window.focus_set()
+
+def settings():
+    pass
 
 
