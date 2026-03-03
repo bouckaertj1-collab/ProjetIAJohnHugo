@@ -7,8 +7,7 @@ Responsibilities:
     - Trigger AI moves when it's not the human's turn
 """
 
-from model.human import HumanGUI
-from model.player import Player
+from model.player import Player, HumanGUI
 from model.game_model import GameModel
 from view.game_view import GameView
 import tkinter.messagebox as mb

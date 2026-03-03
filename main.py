@@ -3,8 +3,7 @@ Entry point for the matchstick game (Tkinter GUI).
 Play Human vs trained Bob (AI).
 """
 import random
-from model.human import HumanGUI
-from model.player import AI
+from model.player import AI, HumanGUI
 from controller.game_controller import GameController
 
 def main() -> None:

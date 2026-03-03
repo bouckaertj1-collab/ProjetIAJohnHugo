@@ -29,7 +29,7 @@ def training(ai1: Player, ai2: Player, nb_games: int, nb_epsilon: int) -> None:
         nb_games: Number of games to play for training.
         nb_epsilon: Epsilon decay period (in games).
     """
-    training_game = GameModel(12, ai1, ai2, displayable=False)
+    training_game = GameModel(21, ai1, ai2, displayable=False)
 
     for i in range(nb_games):
         if i % nb_epsilon == 0:
@@ -87,7 +87,7 @@ def compare_ai(*ais: AI) -> None:
     for state, values in sorted_v(all_v_dict):
         print(f"{state:2} :", end="")
         for value in values:
-            print(f"{value:^15.3}", end="")
+            print(f"{value:^15.3f}", end="")
         print()
 
 

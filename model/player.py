@@ -130,57 +130,41 @@ class AI(Player):
 
     def exploit(self, max_take: int) -> int:
         """
-        Choose the best possible move based on the current value function.
+        Select the best action according to the current value function.
 
-        For each possible move, the AI looks at what could happen next,
-        assuming the opponent tries to put it in a bad situation.
-        It then selects the move that gives it the best guaranteed outcome.
+        This method evaluates each possible action by looking at the value
+        of the state that results immediately after the AI's move.
+        The action leading to the lowest estimated value is selected
+        (assuming the value represents the opponent's advantage).
 
-        If several moves are equally good, one is chosen randomly.
+        If multiple actions share the same best value, one is chosen randomly.
 
         Args:
-            max_take: Maximum number of matches that can be taken.
+            max_take (int): Maximum number of matches that can be taken.
 
         Returns:
-            The number of matches to take.
+            int: The number of matches chosen by the AI.
 
         Raises:
-            RuntimeError: If no game is attached to this player.
+            RuntimeError: If no game is attached to the AI.
         """
+
         if self.game is None:
-            raise RuntimeError("AI has no game attached (self.game is None).")
+            raise RuntimeError("AI has no game attached.")
 
-        matches_when_ai_turn = self.game.nb
+        state: int = self.game.nb
+        pairing_action_value: list[tuple[int, float]] = []
 
-        best_score_for_ai = -float("inf")
-        best_actions: list[int] = []
+        for action in range(1, max_take + 1):
+            next_state: int = state - action
+            self.v_function.setdefault(next_state, 0.0)
+            pairing_action_value.append((action, self.v_function[next_state]))
 
-        for ai_move in range(1, max_take + 1):
-            matches_after_ai_move = matches_when_ai_turn - ai_move
+        min_value: float = min(value for (_, value) in pairing_action_value)
 
-            if matches_after_ai_move == 0:
-                score_for_this_move = self.v_function["lose"]
-            else:
-                worst_state_value_for_ai = float("inf")
-                allowed_opponent_take = min(max_take, matches_after_ai_move)
-
-                for opp_move in range(1, allowed_opponent_take + 1):
-                    matches_when_ai_plays_again = matches_after_ai_move - opp_move
-
-                    if matches_when_ai_plays_again == 0:
-                        state_value = self.v_function["win"]
-                    else:
-                        state_value = self.v_function.get(matches_when_ai_plays_again, 0.0)
-
-                    worst_state_value_for_ai = min(worst_state_value_for_ai, state_value)
-
-                score_for_this_move = worst_state_value_for_ai
-
-            if score_for_this_move > best_score_for_ai:
-                best_score_for_ai = score_for_this_move
-                best_actions = [ai_move]
-            elif score_for_this_move == best_score_for_ai:
-                best_actions.append(ai_move)
+        best_actions: list[int] = [
+            action for (action, value) in pairing_action_value if value == min_value
+        ]
 
         return random.choice(best_actions)
 
@@ -308,3 +292,46 @@ class AI(Player):
         for k_str, v in raw_v_function.items():
             key: int | str = k_str if k_str in ("win", "lose") else int(k_str)
             self.v_function[key] = float(v)
+
+class Human(Player):
+    """
+    Human player for console-based games.
+
+    The player is asked to choose a number of matches to take via standard input.
+    """
+
+    def play(self, max_take: int = 3) -> int:
+        """
+        Ask the user to choose how many matches to take.
+
+        The choice must be an integer between 1 and 3.
+        The user is prompted again until a valid input is provided.
+
+        Returns:
+            int: The number of matches chosen by the player (1, 2, 3).
+        """
+        choice = None
+
+        while choice not in range(1, max_take + 1):
+            try:
+                choice = int(input(f"{self.name}, take 1 to {max_take} matches: "))
+            except ValueError:
+                choice = None
+
+            if choice not in range(1, max_take + 1):
+                print(f"Invalid choice. Please enter a number between 1 and {max_take}.")
+
+        return choice
+
+
+class HumanGUI(Player):
+    """
+    Human player for the Tkinter GUI.
+
+    This class represents a human player interacting through a graphical
+    interface. The player does not choose actions using the `play()` method;
+    instead, actions are provided by the controller in response to button
+    clicks in the GUI.
+    """
+
+    pass
