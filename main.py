@@ -6,13 +6,8 @@ import random
 from model.player import AI, HumanGUI
 from controller.game_controller import GameController
 
-def main() -> None:
-    """
-    Launch the Tkinter GUI for the matches game.
+if __name__ == "__main__":
 
-    This entry point initializes the players, creates the controller,
-    and starts the Tkinter main loop.
-    """
     p1 = HumanGUI("Me")
     bob = AI("AI  Bob")
     randy = AI("randy")
@@ -28,6 +23,3 @@ def main() -> None:
 
     controller = GameController(p1, bob, random.randint(12, 21))
     controller.start()
-
-if __name__ == "__main__":
-    main()
