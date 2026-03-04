@@ -2,9 +2,21 @@
 Define player classes for the matches game.
 
 This module contains:
-- The base Player class
-- A RandomAI player
-- A reinforcement learning AI player
+- Player
+    Base abstract class representing a player.
+
+- RandomAI
+    AI player that selects moves randomly among valid moves.
+
+- AI
+    AI player using a decision algorithm (e.g., MinMax or other strategy).
+
+- Human
+    Human player interacting through the console.
+
+- HumanGUI
+    Human player interacting through the graphical interface.
+
 """
 
 import json

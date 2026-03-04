@@ -52,7 +52,6 @@ project/
 |-- model/
 |   |-- game_model.py
 |   |-- player.py
-|   |-- human.py
 |
 |-- view/
 |   |-- game_view.py
