@@ -38,10 +38,6 @@ class GameController:
         self.model = GameModel(total_matches, p1, p2)
         self.view = GameView(parent,self)
 
-
-        if not isinstance(self.model.get_current_player(), HumanGUI):
-            self.handle_ai_move()
-
     def _bind_buttons(self) -> None:
         """
         Bind GUI buttons to controller actions.
@@ -55,8 +51,16 @@ class GameController:
 
     def start(self) -> None:
         """
-        Start the Tkinter main loop by using the parent arg of the instance.
+        Initialize and start a new game session.
 
+        This method prepares the graphical interface by:
+            - resetting the view
+            - binding the buttons to controller actions
+            - updating the display
+
+        If the AI player starts the game, its move is
+        automatically triggered.
+        
         Postconditions:
             - The window of the gamme runs until the end button is pressed.
         """

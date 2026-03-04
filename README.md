@@ -49,15 +49,17 @@ project/
 |-- README.md
 |-- requirements.txt
 |
-|-- model/
-|   |-- game_model.py
-|   |-- player.py
-|
-|-- view/
-|   |-- game_view.py
-|
-|-- controller/
-|   |-- game_controller.py
+├── controller/
+│   ├── game_controller.py
+│   └── launcher_controller.py   # NOUVEAU (controller du menu)
+│
+├── view/
+│   ├── game_view.py
+│   └── launcher_view.py         # NOUVEAU (view du menu)
+│
+└── model/
+    ├── game_model.py
+    └── player.py
 
 5. PRÉREQUIS
 ---------
