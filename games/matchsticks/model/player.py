@@ -169,8 +169,8 @@ class AI(Player):
 
         for action in range(1, max_take + 1):
             next_state: int = state - action
-            self.v_function.setdefault(next_state, 0.0)
-            pairing_action_value.append((action, self.v_function[next_state]))
+            value: float = self.v_function.get(next_state, 0.0)
+            pairing_action_value.append((action, value))
 
         min_value: float = min(value for (_, value) in pairing_action_value)
 
