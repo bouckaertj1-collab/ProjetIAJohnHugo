@@ -5,7 +5,7 @@ This module starts the graphical launcher of the project.
 The launcher allows the user to select and start available games.
 """
 
-from controller.launcher_controller import LauncherController
+from launcher.controller import LauncherController
 
 if __name__ == "__main__":
     LauncherController().run()

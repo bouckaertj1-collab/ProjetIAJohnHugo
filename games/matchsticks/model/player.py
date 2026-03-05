@@ -24,7 +24,7 @@ import random
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from model.game_model import GameModel
+    from games.matchsticks.model.game_model import GameModel
 
 
 class Player:

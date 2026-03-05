@@ -7,9 +7,9 @@ Responsibilities:
     - Start the selected game
 """
 
-from view.launcher_view import LauncherView
-from controller.game_controller import GameController
-from model.player import AI, HumanGUI
+from launcher.view import LauncherView
+from games.matchsticks.controller.game_controller import GameController
+from games.matchsticks.model.player import AI, HumanGUI
 import random
 
 
@@ -38,7 +38,7 @@ class LauncherController:
             A configured GameController.
         """
         ai: AI = AI("AI Bob")
-        ai.download("bob_training.json")
+        ai.download("games/matchsticks/bob_training.json")
         ai.eps = 0.0
 
         human: HumanGUI = HumanGUI("Me")

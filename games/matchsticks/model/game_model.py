@@ -9,7 +9,7 @@ import random
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from model.player import Player
+    from games.matchsticks.model.player import Player
 
 
 class GameModel:

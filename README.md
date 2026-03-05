@@ -1,65 +1,64 @@
-JEU DES ALLUMETTES – PYTHON / TKINTER
-===================================
+PROJET IA – PYTHON / TKINTER
+============================
 
 1. DESCRIPTION
 -----------
-Ce projet est une implémentation du jeu des allumettes en Python avec une
-interface graphique réalisée à l’aide de la bibliothèque Tkinter.
+Ce projet est une application Python contenant plusieurs jeux implémentés
+avec une interface graphique réalisée à l’aide de la bibliothèque Tkinter.
 
-Le programme respecte une architecture MVC (Modèle – Vue – Contrôleur)
-et inclut une intelligence artificielle basée sur l’apprentissage par
-renforcement (value function).
+L’application utilise une architecture MVC (Modèle – Vue – Contrôleur)
+et un menu principal permettant de sélectionner le jeu à lancer.
 
-2. RÈGLES DU JEU
--------------
-- Un nombre initial d’allumettes est placé sur la table.
-- Deux joueurs jouent à tour de rôle.
-- À chaque tour, un joueur peut retirer 1, 2 ou 3 allumettes.
-- Le joueur qui prend la dernière allumette perd la partie.
+Chaque jeu possède sa propre implémentation MVC et peut inclure une
+intelligence artificielle basée sur l’apprentissage par renforcement.
 
-Le jeu peut opposer :
-- Un joueur humain
-- Une IA aléatoire (RandomAI)
-- Une IA apprenante (AI) utilisant une stratégie epsilon-greedy
-  et une fonction de valeur apprise par expérience.
+2. JEUX DISPONIBLES
+----------------
+Actuellement, les jeux suivants sont disponibles :
+
+- Matchsticks (jeu des allumettes)
+- Cubee (à venir)
+- PixelKart (à venir)
+
+Chaque jeu est isolé dans son propre dossier afin de garder une
+architecture claire et modulaire.
 
 3. ARCHITECTURE DU PROJET
 ----------------------
-Le projet est structuré selon le modèle MVC :
+Le projet est structuré selon une architecture modulaire :
 
-- Modèle (model/)
-  Gère l’état du jeu, les règles, les joueurs et le nombre d’allumettes.
+- Controller (controller/)
+  Gère la logique globale de l’application et le menu principal.
 
-- Vue (view/)
-  Gère l’interface graphique Tkinter (affichage, boutons, messages).
+- View (view/)
+  Contient l’interface graphique du launcher (menu principal).
 
-- Contrôleur (controller/)
-  Fait le lien entre le modèle et la vue, gère les tours de jeu et la logique
-  générale.
+- Games (games/)
+  Contient les différents jeux implémentés dans l’application.
+  Chaque jeu possède sa propre architecture MVC.
 
 4. ARBORESCENCE DU PROJET
 ----------------------
-project/
-|
-|-- main.py
-|-- training.py
-|-- alice_training.json (généré après entraînement)
-|-- bob_training.json (généré après entraînement)
-|-- randy_training.json (généré après entraînement)
-|-- README.md
-|-- requirements.txt
-|
-├── controller/
-│   ├── game_controller.py
-│   └── launcher_controller.py   # NOUVEAU (controller du menu)
+ProjetIAJohnHugo/
 │
-├── view/
-│   ├── game_view.py
-│   └── launcher_view.py         # NOUVEAU (view du menu)
+├── main.py
+├── README.md
+├── requirements.txt
 │
-└── model/
-    ├── game_model.py
-    └── player.py
+├── launcher/
+│   ├── controller.py
+│   └── view.py
+│
+└── games/
+    ├── matchsticks/
+    │   ├── controller/
+    │   ├── model/
+    │   ├── view/
+    │   ├── training.py
+    │   └── README.md
+    │
+    ├── cubee/
+    └── pixel_kart/
 
 5. PRÉREQUIS
 ---------
@@ -96,48 +95,24 @@ Depuis la racine du projet, exécuter :
 
     python main.py
 
-Une fenêtre graphique s’ouvre et le jeu peut commencer.
+Une fenêtre graphique s’ouvre affichant le menu principal permettant
+de sélectionner un jeu.
 
 9. UTILISATION
 -----------
-- Le joueur humain joue en cliquant sur les boutons :
-  "Prendre 1", "Prendre 2" ou "Prendre 3".
-- L’ordinateur joue automatiquement après le tour du joueur humain et un court délai.
-- À la fin de la partie :
-  - le bouton "Recommencer" permet de lancer une nouvelle partie,
-  - le bouton "Terminer" affiche les statistiques finales (victoires, défaites, parties jouées pour chaque joueur) puis ferme l’application
+- L’utilisateur sélectionne le jeu souhaité dans le menu principal.
+- Une nouvelle fenêtre s’ouvre contenant l’interface du jeu choisi.
+- Chaque jeu possède ses propres règles et son propre fonctionnement.
 
 10. SPÉCIFICATIONS ET BONNES PRATIQUES
 ---------------------------------
+- Le projet respecte une architecture MVC.
+- Chaque jeu est isolé dans un dossier indépendant.
 - Toutes les classes, méthodes et fonctions sont documentées avec des docstrings.
 - Le code est rédigé en anglais.
-- Les commentaires peuvent être en français.
-- Aucune entrée utilisateur via la console dans la version GUI. 
-  La classe Human (console) existe uniquement pour la partie 1.
-- Le projet respecte les principes de clean code et de programmation orientée
-  objet.
 - L’interface graphique est réalisée exclusivement avec Tkinter.
 
-11. ENTRAÎNEMENT DE L’INTELLIGENCE ARTIFICIELLE
----------------------------------------
-Le fichier training.py permet :
-- D’entraîner les IA sur un grand nombre de parties
-- De comparer leurs performances
-- D’observer l’évolution de la value function
-  La mise à jour de la fonction de valeur suit une règle de type Temporal-Difference :
-  V(s) ← V(s) + α [V(s') − V(s)]
-- De sauvegarder les paramètres appris dans des fichiers JSON
-
-Lancer l’entraînement :
-
-    python training.py
-
-Deux configurations sont testées :
-- 1000 parties
-- 100000 parties
-Les résultats sont affichés dans la console.
-
-12. AUTEURS
+11. AUTEURS
 -------
 Projet réalisé par :
 Bouckaert John / Hugo Fievet
@@ -146,6 +121,6 @@ Cadre :
 Projet pédagogique – Python / Tkinter
 Année : 2025–2026
 
-13. LICENSE
+12. LICENSE
 -------
 This project is licensed under the MIT License.

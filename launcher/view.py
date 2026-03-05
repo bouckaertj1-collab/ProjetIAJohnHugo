@@ -31,6 +31,7 @@ class LauncherView(tk.Tk):
         self.title("Projet IA")
         self.geometry("1200x600")
         self.minsize(1100, 500)
+        self.resizable(False,False)
 
         self._build_ui()
 
