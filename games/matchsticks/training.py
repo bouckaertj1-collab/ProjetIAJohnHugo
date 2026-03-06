@@ -12,8 +12,8 @@ The training protocol matches the assignment requirements:
 
 from typing import Any
 
-from model.game_model import GameModel
-from model.player import AI, Player
+from game_model import GameModel
+from player import AI, Player
 
 
 def training(ai1: Player, ai2: Player, nb_games: int, nb_epsilon: int) -> None:

@@ -9,7 +9,7 @@ import tkinter as tk
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from games.matchsticks.controller.game_controller import GameController
+    from games.matchsticks.game_controller import GameController
 
 
 class GameView(tk.Toplevel):

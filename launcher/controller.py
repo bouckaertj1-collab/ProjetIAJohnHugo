@@ -8,8 +8,8 @@ Responsibilities:
 """
 
 from launcher.view import LauncherView
-from games.matchsticks.controller.game_controller import GameController
-from games.matchsticks.model.player import AI, HumanGUI
+from games.matchsticks.game_controller import GameController
+from games.matchsticks.player import AI, HumanGUI
 import random
 
 
