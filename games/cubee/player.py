@@ -47,11 +47,7 @@ class RandomAgent(Player):
         return True
 
     def play(self, game_model):
-        if game_model.get_current_player() != self:
-            return None
-
-        moves = game_model.available_moves(self)
+        moves = game_model.available_moves()
         if not moves:
             return None
-
         return random.choice(moves)

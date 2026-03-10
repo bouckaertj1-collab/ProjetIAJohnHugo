@@ -57,8 +57,6 @@ class GameModel:
 
     def get_opponent(self, player: Player | None = None) -> Player:
         """Retourne l'adversaire du joueur donné."""
-        if player is None:
-            player = self.get_current_player()
         return self.player2 if player == self.player1 else self.player1
 
     def is_in_bounds(self, position: tuple[int, int]) -> bool:
@@ -66,51 +64,37 @@ class GameModel:
         row, col = position
         return 0 <= row < self.size and 0 <= col < self.size
 
-    def get_target_position(self, move: str, player: Player | None = None) -> tuple[int, int] | None:
-        """Calcule la position cible après un déplacement."""
-        if player is None:
-            player = self.get_current_player()
-
-        if move not in self.MOVES:
-            return None
-
-        row, col = player.position
+    def get_target_position(self, move: str) -> tuple[int, int]:
+        row, col = self.get_current_player().position
         d_row, d_col = self.MOVES[move]
         return row + d_row, col + d_col
 
-    def is_legal_move(self, move: str, player: Player | None = None) -> bool:
+    def is_legal_move(self, move: str) -> bool:
         """
-        Vérifie si un déplacement est légal.
+        Check whether a move is legal.
 
-        Un joueur peut aller :
-        - sur une case libre
-        - sur une case qui lui appartient déjà
+        A player can move:
+        - to an empty cell
+        - to a cell they already own
 
-        Un joueur ne peut pas aller :
-        - hors du plateau
-        - sur une case adverse
+        A player cannot move:
+        - outside the board
+        - to an opponent's cell
         """
-        if self.is_game_over:
+        player = self.get_current_player()
+        row, col = self.get_target_position(move)
+
+        if not self.is_in_bounds((row, col)):
             return False
 
-        if player is None:
-            player = self.get_current_player()
-
-        target_position = self.get_target_position(move, player)
-        if target_position is None or not self.is_in_bounds(target_position):
-            return False
-
-        row, col = target_position
         target_cell = self.board[row][col]
         opponent_value = 2 if player == self.player1 else 1
 
         return target_cell != opponent_value
 
-    def available_moves(self, player: Player | None = None) -> list[str]:
-        """Retourne la liste des coups possibles."""
-        if player is None:
-            player = self.get_current_player()
-        return [move for move in self.MOVES if self.is_legal_move(move, player)]
+    def available_moves(self) -> list[str]:
+        """Retourne la liste des coups possibles pour le joueur courant."""
+        return [move for move in self.MOVES if self.is_legal_move(move)]
 
     def next_player(self) -> None:
         """Passe au joueur suivant."""
@@ -142,36 +126,12 @@ class GameModel:
             self.player2.draw()
             
     def check_game_over(self) -> bool:
-        """
-        Vérifie si la partie est terminée.
-
-        La partie s'arrête :
-        - s'il n'y a plus de case libre
-        - ou si les deux joueurs sont bloqués
-        """
         if not any(0 in row for row in self.board):
             self.end_game()
             return True
-
-        if not self.available_moves(self.player1) and not self.available_moves(self.player2):
-            self.end_game()
-            return True
-
         return False
 
     def check_enclosure(self) -> None:
-        """
-        Détecte les enclos.
-
-        On considère que le joueur courant vient de jouer.
-        On cherche alors toutes les cases encore atteignables par l'adversaire
-        en traversant :
-        - ses propres cases
-        - les cases libres
-
-        Toutes les cases libres non atteignables sont capturées
-        par le joueur courant.
-        """
         current_player = self.get_current_player()
         opponent = self.get_opponent(current_player)
 
@@ -209,12 +169,12 @@ class GameModel:
         if self.is_game_over:
             return False
 
-        current_player = self.get_current_player()
-
-        if not self.is_legal_move(move, current_player):
+        if not self.is_legal_move(move):
             return False
 
-        new_row, new_col = self.get_target_position(move, current_player)
+        current_player = self.get_current_player()
+        new_row, new_col = self.get_target_position(move)
+
         current_player.position = (new_row, new_col)
         self.board[new_row][new_col] = self.player_turn
 
