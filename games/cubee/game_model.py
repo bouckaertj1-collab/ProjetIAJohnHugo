@@ -22,24 +22,12 @@ class GameModel:
     def __init__(self, player1, player2, size: int = 5):
         self.size = size
 
-        if isinstance(player1, Player):
-            self.player1 = player1
-        else:
-            self.player1 = Player(player1, 1, (0, 0))
-
-        if isinstance(player2, Player):
-            self.player2 = player2
-        else:
-            self.player2 = Player(player2, 2, (size - 1, size - 1))
-
-        self.player1.game_model = self
-        self.player2.game_model = self
+        self.player1 = player1 if isinstance(player1, Player) else Player(player1, (0, 0))
+        self.player2 = player2 if isinstance(player2, Player) else Player(player2, (size - 1, size - 1))
 
         self.board = []
         self.is_game_over = False
-        self.current_player = None
         self.player_turn = 1
-        self.turn = 1
         self.winner = None
         self.loser = None
         self.score = (0, 0)
@@ -57,35 +45,21 @@ class GameModel:
         self.board[self.size - 1][self.size - 1] = 2
 
         self.is_game_over = False
+        self.player_turn = random.choice([1, 2])
         self.winner = None
         self.loser = None
 
-        self.shuffle_player()
         self.update_score()
-
-    def shuffle_player(self) -> None:
-        """Choisit aléatoirement le joueur qui commence."""
-        self.current_player = random.choice([self.player1, self.player2])
-        self.player_turn = self.current_player.player_id
-        self.turn = self.player_turn
-
-    def get_player_by_id(self, player_id: int) -> Player | None:
-        """Retourne le joueur correspondant à l'id donné."""
-        if player_id == 1:
-            return self.player1
-        if player_id == 2:
-            return self.player2
-        return None
 
     def get_current_player(self) -> Player:
         """Retourne le joueur courant."""
-        return self.get_player_by_id(self.player_turn)
+        return self.player1 if self.player_turn == 1 else self.player2
 
     def get_opponent(self, player: Player | None = None) -> Player:
         """Retourne l'adversaire du joueur donné."""
         if player is None:
             player = self.get_current_player()
-        return self.player2 if player.player_id == 1 else self.player1
+        return self.player2 if player == self.player1 else self.player1
 
     def is_in_bounds(self, position: tuple[int, int]) -> bool:
         """Vérifie qu'une position est dans le plateau."""
@@ -122,79 +96,51 @@ class GameModel:
         if player is None:
             player = self.get_current_player()
 
-        new_position = self.get_target_position(move, player)
-        if new_position is None:
+        target_position = self.get_target_position(move, player)
+        if target_position is None or not self.is_in_bounds(target_position):
             return False
 
-        if not self.is_in_bounds(new_position):
-            return False
-
-        row, col = new_position
+        row, col = target_position
         target_cell = self.board[row][col]
-        opponent = self.get_opponent(player)
+        opponent_value = 2 if player == self.player1 else 1
 
-        return target_cell != opponent.player_id
+        return target_cell != opponent_value
 
     def available_moves(self, player: Player | None = None) -> list[str]:
         """Retourne la liste des coups possibles."""
         if player is None:
             player = self.get_current_player()
-
-        moves = []
-        for move in self.MOVES:
-            if self.is_legal_move(move, player):
-                moves.append(move)
-        return moves
-
-    def available_cell(self) -> list[tuple[int, int]]:
-        """Retourne la liste des cases libres."""
-        free_cells = []
-        for row in range(self.size):
-            for col in range(self.size):
-                if self.board[row][col] == 0:
-                    free_cells.append((row, col))
-        return free_cells
+        return [move for move in self.MOVES if self.is_legal_move(move, player)]
 
     def next_player(self) -> None:
         """Passe au joueur suivant."""
-        if self.player_turn == 1:
-            self.player_turn = 2
-            self.current_player = self.player2
-        else:
-            self.player_turn = 1
-            self.current_player = self.player1
-
-        self.turn = self.player_turn
+        self.player_turn = 2 if self.player_turn == 1 else 1
 
     def update_score(self) -> None:
         """Recalcule le score à partir du plateau."""
-        score_p1 = 0
-        score_p2 = 0
-
-        for row in self.board:
-            for cell in row:
-                if cell == 1:
-                    score_p1 += 1
-                elif cell == 2:
-                    score_p2 += 1
-
-        self.score = (score_p1, score_p2)
+        flat_board = [cell for row in self.board for cell in row]
+        self.score = (flat_board.count(1), flat_board.count(2))
 
     def end_game(self) -> None:
         """Termine la partie et détermine le gagnant."""
         self.is_game_over = True
-        self.update_score()
 
         if self.score[0] > self.score[1]:
             self.winner = self.player1
             self.loser = self.player2
+            self.player1.win()
+            self.player2.lose()
         elif self.score[1] > self.score[0]:
             self.winner = self.player2
             self.loser = self.player1
+            self.player2.win()
+            self.player1.lose()
         else:
             self.winner = None
             self.loser = None
-
+            self.player1.draw()
+            self.player2.draw()
+            
     def check_game_over(self) -> bool:
         """
         Vérifie si la partie est terminée.
@@ -203,11 +149,11 @@ class GameModel:
         - s'il n'y a plus de case libre
         - ou si les deux joueurs sont bloqués
         """
-        if len(self.available_cell()) == 0:
+        if not any(0 in row for row in self.board):
             self.end_game()
             return True
 
-        if len(self.available_moves(self.player1)) == 0 and len(self.available_moves(self.player2)) == 0:
+        if not self.available_moves(self.player1) and not self.available_moves(self.player2):
             self.end_game()
             return True
 
@@ -215,9 +161,9 @@ class GameModel:
 
     def check_enclosure(self) -> None:
         """
-        Détecte les enclos de manière compatible avec les tests de l'énoncé.
+        Détecte les enclos.
 
-        On considère que le joueur `player_turn` vient de jouer.
+        On considère que le joueur courant vient de jouer.
         On cherche alors toutes les cases encore atteignables par l'adversaire
         en traversant :
         - ses propres cases
@@ -226,47 +172,40 @@ class GameModel:
         Toutes les cases libres non atteignables sont capturées
         par le joueur courant.
         """
-        current_player = self.get_player_by_id(self.player_turn)
+        current_player = self.get_current_player()
         opponent = self.get_opponent(current_player)
 
+        current_value = self.player_turn
+        opponent_value = 2 if current_value == 1 else 1
+
         reachable = [[False for _ in range(self.size)] for _ in range(self.size)]
-        queue = deque()
+        queue = deque([opponent.position])
 
         start_row, start_col = opponent.position
-        queue.append((start_row, start_col))
         reachable[start_row][start_col] = True
 
         while queue:
             row, col = queue.popleft()
 
             for d_row, d_col in self.MOVES.values():
-                new_row = row + d_row
-                new_col = col + d_col
-                new_position = (new_row, new_col)
+                new_row, new_col = row + d_row, col + d_col
 
-                if not self.is_in_bounds(new_position):
+                if not self.is_in_bounds((new_row, new_col)):
                     continue
 
                 if reachable[new_row][new_col]:
                     continue
 
-                cell_value = self.board[new_row][new_col]
-
-                if cell_value == 0 or cell_value == opponent.player_id:
+                if self.board[new_row][new_col] in (0, opponent_value):
                     reachable[new_row][new_col] = True
                     queue.append((new_row, new_col))
 
         for row in range(self.size):
             for col in range(self.size):
                 if self.board[row][col] == 0 and not reachable[row][col]:
-                    self.board[row][col] = current_player.player_id
+                    self.board[row][col] = current_value
 
     def step(self, move: str) -> bool:
-        """
-        Exécute un tour de jeu.
-
-        Retourne True si le coup a été joué, sinon False.
-        """
         if self.is_game_over:
             return False
 
@@ -277,16 +216,13 @@ class GameModel:
 
         new_row, new_col = self.get_target_position(move, current_player)
         current_player.position = (new_row, new_col)
-        self.board[new_row][new_col] = current_player.player_id
+        self.board[new_row][new_col] = self.player_turn
 
         self.check_enclosure()
         self.update_score()
 
-        if self.check_game_over():
-            return True
-
-        self.next_player()
-        self.check_game_over()
+        if not self.check_game_over():
+            self.next_player()
 
         return True
 
@@ -299,7 +235,7 @@ class GameModel:
         return {
             "size": self.size,
             "board": self.board_to_string(),
-            "turn": self.turn,
+            "player_turn": self.player_turn,
             "pos_p1": self.player1.position,
             "pos_p2": self.player2.position,
             "is_game_over": self.is_game_over,

@@ -1,21 +1,20 @@
 from game_model import GameModel
-from game_controller import GameController
 from game_view import GameView
-from ai.random_agent import RandomAgent
+from game_controller import GameController
+from player import Player, RandomAgent
 
-def main():
+def main() -> None:
+    size = 5
 
-    model = GameModel("Human", "AI", size=5)
+    player1 = Player("Human", (0, 0))
+    player2 = RandomAgent("Random Randy", (size - 1, size - 1))
 
-    ai_agent = RandomAgent(player_id=2)
-
-    controller = GameController(model, ai_agent=ai_agent)
-
+    model = GameModel(player1, player2, size=size)
+    controller = GameController(model)
     view = GameView(controller, size=model.size)
 
     controller.view = view
     controller.start()
-
     view.run()
 
 if __name__ == "__main__":
