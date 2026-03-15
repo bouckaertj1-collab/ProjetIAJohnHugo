@@ -17,7 +17,7 @@ class GameModel:
         "right": (0, 1),
     }
 
-    def __init__(self, player1: Player | str, player2: Player | str, size: int = 5) -> None:
+    def __init__(self, player1: Player, player2: Player, size: int = 5) -> None:
         """
         Initialize the game model.
 
@@ -28,8 +28,8 @@ class GameModel:
         """
         self.size = size
 
-        self.player1 = player1 if isinstance(player1, Player) else Player(player1, (0, 0))
-        self.player2 = player2 if isinstance(player2, Player) else Player(player2, (size - 1, size - 1))
+        self.player1 = player1 if isinstance(player1, Player) else Player(player1, (0, 0)) # pour les test
+        self.player2 = player2 if isinstance(player2, Player) else Player(player2, (size - 1, size - 1)) # pr test
 
         self.board: list[list[int]] = []
         self.is_game_over = False
@@ -132,7 +132,7 @@ class GameModel:
 
         return target_cell != opponent_value
 
-    def available_moves(self) -> list[str]:
+    def available_moves(self) -> list[str]: # utile pour randomAgent
         """
         Return the list of legal moves for the current player.
 
@@ -261,9 +261,7 @@ class GameModel:
 
     def get_state_DTO(self) -> dict:
         """
-        Return the current game state as a dictionary.
-
-        Returns:
+          Returns:
             A dictionary with the current game state.
         """
         return {

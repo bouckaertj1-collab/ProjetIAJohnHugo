@@ -1,7 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox
-from typing import Any
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from games.cubee.game_controller import GameController
 
 class GameView(tk.Toplevel):
     """Tkinter view for the Cubee game."""
@@ -18,13 +20,7 @@ class GameView(tk.Toplevel):
         "2": {"text": "2", "bg": P2_COLOR},
     }
 
-    def __init__(
-        self,
-        parent: tk.Misc,
-        controller: Any,
-        size: int = 5,
-        cell_size: int = 4,
-    ) -> None:
+    def __init__(self, parent: tk.Tk, controller: "GameController", size: int, cell_size: int = 4,) -> None:
         """
         Initialize the game view.
 
@@ -44,7 +40,7 @@ class GameView(tk.Toplevel):
 
         self.status_label = tk.Label(
             self,
-            text="Welcome to Cubee",
+            text="",
             font=("Arial", 12)
         )
         self.status_label.pack(pady=10)
@@ -84,7 +80,7 @@ class GameView(tk.Toplevel):
             for col in range(self.size):
                 button = tk.Button(
                     self.board_frame,
-                    text=" ",
+                    text="",
                     width=self.cell_size,
                     height=2,
                     command=lambda r=row, c=col: self.on_cell_click(r, c)
@@ -93,11 +89,6 @@ class GameView(tk.Toplevel):
                 button_row.append(button)
 
             self.buttons.append(button_row)
-
-    def reset(self) -> None:
-        """Reset the labels for a new game."""
-        self.status_label.config(text="New game")
-        self.score_label.config(text="Score: 0 - 0")
 
     def update_view(self, state: dict) -> None:
         """

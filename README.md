@@ -21,7 +21,7 @@ Actuellement, les jeux suivants sont disponibles :
 - PixelKart (à venir)
 
 Chaque jeu est isolé dans son propre dossier afin de garder une
-architecture claire et modulaire.
+structure claire.
 
 3. ARCHITECTURE DU PROJET
 ----------------------

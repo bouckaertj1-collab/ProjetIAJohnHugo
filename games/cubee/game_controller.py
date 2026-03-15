@@ -1,9 +1,13 @@
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from game_model import GameModel
+    from game_view import GameView
 
 class GameController:
     """Main controller for the Cubee game."""
 
-    def __init__(self, model: Any, view: Any = None) -> None:
+    def __init__(self, model: "GameModel", view: "GameView | None" = None) -> None:
         """
         Initialize the controller.
 
@@ -14,22 +18,20 @@ class GameController:
         self.model = model
         self.view = view
 
+    def _update_view(self) -> None:
+        """Refresh the view if a view is attached."""
+        if self.view is not None:
+            self.view.update_view(self.get_state_DTO())
+
     def start(self) -> None:
         """Start the game and refresh the view."""
-        if self.view:
-            self.view.update_view(self.model.get_state_DTO())
-
+        self._update_view()
         self.handle_ai_move()
 
     def reset(self) -> None:
         """Reset the game and refresh the view."""
         self.model.reset()
-
-        if self.view:
-            self.view.reset()
-            self.view.update_view(self.model.get_state_DTO())
-
-        self.handle_ai_move()
+        self.start()
 
     def handle_move(self, move: str) -> bool:
         """
@@ -43,8 +45,7 @@ class GameController:
         """
         success = self.model.step(move)
 
-        if self.view:
-            self.view.update_view(self.model.get_state_DTO())
+        self._update_view()
 
         if not success:
             return False
@@ -74,8 +75,7 @@ class GameController:
 
         success = self.model.step(move)
 
-        if self.view:
-            self.view.update_view(self.model.get_state_DTO())
+        self._update_view()
 
         if success and self.model.is_game_over:
             self.handle_end_game()
@@ -96,7 +96,7 @@ class GameController:
         Returns:
             True if the click produced a valid move, False otherwise.
         """
-        state = self.model.get_state_DTO()
+        state = self.get_state_DTO()
 
         if state["turn"] == 1:
             current_row, current_col = state["pos_p1"]
@@ -118,10 +118,10 @@ class GameController:
 
     def handle_end_game(self) -> None:
         """Notify the view that the game is over."""
-        if self.view:
+        if self.view is not None:
             self.view.end_game(
                 self.get_status_message(),
-                self.model.get_state_DTO()
+                self.get_state_DTO(),
             )
 
     def get_status_message(self) -> str:
@@ -155,7 +155,7 @@ class GameController:
 
         return result + stats
 
-    def get_state_DTO(self) -> dict:
+    def get_state_DTO(self) -> dict: # utilisée dans view (car model ne communique pas ac vue)
         """
         Return the current game state.
 

@@ -69,7 +69,7 @@ class LauncherController:
         Returns:
             A configured CubeeController.
         """
-        size: int = 10
+        size: int = 4
 
         player1: Player = Player("Human", (0, 0))
         player2: RandomAgent = RandomAgent("Random Randy", (size - 1, size - 1))

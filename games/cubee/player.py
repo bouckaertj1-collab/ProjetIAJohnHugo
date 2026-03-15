@@ -4,12 +4,7 @@ import random
 class Player:
     """Base class for a Cubee player."""
 
-    def __init__(
-        self,
-        name: str,
-        position: tuple[int, int],
-        color: str | None = None,
-    ) -> None:
+    def __init__(self, name: str, position: tuple[int, int], color: str | None = None,) -> None:
         """
         Initialize a player.
 
@@ -62,16 +57,6 @@ class Player:
         """Record a draw for this player."""
         self.nb_draw += 1
         self.nb_game += 1
-
-    def __repr__(self) -> str:
-        """
-        Return a readable string representation of the player.
-
-        Returns:
-            A string with the player name and position.
-        """
-        return f"Player(name={self.name}, position={self.position})"
-
 
 class RandomAgent(Player):
     """Very simple AI that plays a random move."""
