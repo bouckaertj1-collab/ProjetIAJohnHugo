@@ -4,18 +4,16 @@ import random
 class Player:
     """Base class for a Cubee player."""
 
-    def __init__(self, name: str, position: tuple[int, int], color: str | None = None,) -> None:
+    def __init__(self, name: str, position: tuple[int, int],) -> None:
         """
         Initialize a player.
 
         Args:
             name: The player name.
             position: The current player position on the board.
-            color: Optional display color.
         """
         self.name = name
         self.position = position
-        self.color = color
 
         self.nb_win: int = 0
         self.nb_lose: int = 0
