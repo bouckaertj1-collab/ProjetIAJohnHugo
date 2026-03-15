@@ -16,8 +16,8 @@ intelligence artificielle basée sur l’apprentissage par renforcement.
 ----------------
 Actuellement, les jeux suivants sont disponibles :
 
-- Matchsticks (jeu des allumettes)
-- Cubee (à venir)
+- Matchsticks (disponible)
+- Cubee (disponible)
 - PixelKart (à venir)
 
 Chaque jeu est isolé dans son propre dossier afin de garder une
@@ -27,38 +27,45 @@ architecture claire et modulaire.
 ----------------------
 Le projet est structuré selon une architecture modulaire :
 
-- Controller (controller/)
+- Controller 
   Gère la logique globale de l’application et le menu principal.
 
-- View (view/)
+- View 
   Contient l’interface graphique du launcher (menu principal).
 
-- Games (games/)
+- Games 
   Contient les différents jeux implémentés dans l’application.
   Chaque jeu possède sa propre architecture MVC.
 
 4. ARBORESCENCE DU PROJET
 ----------------------
 ProjetIAJohnHugo/
-│
-├── main.py
 ├── README.md
 ├── requirements.txt
-│
+├── main.py
 ├── launcher/
 │   ├── controller.py
 │   └── view.py
-│
-└── games/
-    ├── matchsticks/
-    │   ├── controller/
-    │   ├── model/
-    │   ├── view/
-    │   ├── training.py
-    │   └── README.md
-    │
-    ├── cubee/
-    └── pixel_kart/
+├── games/
+│   ├── cubee/
+│   │   ├── README.md
+│   │   ├── game_controller.py
+│   │   ├── game_model.py
+│   │   ├── game_view.py
+│   │   ├── player.py
+│   │   └── tests/
+│   │       └── test_game_model.py
+│   ├── matchsticks/
+│   │   ├── README.md
+│   │   ├── game_controller.py
+│   │   ├── game_model.py
+│   │   ├── game_view.py
+│   │   ├── player.py
+│   │   ├── training.py
+│   │   ├── alice_training.json
+│   │   ├── bob_training.json
+│   │   └── randy_training.json
+│   └── pixel_kart/
 
 5. PRÉREQUIS
 ---------
@@ -88,6 +95,7 @@ Installer les dépendances avec :
 Remarque :
 Tkinter fait partie de la bibliothèque standard Python et ne nécessite pas
 d’installation supplémentaire.
+Le fichier `requirements.txt` contient actuellement `pytest`, utilisé pour lancer les tests
 
 8. LANCEMENT DU PROGRAMME
 ----------------------
@@ -98,13 +106,24 @@ Depuis la racine du projet, exécuter :
 Une fenêtre graphique s’ouvre affichant le menu principal permettant
 de sélectionner un jeu.
 
-9. UTILISATION
+9. LANCEMENT DES TESTS
+--------------------
+Pour lancer les tests, executer :
+
+    pytest
+
+Ou seulement pour Cubee :
+
+    pytest games/cubee/tests
+
+10. UTILISATION
 -----------
+- L’utilisateur démarre l’application depuis le launcher principal.
 - L’utilisateur sélectionne le jeu souhaité dans le menu principal.
 - Une nouvelle fenêtre s’ouvre contenant l’interface du jeu choisi.
 - Chaque jeu possède ses propres règles et son propre fonctionnement.
 
-10. SPÉCIFICATIONS ET BONNES PRATIQUES
+11. SPÉCIFICATIONS ET BONNES PRATIQUES
 ---------------------------------
 - Le projet respecte une architecture MVC.
 - Chaque jeu est isolé dans un dossier indépendant.
@@ -112,7 +131,7 @@ de sélectionner un jeu.
 - Le code est rédigé en anglais.
 - L’interface graphique est réalisée exclusivement avec Tkinter.
 
-11. AUTEURS
+12. AUTEURS
 -------
 Projet réalisé par :
 Bouckaert John / Hugo Fievet
@@ -121,6 +140,6 @@ Cadre :
 Projet pédagogique – Python / Tkinter
 Année : 2025–2026
 
-12. LICENSE
+13. LICENSE
 -------
 This project is licensed under the MIT License.

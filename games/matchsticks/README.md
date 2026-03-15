@@ -92,11 +92,13 @@ d’installation supplémentaire.
 
 8. LANCEMENT DU PROGRAMME
 ----------------------
+Le jeu Matchsticks se lance depuis le launcher principal du projet.
+
 Depuis la racine du projet, exécuter :
 
     python main.py
 
-Une fenêtre graphique s’ouvre et le jeu peut commencer.
+Ensuite, sélectionner Matchsticks dans la fenêtre du launcher.
 
 9. UTILISATION
 -----------
@@ -130,7 +132,7 @@ Le fichier training.py permet :
 
 Lancer l’entraînement :
 
-    python training.py
+    python games/matchsticks/training.py
 
 Deux configurations sont testées :
 - 1000 parties

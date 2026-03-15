@@ -8,34 +8,45 @@ except ModuleNotFoundError:
 
 
 class GameModel:
-    """
-    Modèle principal du jeu Cubee.
-    """
+    """Main model for the Cubee game."""
 
-    MOVES = {
+    MOVES: dict[str, tuple[int, int]] = {
         "up": (-1, 0),
         "down": (1, 0),
         "left": (0, -1),
         "right": (0, 1),
     }
 
-    def __init__(self, player1, player2, size: int = 5):
+    def __init__(self, player1: Player | str, player2: Player | str, size: int = 5) -> None:
+        """
+        Initialize the game model.
+
+        Args:
+            player1: The first player or the player name.
+            player2: The second player or the player name.
+            size: The board size.
+        """
         self.size = size
 
         self.player1 = player1 if isinstance(player1, Player) else Player(player1, (0, 0))
         self.player2 = player2 if isinstance(player2, Player) else Player(player2, (size - 1, size - 1))
 
-        self.board = []
+        self.board: list[list[int]] = []
         self.is_game_over = False
         self.player_turn = 1
-        self.winner = None
-        self.loser = None
-        self.score = (0, 0)
+        self.winner: Player | None = None
+        self.loser: Player | None = None
+        self.score: tuple[int, int] = (0, 0)
 
         self.reset()
 
+    @property
+    def current_player(self) -> Player:
+        """Return the player whose turn it is."""
+        return self.player1 if self.player_turn == 1 else self.player2
+
     def reset(self) -> None:
-        """Réinitialise complètement la partie."""
+        """Reset the game to its initial state."""
         self.board = [[0 for _ in range(self.size)] for _ in range(self.size)]
 
         self.player1.position = (0, 0)
@@ -51,21 +62,44 @@ class GameModel:
 
         self.update_score()
 
-    def get_current_player(self) -> Player:
-        """Retourne le joueur courant."""
-        return self.player1 if self.player_turn == 1 else self.player2
-
     def get_opponent(self, player: Player | None = None) -> Player:
-        """Retourne l'adversaire du joueur donné."""
+        """
+        Return the opponent of the given player.
+
+        Args:
+            player: The reference player. If None, use the current player.
+
+        Returns:
+            The other player.
+        """
+        if player is None:
+            player = self.current_player
         return self.player2 if player == self.player1 else self.player1
 
     def is_in_bounds(self, position: tuple[int, int]) -> bool:
-        """Vérifie qu'une position est dans le plateau."""
+        """
+        Check if a position is inside the board.
+
+        Args:
+            position: The position to check.
+
+        Returns:
+            True if the position is inside the board, False otherwise.
+        """
         row, col = position
         return 0 <= row < self.size and 0 <= col < self.size
 
     def get_target_position(self, move: str) -> tuple[int, int]:
-        row, col = self.get_current_player().position
+        """
+        Return the target position for a move.
+
+        Args:
+            move: The move to apply.
+
+        Returns:
+            The new position after the move.
+        """
+        row, col = self.current_player.position
         d_row, d_col = self.MOVES[move]
         return row + d_row, col + d_col
 
@@ -79,9 +113,15 @@ class GameModel:
 
         A player cannot move:
         - outside the board
-        - to an opponent's cell
+        - to an opponent cell
+
+        Args:
+            move: The move to check.
+
+        Returns:
+            True if the move is legal, False otherwise.
         """
-        player = self.get_current_player()
+        player = self.current_player
         row, col = self.get_target_position(move)
 
         if not self.is_in_bounds((row, col)):
@@ -93,20 +133,25 @@ class GameModel:
         return target_cell != opponent_value
 
     def available_moves(self) -> list[str]:
-        """Retourne la liste des coups possibles pour le joueur courant."""
+        """
+        Return the list of legal moves for the current player.
+
+        Returns:
+            A list of move names.
+        """
         return [move for move in self.MOVES if self.is_legal_move(move)]
 
     def next_player(self) -> None:
-        """Passe au joueur suivant."""
+        """Switch to the other player."""
         self.player_turn = 2 if self.player_turn == 1 else 1
 
     def update_score(self) -> None:
-        """Recalcule le score à partir du plateau."""
+        """Recompute the score from the board."""
         flat_board = [cell for row in self.board for cell in row]
         self.score = (flat_board.count(1), flat_board.count(2))
 
     def end_game(self) -> None:
-        """Termine la partie et détermine le gagnant."""
+        """End the game and update player statistics."""
         self.is_game_over = True
 
         if self.score[0] > self.score[1]:
@@ -124,16 +169,27 @@ class GameModel:
             self.loser = None
             self.player1.draw()
             self.player2.draw()
-            
+
     def check_game_over(self) -> bool:
+        """
+        Check whether the game is over.
+
+        Returns:
+            True if the game is over, False otherwise.
+        """
         if not any(0 in row for row in self.board):
             self.end_game()
             return True
         return False
 
     def check_enclosure(self) -> None:
-        current_player = self.get_current_player()
-        opponent = self.get_opponent(current_player)
+        """
+        Fill enclosed empty cells with the current player's value.
+
+        This method uses a breadth-first search from the opponent position
+        to find all cells the opponent can still reach.
+        """
+        opponent = self.get_opponent(self.current_player)
 
         current_value = self.player_turn
         opponent_value = 2 if current_value == 1 else 1
@@ -166,16 +222,24 @@ class GameModel:
                     self.board[row][col] = current_value
 
     def step(self, move: str) -> bool:
+        """
+        Apply one move for the current player.
+
+        Args:
+            move: The move to play.
+
+        Returns:
+            True if the move was applied, False otherwise.
+        """
         if self.is_game_over:
             return False
 
         if not self.is_legal_move(move):
             return False
 
-        current_player = self.get_current_player()
         new_row, new_col = self.get_target_position(move)
 
-        current_player.position = (new_row, new_col)
+        self.current_player.position = (new_row, new_col)
         self.board[new_row][new_col] = self.player_turn
 
         self.check_enclosure()
@@ -187,15 +251,25 @@ class GameModel:
         return True
 
     def board_to_string(self) -> str:
-        """Convertit le plateau en chaîne compacte."""
+        """
+        Convert the board into a compact string.
+
+        Returns:
+            The board as a single string.
+        """
         return "".join(str(cell) for row in self.board for cell in row)
 
     def get_state_DTO(self) -> dict:
-        """Retourne l'état courant du jeu sous forme de dictionnaire."""
+        """
+        Return the current game state as a dictionary.
+
+        Returns:
+            A dictionary with the current game state.
+        """
         return {
             "size": self.size,
             "board": self.board_to_string(),
-            "player_turn": self.player_turn,
+            "turn": self.player_turn,
             "pos_p1": self.player1.position,
             "pos_p2": self.player2.position,
             "is_game_over": self.is_game_over,
