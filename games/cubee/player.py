@@ -20,27 +20,6 @@ class Player:
         self.nb_draw: int = 0
         self.nb_game: int = 0
 
-    def is_ai(self) -> bool:
-        """
-        Tell whether this player is controlled by the AI.
-
-        Returns:
-            False for a regular player.
-        """
-        return False
-
-    def play(self, game_model) -> str | None:
-        """
-        Return the move to play.
-
-        Args:
-            game_model: The current game model.
-
-        Returns:
-            The chosen move, or None if no move is available.
-        """
-        return None
-
     def win(self) -> None:
         """Record a win for this player."""
         self.nb_win += 1
@@ -55,6 +34,16 @@ class Player:
         """Record a draw for this player."""
         self.nb_draw += 1
         self.nb_game += 1
+    
+    def is_ai(self) -> bool:
+        """
+        Tell whether this player is controlled by the AI.
+
+        Returns:
+            False for a regular player.
+        """
+        return False
+
 
 class RandomAgent(Player):
     """Very simple AI that plays a random move."""
@@ -68,7 +57,7 @@ class RandomAgent(Player):
         """
         return True
 
-    def play(self, game_model) -> str | None:
+    def play(self, game_model) -> str:
         """
         Choose and return a random legal move.
 
@@ -76,9 +65,7 @@ class RandomAgent(Player):
             game_model: The current game model.
 
         Returns:
-            A random move, or None if no move is available.
+            A random legal move.
         """
         moves = game_model.available_moves()
-        if not moves:
-            return None
         return random.choice(moves)
