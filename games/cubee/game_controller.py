@@ -1,8 +1,5 @@
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from game_model import GameModel
-    from game_view import GameView
+from games.cubee.game_model import GameModel
+from games.cubee.game_view import GameView
 
 class GameController:
     """Main controller for the Cubee game."""
@@ -70,9 +67,7 @@ class GameController:
             return False
 
         move = current_player.play(self.model)
-        if move is None:
-            return False
-
+        
         success = self.model.step(move)
 
         self._update_view()
@@ -155,7 +150,7 @@ class GameController:
 
         return result + stats
 
-    def get_state_DTO(self) -> dict: # utilisée dans view (car model ne communique pas ac vue)
+    def get_state_DTO(self) -> dict: 
         """
         Return the current game state.
 
@@ -163,3 +158,4 @@ class GameController:
             The current game state as a dictionary.
         """
         return self.model.get_state_DTO()
+    

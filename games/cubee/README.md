@@ -7,7 +7,7 @@ Ce projet est une implémentation du jeu Cubee en Python avec une
 interface graphique réalisée à l’aide de la bibliothèque Tkinter.
 
 Le programme respecte une architecture MVC (Modèle – Vue – Contrôleur)
-et inclut un joueur contrôlé par intelligence artificielle.
+et inclut un joueur contrôlé par un joueur random.
 
 2. RÈGLES DU JEU
 -------------
