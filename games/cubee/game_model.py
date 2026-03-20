@@ -1,11 +1,6 @@
 import random
 from collections import deque
-
-try:
-    from games.cubee.player import Player
-except ModuleNotFoundError:
-    from player import Player
-
+from games.cubee.player import Player
 
 class GameModel:
     """Main model for the Cubee game."""
@@ -61,20 +56,6 @@ class GameModel:
         self.loser = None
 
         self.update_score()
-
-    def get_opponent(self, player: Player | None = None) -> Player:
-        """
-        Return the opponent of the given player.
-
-        Args:
-            player: The reference player. If None, use the current player.
-
-        Returns:
-            The other player.
-        """
-        if player is None:
-            player = self.current_player
-        return self.player2 if player == self.player1 else self.player1
 
     def is_in_bounds(self, position: tuple[int, int]) -> bool:
         """
@@ -189,10 +170,9 @@ class GameModel:
         This method uses a breadth-first search from the opponent position
         to find all cells the opponent can still reach.
         """
-        opponent = self.get_opponent(self.current_player)
-
+        opponent = self.player2 if self.player_turn == 1 else self.player1
         current_value = self.player_turn
-        opponent_value = 2 if current_value == 1 else 1
+        opponent_value = 2 if self.player_turn == 1 else 1
 
         reachable = [[False for _ in range(self.size)] for _ in range(self.size)]
         queue = deque([opponent.position])

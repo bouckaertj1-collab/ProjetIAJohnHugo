@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from games.cubee.game_controller import GameController
 
+
 class GameView(tk.Toplevel):
     """Tkinter view for the Cubee game."""
 
@@ -20,7 +21,7 @@ class GameView(tk.Toplevel):
         "2": {"text": "2", "bg": P2_COLOR},
     }
 
-    def __init__(self, parent: tk.Tk, controller: "GameController", size: int, cell_size: int = 4,) -> None:
+    def __init__(self, parent: tk.Tk, controller: "GameController", size: int, cell_size: int = 4) -> None:
         """
         Initialize the game view.
 
@@ -154,9 +155,4 @@ class GameView(tk.Toplevel):
             row: The clicked row.
             col: The clicked column.
         """
-        state = self.controller.get_state_DTO()
-
-        if state["is_game_over"]:
-            return
-
         self.controller.handle_cell_click(row, col)
