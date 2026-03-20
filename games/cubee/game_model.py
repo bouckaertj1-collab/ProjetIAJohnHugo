@@ -28,8 +28,8 @@ class GameModel:
         """
         self.size = size
 
-        self.player1 = player1 if isinstance(player1, Player) else Player(player1, (0, 0)) # pour les test
-        self.player2 = player2 if isinstance(player2, Player) else Player(player2, (size - 1, size - 1)) # pr test
+        self.player1 = player1 if isinstance(player1, Player) else Player(player1, (0, 0)) 
+        self.player2 = player2 if isinstance(player2, Player) else Player(player2, (size - 1, size - 1)) 
 
         self.board: list[list[int]] = []
         self.is_game_over = False
@@ -132,7 +132,7 @@ class GameModel:
 
         return target_cell != opponent_value
 
-    def available_moves(self) -> list[str]: # utile pour randomAgent
+    def available_moves(self) -> list[str]: 
         """
         Return the list of legal moves for the current player.
 

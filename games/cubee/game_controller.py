@@ -155,7 +155,7 @@ class GameController:
 
         return result + stats
 
-    def get_state_DTO(self) -> dict: # utilisée dans view (car model ne communique pas ac vue)
+    def get_state_DTO(self) -> dict: 
         """
         Return the current game state.
 
@@ -163,3 +163,5 @@ class GameController:
             The current game state as a dictionary.
         """
         return self.model.get_state_DTO()
+    
+    
