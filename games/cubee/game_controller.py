@@ -1,5 +1,6 @@
 from games.cubee.game_model import GameModel
 from games.cubee.game_view import GameView
+from games.cubee.player import QLearningAgent
 
 class GameController:
     """Main controller for the Cubee game."""
@@ -66,9 +67,15 @@ class GameController:
         if not current_player.is_ai():
             return False
 
+        old_score = self.model.score
         move = current_player.play(self.model)
-        
         success = self.model.step(move)
+
+        if success and isinstance(current_player, QLearningAgent):
+            new_state = current_player.get_state_key(self.model)
+            new_legal_moves = self.model.available_moves() if not self.model.is_game_over else []
+            reward = current_player.compute_reward(old_score, self.model.score, self.model)
+            current_player.learn(reward, new_state, new_legal_moves, self.model.is_game_over)
 
         self._update_view()
 
@@ -113,6 +120,12 @@ class GameController:
 
     def handle_end_game(self) -> None:
         """Notify the view that the game is over."""
+        for player in [self.model.player1, self.model.player2]:
+            if isinstance(player, QLearningAgent):
+                player.upload("games/cubee/cubee_qtable.json")
+                player.next_epsilon()
+                player.reset_memory()   
+                     
         if self.view is not None:
             self.view.end_game(
                 self.get_status_message(),
