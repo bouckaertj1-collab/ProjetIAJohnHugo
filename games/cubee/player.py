@@ -1,6 +1,9 @@
 import random
 from games.cubee.qtable_dao import QTableDAO
 
+QTABLE_FILE = "games/cubee/cubee_qtable.json"
+
+
 class Player:
     """Base class for a Cubee player."""
 
@@ -70,28 +73,53 @@ class RandomAgent(Player):
         moves = game_model.available_moves()
         return random.choice(moves)
     
-    
+
 class QLearningAgent(Player):
-    """Cubee AI using Q-learning."""
+    """AI player for Cubee using a Q-learning strategy."""
 
     def __init__(self, name: str, position: tuple[int, int]) -> None:
+        """
+        Initialize a Q-learning agent.
+
+        Args:
+            name: Player name.
+            position: Initial position of the player on the board.
+        """
         super().__init__(name, position)
 
         self.epsilon: float = 0.9
         self.alpha: float = 0.2
         self.gamma: float = 0.9
 
+        # q_table[state][action] = estimated value
         self.q_table: dict[str, dict[str, float]] = {}
 
         self.previous_state: str | None = None
         self.previous_action: str | None = None
 
     def is_ai(self) -> bool:
+        """
+        Indicate that this player is controlled by the AI.
+
+        Returns:
+            True because this player is an AI.
+        """
         return True
 
     def get_state_key(self, game_model) -> str:
         """
-        Build a state string from the AI point of view.
+        Build a string representation of the current state.
+
+        The state is described from the AI point of view using:
+        - the AI position
+        - the opponent position
+        - the serialized board
+
+        Args:
+            game_model: Current Cubee game model.
+
+        Returns:
+            A string uniquely describing the current state.
         """
         if game_model.player1 == self:
             my_pos = game_model.player1.position
@@ -108,7 +136,14 @@ class QLearningAgent(Player):
 
     def ensure_state_exists(self, state: str, legal_moves: list[str]) -> None:
         """
-        Create the state in the Q-table if it does not exist yet.
+        Ensure that a state and its legal actions exist in the Q-table.
+
+        If the state does not exist yet, it is created.
+        If an action is missing for this state, it is initialized to 0.0.
+
+        Args:
+            state: Serialized state key.
+            legal_moves: Legal actions available in this state.
         """
         if state not in self.q_table:
             self.q_table[state] = {}
@@ -119,7 +154,16 @@ class QLearningAgent(Player):
 
     def exploit(self, game_model) -> str:
         """
-        Choose the best move according to the Q-table.
+        Choose the best known action for the current state.
+
+        If several actions have the same best value, one of them is chosen
+        randomly.
+
+        Args:
+            game_model: Current Cubee game model.
+
+        Returns:
+            The selected action.
         """
         state = self.get_state_key(game_model)
         legal_moves = game_model.available_moves()
@@ -136,13 +180,21 @@ class QLearningAgent(Player):
 
     def play(self, game_model) -> str:
         """
-        Choose a move using epsilon-greedy.
+        Choose an action using an epsilon-greedy strategy.
+
+        With probability epsilon, the agent explores by choosing a random move.
+        Otherwise, it exploits the best known move.
+
+        Args:
+            game_model: Current Cubee game model.
+
+        Returns:
+            The selected action.
         """
         state = self.get_state_key(game_model)
         legal_moves = game_model.available_moves()
 
         self.ensure_state_exists(state, legal_moves)
-
         self.previous_state = state
 
         if random.random() < self.epsilon:
@@ -153,32 +205,73 @@ class QLearningAgent(Player):
         self.previous_action = action
         return action
 
-    def learn(self, reward: float, new_state: str, new_legal_moves: list[str], done: bool) -> None:
+    def learn(
+        self,
+        reward: float,
+        new_state: str,
+        new_legal_moves: list[str],
+        done: bool,
+    ) -> None:
         """
-        Update the Q-table after one move.
+        Update the Q-table after the agent has played one move.
+
+        The update uses:
+        - the previous state
+        - the previous action
+        - the reward obtained after the move
+        - the estimated value of the next state
+
+        Args:
+            reward: Immediate reward obtained after the action.
+            new_state: State reached after the action.
+            new_legal_moves: Legal actions available in the new state.
+            done: True if the game is over, False otherwise.
         """
         if self.previous_state is None or self.previous_action is None:
             return
 
-        self.ensure_state_exists(self.previous_state, [self.previous_action])
+        previous_state = self.previous_state
+        previous_action = self.previous_action
 
-        if not done:
-            self.ensure_state_exists(new_state, new_legal_moves)
-            max_next_q = max(self.q_table[new_state][move] for move in new_legal_moves)
-        else:
+        self.ensure_state_exists(previous_state, [previous_action])
+
+        if done or not new_legal_moves:
             max_next_q = 0.0
+        else:
+            self.ensure_state_exists(new_state, new_legal_moves)
+            max_next_q = max(
+                self.q_table[new_state][action]
+                for action in new_legal_moves
+            )
 
-        old_q = self.q_table[self.previous_state][self.previous_action]
+        current_q = self.q_table[previous_state][previous_action]
+        target = reward + self.gamma * max_next_q
+        updated_q = current_q + self.alpha * (target - current_q)
 
-        new_q = old_q + self.alpha * (
-            reward + self.gamma * max_next_q - old_q
-        )
+        self.q_table[previous_state][previous_action] = updated_q
 
-        self.q_table[self.previous_state][self.previous_action] = new_q
-
-    def compute_reward(self, old_score: tuple[int, int], new_score: tuple[int, int], game_model) -> float:
+    def compute_reward(
+        self,
+        old_score: tuple[int, int],
+        new_score: tuple[int, int],
+        game_model,
+    ) -> float:
         """
         Compute the reward from the AI point of view.
+
+        The reward is based on the score evolution:
+        - gaining territory for the AI increases the reward
+        - allowing the opponent to gain territory decreases the reward
+        - a bonus is added for a victory
+        - a penalty is added for a defeat
+
+        Args:
+            old_score: Score before the move.
+            new_score: Score after the move.
+            game_model: Current Cubee game model.
+
+        Returns:
+            The reward associated with the transition.
         """
         if game_model.player1 == self:
             my_old, opp_old = old_score[0], old_score[1]
@@ -199,18 +292,31 @@ class QLearningAgent(Player):
 
     def next_epsilon(self, coef: float = 0.995, min_epsilon: float = 0.05) -> None:
         """
-        Slowly reduce exploration.
+        Reduce exploration progressively after each game.
+
+        Args:
+            coef: Multiplicative decay coefficient.
+            min_epsilon: Minimum exploration rate allowed.
         """
         self.epsilon = max(min_epsilon, self.epsilon * coef)
 
     def reset_memory(self) -> None:
         """
-        Reset temporary memory between games.
+        Reset the temporary memory used between actions.
+
+        This is useful between two games to avoid reusing the last
+        state/action of the previous match.
         """
         self.previous_state = None
         self.previous_action = None
 
-    def upload(self, filename: str) -> None:
+    def upload(self, filename: str = QTABLE_FILE) -> None:
+        """
+        Save the Q-table and learning parameters to a file.
+
+        Args:
+            filename: Path of the JSON file used for persistence.
+        """
         QTableDAO.save(
             filename,
             self.q_table,
@@ -219,7 +325,13 @@ class QLearningAgent(Player):
             self.gamma,
         )
 
-    def download(self, filename: str) -> None:
+    def download(self, filename: str = QTABLE_FILE) -> None:
+        """
+        Load the Q-table and learning parameters from a file.
+
+        Args:
+            filename: Path of the JSON file used for persistence.
+        """
         data = QTableDAO.load(filename)
         self.epsilon = data["epsilon"]
         self.alpha = data["alpha"]
