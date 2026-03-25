@@ -13,7 +13,7 @@ from games.matchsticks.player import AI, HumanGUI
 from games.cubee.game_model import GameModel as CubeeModel
 from games.cubee.game_controller import GameController as CubeeController
 from games.cubee.game_view import GameView as CubeeView
-from games.cubee.player import Player, RandomAgent
+from games.cubee.player import Player, QLearningAgent , RandomAgent
 import random
 
 
@@ -72,7 +72,10 @@ class LauncherController:
         size: int = 6
 
         player1: Player = Player("Human", (0, 0))
-        player2: RandomAgent = RandomAgent("Random Randy", (size - 1, size - 1))
+        player2: QLearningAgent = QLearningAgent("Q-Bot", (size - 1, size - 1))
+
+        player2.download("games/cubee/cubee_qtable.json")
+        player2.epsilon = 0.9
 
         model: CubeeModel = CubeeModel(player1, player2, size=size)
         controller: CubeeController = CubeeController(model)
