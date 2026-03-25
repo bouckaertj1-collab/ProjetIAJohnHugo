@@ -122,10 +122,10 @@ class GameController:
         """Notify the view that the game is over."""
         for player in [self.model.player1, self.model.player2]:
             if isinstance(player, QLearningAgent):
-                player.upload("games/cubee/cubee_qtable.json")
+                player.upload()
                 player.next_epsilon()
                 player.reset_memory()   
-                     
+
         if self.view is not None:
             self.view.end_game(
                 self.get_status_message(),

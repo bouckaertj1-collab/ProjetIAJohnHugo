@@ -74,7 +74,7 @@ class LauncherController:
         player1: Player = Player("Human", (0, 0))
         player2: QLearningAgent = QLearningAgent("Q-Bot", (size - 1, size - 1))
 
-        player2.download("games/cubee/cubee_qtable.json")
+        player2.download()
         player2.epsilon = 0.9
 
         model: CubeeModel = CubeeModel(player1, player2, size=size)
