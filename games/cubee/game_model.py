@@ -28,7 +28,16 @@ class GameModel:
         "right": 1,
         }
 
-        
+        self.left_column_mask = 0
+        for index in range(self.size**2):
+            if index % self.size == 0:
+                self.left_column_mask |= (1 << index)
+
+        self.right_column_mask = 0
+        for index in range(self.size**2):
+                if index % self.size == self.size - 1:
+                    self.right_column_mask |= (1 << index)    
+
         self.player_turn = 1
         self.winner = None
         self.loser = None
@@ -77,24 +86,25 @@ class GameModel:
         """
         if not self.is_legal_move(move):
             return False
+        
+        pos = self.current_player.position
+        target = self.compute_target(move)
+
+        if self.current_player == self.player1:
+            self.player1_board |= (1 << pos)
+            self.player1.position = target
         else:
-
-            pos = self.current_player.position
-
-            target = self.compute_target(move)
-
-            if self.current_player == self.player1:
-                self.player1_board |= (1 << pos)
-                self.player1.position = target
-            else:
-                self.player2_board |= (1 << pos)
-                self.player2.position = target
+            self.player2_board |= (1 << pos)
+            self.player2.position = target
             
-            self.update_score()
-            self.is_game_over()
+        self.update_score()
+
+        if self.is_game_over:
+            self.end_game()
+        else:
             self.next_player()
 
-            return True
+        return True
     
     def get_valid_moves(self):
         """
@@ -126,31 +136,21 @@ class GameModel:
         """
         if self.is_game_over:
             return False
-
-        if self.current_player == self.player1:
-            opponent_board = self.player2_board
-            opponent_pos = self.player2.position
-        else:
-            opponent_board = self.player1_board
-            opponent_pos = self.player1.position
-
+        
         pos = self.current_player.position
 
         target = self.compute_target(move)
 
-        if target < 0 or target >= self.size**2:
+        if move == "left" and self.is_left_edge(pos):
             return False
         
-        if move == "left" and pos % self.size == 0:
+        if move == "right" and self.is_right_edge(pos):
+            return False
+
+        if not self.is_in_bounds(target):
             return False
         
-        if move == "right" and pos % self.size == self.size - 1:
-            return False
-        
-        if opponent_board & (1 << target) != 0:
-            return False
-        
-        if target == opponent_pos:
+        if self._is_opponent_cell(target,self.current_player):
             return False
         
         return True
@@ -159,79 +159,116 @@ class GameModel:
         """Passe au joueur suivant."""
         if self.player_turn == 1:
             self.player_turn = 2
-            self.current_player = self.player2
         else:
             self.player_turn = 1
-            self.current_player = self.player1
-
-        self.turn = self.player_turn
 
     def update_score(self) -> None:
         """Recalcule le score à partir du plateau."""
-        score1 = int.bit_count(self.player1_board) + self.player1.position
-        score2 = int.bit_count(self.player2_board) + self.player2.position
-        self.score = (score1,score2)
+        self.score = ((self.player1_board | (1 << self.player1.position)).bit_count() 
+                    ,(self.player2_board |(1 << self.player2.position)).bit_count())
 
-    def end_game(self) -> None:
-        """Termine la partie et détermine le gagnant."""
-    pass
+    @property
     def is_game_over(self) -> bool:
         """
-        Vérifie si la partie est terminée.
+          Vérifie si la partie est terminée.
 
         La partie s'arrête :
         - s'il n'y a plus de case libre
         - ou si les deux joueurs sont bloqués
         """
-    pass
-
+        return self.occupied_tiles == self.board_mask or self._both_players_blocked()
+        
     def check_enclosure(self) -> None:
         """
-        Détecte les enclos de manière compatible avec les tests de l'énoncé.
-
-        On considère que le joueur `player_turn` vient de jouer.
-        On cherche alors toutes les cases encore atteignables par l'adversaire
-        en traversant :
-        - ses propres cases
-        - les cases libres
-
-        Toutes les cases libres non atteignables sont capturées
-        par le joueur courant.
+        
         """
-        current_player = self.get_player_by_id(self.player_turn)
-        opponent = self.get_opponent(current_player)
+        opponent = self.get_opponent(self.current_player)
+        start = opponent.position
+        to_explore = (1 << start) 
+        visited |= (1 << start)
+        free_cells = ~self.occupied_tiles & self.board_mask
+        opponent_cells = self.get_opponent_board(opponent)  
+        traversable = free_cells | opponent_cells
+        
+        while to_explore:
 
-        reachable = [[False for _ in range(self.size)] for _ in range(self.size)]
-        queue = deque()
+            up = to_explore >> self.size
+            down = to_explore << self.size
+            left =  (to_explore >> 1) & ~self.right_column_mask
+            right = (to_explore << 1) & ~self.left_column_mask
 
-        start_row, start_col = opponent.position
-        queue.append((start_row, start_col))
-        reachable[start_row][start_col] = True
+            next_to_explore = (up | down | left | right) & traversable
+        
+            to_explore = next_to_explore & ~visited
+            visited |= to_explore
 
-        while queue:
-            row, col = queue.popleft()
+        captured = free_cells & ~visited
 
-            for d_row, d_col in self.MOVES.values():
-                new_row = row + d_row
-                new_col = col + d_col
-                new_position = (new_row, new_col)
+        if self.current_player is self.player1:
+            self.player1_board |= captured
+        else:           
+            self.player2_board |= captured
+        self.update_score()
 
-                if not self.is_in_bounds(new_position):
-                    continue
+    def is_valid_neighbor(self,current_tile,move,neighbor,reachable,opponent):
+        if move == "left" and self.is_left_edge(current_tile):
+            return False
+        if move == "right" and self.is_right_edge(current_tile):
+            return False
+        if not self.is_in_bounds(neighbor):
+            return False
+        if reachable & (1 << neighbor):
+            return False
+        if self._is_free_cell(neighbor) or self._is_opponent_cell(neighbor,opponent):
+            return True
+        
+        return False
 
-                if reachable[new_row][new_col]:
-                    continue
+    def _is_free_cell(self,index):
+        return self.occupied_tiles & (1 << index) == 0
+    
+    def _is_opponent_cell(self,index,player):
+       return (self.get_opponent_board(player) & (1 << index)) != 0
+    
+    def get_opponent(self,player):
 
-                cell_value = self.board[new_row][new_col]
+        if player is self.player1:
+            return self.player2
+        elif player is self.player2:
+            return self.player1
+        else:
+            raise ValueError("Le joueur actuel n'est pas une instance de joueur")
+    
+    def get_opponent_board(self,player):
 
-                if cell_value == 0 or cell_value == opponent.player_id:
-                    reachable[new_row][new_col] = True
-                    queue.append((new_row, new_col))
+        if player is self.player1:
+            return self.player2_board 
+        elif player is self.player2:
+            return self.player1_board
+        else:
+            raise ValueError("Le joueur actuel n'est pas une instance de joueur et ne possède pas de plateau")
+    
+    def is_in_bounds(self,index):
+        return 0 <= index < self.size**2
+        
+    def is_left_edge(self,index):
+        return index % self.size == 0
 
-        for row in range(self.size):
-            for col in range(self.size):
-                if self.board[row][col] == 0 and not reachable[row][col]:
-                    self.board[row][col] = current_player.player_id
+    def is_right_edge(self,index):
+        return index % self.size == self.size - 1
+    
+    def _both_players_blocked(self):
+            old_player_turn = self.player_turn
+            try:
+                self.player_turn = 1
+                valid_moves_j1 = self.get_valid_moves()
+
+                self.player_turn = 2
+                valid_moves_j2 = self.get_valid_moves()
+
+                return not (valid_moves_j1 or valid_moves_j2) 
+            finally:
+                self.player_turn = old_player_turn
 
     def get_state_DTO(self) -> dict:
         """Retourne l'état courant du jeu sous forme de dictionnaire."""
