@@ -1,32 +1,48 @@
-class GameController:
-    """
-    Contrôleur principal du jeu Cubee.
-    """
+from games.cubee.game_model import GameModel
+from games.cubee.game_view import GameView
 
-    def __init__(self, model, view=None):
+class GameController:
+    """Main controller for the Cubee game."""
+
+    def __init__(self, model: "GameModel", view: "GameView | None" = None) -> None:
+        """
+        Initialize the controller.
+
+        Args:
+            model: The game model.
+            view: The game view. Can be None.
+        """
         self.model = model
         self.view = view
 
-    def start(self) -> None:
-        if self.view:
-            self.view.update_view(self.model.get_state_DTO())
+    def _update_view(self) -> None:
+        """Refresh the view if a view is attached."""
+        if self.view is not None:
+            self.view.update_view(self.get_state_DTO())
 
+    def start(self) -> None:
+        """Start the game and refresh the view."""
+        self._update_view()
         self.handle_ai_move()
 
     def reset(self) -> None:
+        """Reset the game and refresh the view."""
         self.model.reset()
-
-        if self.view:
-            self.view.reset()
-            self.view.update_view(self.model.get_state_DTO())
-
-        self.handle_ai_move()
+        self.start()
 
     def handle_move(self, move: str) -> bool:
+        """
+        Apply a player move.
+
+        Args:
+            move: The move to play.
+
+        Returns:
+            True if the move was handled, False if it failed.
+        """
         success = self.model.step(move)
 
-        if self.view:
-            self.view.update_view(self.model.get_state_DTO())
+        self._update_view()
 
         if not success:
             return False
@@ -39,29 +55,45 @@ class GameController:
         return True
 
     def handle_ai_move(self) -> bool:
-        current_player = self.model.get_current_player()
+        """
+        Let the AI play if it is the current player's turn.
+
+        Returns:
+            True if an AI move was played successfully, False otherwise.
+        """
+        current_player = self.model.current_player
 
         if not current_player.is_ai():
             return False
 
         move = current_player.play(self.model)
-        if move is None:
-            return False
-
+        
         success = self.model.step(move)
 
-        if self.view:
-            self.view.update_view(self.model.get_state_DTO())
+        self._update_view()
 
         if success and self.model.is_game_over:
             self.handle_end_game()
 
         return success
-    
-    def handle_cell_click(self, row: int, col: int) -> bool:
-        state = self.model.get_state_DTO()
 
-        if state["player_turn"] == 1:
+    def handle_cell_click(self, row: int, col: int) -> bool:
+        """
+        Handle a click on a board cell.
+
+        The clicked cell is converted into a move if it is adjacent
+        to the current player's position.
+
+        Args:
+            row: Clicked row.
+            col: Clicked column.
+
+        Returns:
+            True if the click produced a valid move, False otherwise.
+        """
+        state = self.get_state_DTO()
+
+        if state["turn"] == 1:
             current_row, current_col = state["pos_p1"]
         else:
             current_row, current_col = state["pos_p2"]
@@ -80,13 +112,21 @@ class GameController:
         return self.handle_move(move)
 
     def handle_end_game(self) -> None:
-        if self.view:
+        """Notify the view that the game is over."""
+        if self.view is not None:
             self.view.end_game(
                 self.get_status_message(),
-                self.model.get_state_DTO()
+                self.get_state_DTO(),
             )
-    
+
     def get_status_message(self) -> str:
+        """
+        Build the current game status message.
+
+        Returns:
+            A message with the game result or current turn, followed by
+            player statistics.
+        """
         p1 = self.model.player1
         p2 = self.model.player2
 
@@ -94,16 +134,28 @@ class GameController:
             if self.model.winner is None:
                 result = f"Draw: {self.model.score[0]} - {self.model.score[1]}"
             else:
-                result = f"{self.model.winner.name} wins: {self.model.score[0]} - {self.model.score[1]}"
+                result = (
+                    f"{self.model.winner.name} wins: "
+                    f"{self.model.score[0]} - {self.model.score[1]}"
+                )
         else:
             result = f"Player {self.model.player_turn}'s turn"
 
         stats = (
-            f"\n\n{p1.name} - Games: {p1.nb_game}, W: {p1.nb_win}, L: {p1.nb_lose}, D: {p1.nb_draw}"
-            f"\n{p2.name} - Games: {p2.nb_game}, W: {p2.nb_win}, L: {p2.nb_lose}, D: {p2.nb_draw}"
+            f"\n\n{p1.name} - Games: {p1.nb_game}, W: {p1.nb_win}, "
+            f"L: {p1.nb_lose}, D: {p1.nb_draw}"
+            f"\n{p2.name} - Games: {p2.nb_game}, W: {p2.nb_win}, "
+            f"L: {p2.nb_lose}, D: {p2.nb_draw}"
         )
 
         return result + stats
 
-    def get_state_DTO(self) -> dict:
+    def get_state_DTO(self) -> dict: 
+        """
+        Return the current game state.
+
+        Returns:
+            The current game state as a dictionary.
+        """
         return self.model.get_state_DTO()
+    

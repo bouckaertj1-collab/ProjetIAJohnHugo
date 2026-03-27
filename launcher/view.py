@@ -1,3 +1,4 @@
+
 """
 Tkinter view for the application launcher.
 
@@ -61,7 +62,11 @@ class LauncherView(tk.Tk):
         )
         card1.grid(row=0, column=0, padx=30)
 
-        card2: tk.Frame = self._create_card(main_frame, "Cubee", disabled=True)
+        card2: tk.Frame = self._create_card(
+            main_frame,
+            "Cubee",
+            command=self.controller.on_cubee
+        )
         card2.grid(row=0, column=1, padx=30)
 
         card3: tk.Frame = self._create_card(main_frame, "PixelKart", disabled=True)

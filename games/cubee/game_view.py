@@ -1,11 +1,13 @@
 import tkinter as tk
 from tkinter import messagebox
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from games.cubee.game_controller import GameController
 
 
-class GameView:
-    """
-    Tkinter view for the Cubee game.
-    """
+class GameView(tk.Toplevel):
+    """Tkinter view for the Cubee game."""
 
     EMPTY_COLOR = "white"
     P1_COLOR = "lightblue"
@@ -13,62 +15,73 @@ class GameView:
     P1_CURRENT_COLOR = "deepskyblue"
     P2_CURRENT_COLOR = "tomato"
 
-    CELL_STYLES = {
+    CELL_STYLES: dict[str, dict[str, str]] = {
         "0": {"text": "", "bg": EMPTY_COLOR},
         "1": {"text": "1", "bg": P1_COLOR},
         "2": {"text": "2", "bg": P2_COLOR},
     }
 
-    def __init__(self, controller, size=5, cell_size=4):
+    def __init__(self, parent: tk.Tk, controller: "GameController", size: int, cell_size: int = 4) -> None:
+        """
+        Initialize the game view.
+
+        Args:
+            parent: The parent window.
+            controller: The game controller.
+            size: The board size.
+            cell_size: The button width for each cell.
+        """
+        super().__init__(parent)
+
         self.controller = controller
         self.size = size
         self.cell_size = cell_size
 
-        self.root = tk.Tk()
-        self.root.title("Cubee")
+        self.title("Cubee")
 
         self.status_label = tk.Label(
-            self.root,
-            text="Welcome to Cubee",
+            self,
+            text="",
             font=("Arial", 12)
         )
         self.status_label.pack(pady=10)
 
         self.score_label = tk.Label(
-            self.root,
+            self,
             text="Score: 0 - 0",
             font=("Arial", 11)
         )
         self.score_label.pack(pady=5)
 
-        self.board_frame = tk.Frame(self.root)
+        self.board_frame = tk.Frame(self)
         self.board_frame.pack(padx=10, pady=10)
 
-        self.buttons = []
+        self.buttons: list[list[tk.Button]] = []
         self._create_board()
 
         self.reset_button = tk.Button(
-            self.root,
+            self,
             text="Reset",
             command=self.controller.reset
         )
         self.reset_button.pack(pady=10)
 
         self.finish_button = tk.Button(
-            self.root,
+            self,
             text="Quit",
-            command=self.root.destroy
+            command=self.destroy
         )
         self.finish_button.pack(pady=5)
 
     def _create_board(self) -> None:
+        """Create the board buttons."""
         for row in range(self.size):
-            button_row = []
+            button_row: list[tk.Button] = []
 
             for col in range(self.size):
                 button = tk.Button(
                     self.board_frame,
-                    text=" ",
+                    text="",
                     width=self.cell_size,
                     height=2,
                     command=lambda r=row, c=col: self.on_cell_click(r, c)
@@ -78,14 +91,13 @@ class GameView:
 
             self.buttons.append(button_row)
 
-    def run(self) -> None:
-        self.root.mainloop()
-
-    def reset(self) -> None:
-        self.status_label.config(text="New game")
-        self.score_label.config(text="Score: 0 - 0")
-
     def update_view(self, state: dict) -> None:
+        """
+        Update the board and labels from the current game state.
+
+        Args:
+            state: The current game state.
+        """
         board_str = state["board"]
         score_p1, score_p2 = state["score"]
 
@@ -97,7 +109,7 @@ class GameView:
             else:
                 self.status_label.config(text=f"{state['winner']} wins!")
         else:
-            if state["player_turn"] == 1:
+            if state["turn"] == 1:
                 name = self.controller.model.player1.name
             else:
                 name = self.controller.model.player2.name
@@ -112,6 +124,12 @@ class GameView:
         self.highlight_players(state)
 
     def highlight_players(self, state: dict) -> None:
+        """
+        Highlight the current positions of both players.
+
+        Args:
+            state: The current game state.
+        """
         p1_row, p1_col = state["pos_p1"]
         p2_row, p2_col = state["pos_p2"]
 
@@ -119,13 +137,22 @@ class GameView:
         self.buttons[p2_row][p2_col].config(text="P2", bg=self.P2_CURRENT_COLOR)
 
     def end_game(self, message: str, state: dict) -> None:
+        """
+        Show the final game state and display the end message.
+
+        Args:
+            message: The message to show.
+            state: The final game state.
+        """
         self.update_view(state)
         messagebox.showinfo("Game Over", message)
 
     def on_cell_click(self, row: int, col: int) -> None:
-        state = self.controller.get_state_DTO()
+        """
+        Handle a click on a board cell.
 
-        if state["is_game_over"]:
-            return
-
+        Args:
+            row: The clicked row.
+            col: The clicked column.
+        """
         self.controller.handle_cell_click(row, col)

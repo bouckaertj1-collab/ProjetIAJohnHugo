@@ -15,8 +15,8 @@ class GameModel:
         self.size = size
         self.player1 = player1
         self.player2 = player2
-        self.player1_pos = None
-        self.player2_pos = None
+        self.player1_pos = 0
+        self.player2_pos = (self.size**2)-1
 
         if hasattr(self.player1, "game_model"):
             self.player1.game_model = self
