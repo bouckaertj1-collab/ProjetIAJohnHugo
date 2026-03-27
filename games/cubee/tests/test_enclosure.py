@@ -1,5 +1,8 @@
 import pytest
-from games.cubee.game_model import GameModel
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from game_model import GameModel
 
 def test_check_enclosure_empty_board():
     game = GameModel("P1", "P2", size=3)
