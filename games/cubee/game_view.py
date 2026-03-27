@@ -104,37 +104,27 @@ class GameView(tk.Toplevel):
         self.score_label.config(text=f"Score: {score_p1} - {score_p2}")
 
         if state["is_game_over"]:
-            if state["winner"] is None:
-                self.status_label.config(text="Draw")
-            else:
-                self.status_label.config(text=f"{state['winner']} wins!")
+            status = "Draw" if state["winner"] is None else f"{state['winner']} wins!"
         else:
-            if state["turn"] == 1:
-                name = self.controller.model.player1.name
-            else:
-                name = self.controller.model.player2.name
+            current_player = (
+                self.controller.model.player1
+                if state["turn"] == 1
+                else self.controller.model.player2
+            )
+            status = f"{current_player.name}'s turn"
 
-            self.status_label.config(text=f"{name}'s turn")
+        self.status_label.config(text=status)
 
         for index, cell in enumerate(board_str):
             row = index // self.size
             col = index % self.size
             self.buttons[row][col].config(**self.CELL_STYLES[cell])
 
-        self.highlight_players(state)
+        player1_row, player1_col = state["pos_p1"]
+        player2_row, player2_col = state["pos_p2"]
 
-    def highlight_players(self, state: dict) -> None:
-        """
-        Highlight the current positions of both players.
-
-        Args:
-            state: The current game state.
-        """
-        p1_row, p1_col = state["pos_p1"]
-        p2_row, p2_col = state["pos_p2"]
-
-        self.buttons[p1_row][p1_col].config(text="P1", bg=self.P1_CURRENT_COLOR)
-        self.buttons[p2_row][p2_col].config(text="P2", bg=self.P2_CURRENT_COLOR)
+        self.buttons[player1_row][player1_col].config(bg=self.P1_CURRENT_COLOR, text="P1")
+        self.buttons[player2_row][player2_col].config(bg=self.P2_CURRENT_COLOR, text="P2",)
 
     def end_game(self, message: str, state: dict) -> None:
         """

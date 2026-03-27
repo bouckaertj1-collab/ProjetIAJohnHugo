@@ -39,16 +39,32 @@ class GameModel:
     def current_player(self) -> Player:
         """Return the player whose turn it is."""
         return self.player1 if self.player_turn == 1 else self.player2
+    
+    def get_start_positions(self) -> tuple[tuple[int, int], tuple[int, int]]:
+        """
+        Return the starting positions for player1 and player2.
+
+        The starting corners alternate every game to avoid training the AI
+        only from one initial configuration.
+
+        Returns:
+            A tuple containing player1's start position and player2's start
+            position.
+        """
+        corner1 = (0, 0)
+        corner2 = (self.size - 1, self.size - 1)
+        return (corner1, corner2) if self.player1.nb_game % 2 == 0 else (corner2, corner1)
 
     def reset(self) -> None:
         """Reset the game to its initial state."""
         self.board = [[0 for _ in range(self.size)] for _ in range(self.size)]
 
-        self.player1.position = (0, 0)
-        self.player2.position = (self.size - 1, self.size - 1)
+        p1_pos, p2_pos = self.get_start_positions()
+        self.player1.position = p1_pos
+        self.player2.position = p2_pos
 
-        self.board[0][0] = 1
-        self.board[self.size - 1][self.size - 1] = 2
+        self.board[p1_pos[0]][p1_pos[1]] = 1
+        self.board[p2_pos[0]][p2_pos[1]] = 2
 
         self.is_game_over = False
         self.player_turn = random.choice([1, 2])
@@ -124,7 +140,7 @@ class GameModel:
 
     def next_player(self) -> None:
         """Switch to the other player."""
-        self.player_turn = 2 if self.player_turn == 1 else 1
+        self.player_turn = 3 - self.player_turn
 
     def update_score(self) -> None:
         """Recompute the score from the board."""
@@ -150,18 +166,6 @@ class GameModel:
             self.loser = None
             self.player1.draw()
             self.player2.draw()
-
-    def check_game_over(self) -> bool:
-        """
-        Check whether the game is over.
-
-        Returns:
-            True if the game is over, False otherwise.
-        """
-        if not any(0 in row for row in self.board):
-            self.end_game()
-            return True
-        return False
 
     def check_enclosure(self) -> None:
         """
@@ -211,10 +215,7 @@ class GameModel:
         Returns:
             True if the move was applied, False otherwise.
         """
-        if self.is_game_over:
-            return False
-
-        if not self.is_legal_move(move):
+        if self.is_game_over or not self.is_legal_move(move):
             return False
 
         new_row, new_col = self.get_target_position(move)
@@ -225,7 +226,9 @@ class GameModel:
         self.check_enclosure()
         self.update_score()
 
-        if not self.check_game_over():
+        if not any(0 in row for row in self.board):
+            self.end_game()
+        else:
             self.next_player()
 
         return True
