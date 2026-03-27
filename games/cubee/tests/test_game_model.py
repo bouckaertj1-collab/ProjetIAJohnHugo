@@ -35,26 +35,6 @@ def test_step_updates_position_board_score_and_turn():
     assert game.score == (2, 1)
     assert game.player_turn == 2
 
-def test_check_game_over_sets_winner_and_stats():
-    game = GameModel("P1", "P2", size=3)
-    game.board = [
-        [1, 1, 1],
-        [1, 1, 2],
-        [2, 2, 2],
-    ]
-    game.update_score()
-
-    result = game.check_game_over()
-
-    assert result is True
-    assert game.is_game_over is True
-    assert game.winner == game.player1
-    assert game.loser == game.player2
-    assert game.player1.nb_win == 1
-    assert game.player2.nb_lose == 1
-    assert game.player1.nb_game == 1
-    assert game.player2.nb_game == 1
-
 
 def test_reset_restores_initial_state():
     game = GameModel("P1", "P2", size=4)

@@ -42,47 +42,61 @@ class GameController:
             True if the move was handled, False if it failed.
         """
         success = self.model.step(move)
-
-        self._update_view()
-
         if not success:
             return False
 
+        self._update_view()
+
         if self.model.is_game_over:
             self.handle_end_game()
-            return True
+        else:
+            self.handle_ai_move()
 
-        self.handle_ai_move()
         return True
 
     def handle_ai_move(self) -> bool:
         """
         Let the AI play if it is the current player's turn.
 
+        The Q-learning update is performed when the AI reaches its next
+        decision state, so the reward includes the opponent response.
+
         Returns:
             True if an AI move was played successfully, False otherwise.
         """
         current_player = self.model.current_player
 
-        if not current_player.is_ai():
+        if not isinstance(current_player, QLearningAgent):
             return False
+
+        if current_player.previous_score is not None:
+            reward = current_player.compute_reward(
+                current_player.previous_score,
+                self.model.score,
+                self.model,
+            )
+            current_player.learn(
+                reward,
+                current_player.get_state_key(self.model),
+                self.model.available_moves(),
+                False,
+            )
+            current_player.previous_score = None
 
         old_score = self.model.score
         move = current_player.play(self.model)
         success = self.model.step(move)
 
-        if success and isinstance(current_player, QLearningAgent):
-            new_state = current_player.get_state_key(self.model)
-            new_legal_moves = self.model.available_moves() if not self.model.is_game_over else []
-            reward = current_player.compute_reward(old_score, self.model.score, self.model)
-            current_player.learn(reward, new_state, new_legal_moves, self.model.is_game_over)
+        if not success:
+            return False
 
+        current_player.remember_score(old_score)
         self._update_view()
 
-        if success and self.model.is_game_over:
+        if self.model.is_game_over:
             self.handle_end_game()
 
-        return success
+        return True
 
     def handle_cell_click(self, row: int, col: int) -> bool:
         """
@@ -100,10 +114,7 @@ class GameController:
         """
         state = self.get_state_DTO()
 
-        if state["turn"] == 1:
-            current_row, current_col = state["pos_p1"]
-        else:
-            current_row, current_col = state["pos_p2"]
+        current_row, current_col = state["pos_p1"] if state["turn"] == 1 else state["pos_p2"]
 
         moves = {
             (-1, 0): "up",
@@ -122,9 +133,17 @@ class GameController:
         """Notify the view that the game is over."""
         for player in [self.model.player1, self.model.player2]:
             if isinstance(player, QLearningAgent):
+                if player.previous_score is not None:
+                    reward = player.compute_reward(
+                        player.previous_score,
+                        self.model.score,
+                        self.model,
+                    )
+                    player.learn(reward, None, [], True)
+
                 player.upload()
                 player.next_epsilon()
-                player.reset_memory()   
+                player.reset_memory()
 
         if self.view is not None:
             self.view.end_game(

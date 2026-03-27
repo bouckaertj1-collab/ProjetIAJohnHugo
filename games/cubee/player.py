@@ -90,6 +90,7 @@ class QLearningAgent(Player):
         self.epsilon: float = 0.9
         self.alpha: float = 0.2
         self.gamma: float = 0.9
+        self.previous_score: tuple[int, int] | None = None
 
         # q_table[state][action] = estimated value
         self.q_table: dict[str, dict[str, float]] = {}
@@ -105,12 +106,25 @@ class QLearningAgent(Player):
             True because this player is an AI.
         """
         return True
+    
+    def remember_score(self, score: tuple[int, int]) -> None:
+        """
+        Store the score at the beginning of the learning transition.
+
+        This score is compared with the future score when the agent reaches
+        its next decision state.
+
+        Args:
+            score: Score before the agent action.
+        """
+        self.previous_score = score
 
     def get_state_key(self, game_model) -> str:
         """
-        Build a string representation of the current state.
+        Build a compact representation of the current state for the Q-table.
 
         The state is described from the AI point of view using:
+        - the current turn
         - the AI position
         - the opponent position
         - the serialized board
@@ -130,9 +144,10 @@ class QLearningAgent(Player):
 
         my_row, my_col = my_pos
         opp_row, opp_col = opp_pos
+        turn = game_model.player_turn
         board = game_model.board_to_string()
 
-        return f"{my_row},{my_col}|{opp_row},{opp_col}|{board}"
+        return f"{turn}|{my_row},{my_col}|{opp_row},{opp_col}|{board}"
 
     def ensure_state_exists(self, state: str, legal_moves: list[str]) -> None:
         """
@@ -152,30 +167,22 @@ class QLearningAgent(Player):
             if move not in self.q_table[state]:
                 self.q_table[state][move] = 0.0
 
-    def exploit(self, game_model) -> str:
+    def exploit(self, state: str, legal_moves: list[str]) -> str:
         """
-        Choose the best known action for the current state.
+        Choose the best known action for a given state.
 
         If several actions have the same best value, one of them is chosen
         randomly.
 
         Args:
-            game_model: Current Cubee game model.
+            state: Serialized state key.
+            legal_moves: Legal actions available in this state.
 
         Returns:
             The selected action.
         """
-        state = self.get_state_key(game_model)
-        legal_moves = game_model.available_moves()
-
-        self.ensure_state_exists(state, legal_moves)
-
         best_value = max(self.q_table[state][move] for move in legal_moves)
-        best_moves = [
-            move for move in legal_moves
-            if self.q_table[state][move] == best_value
-        ]
-
+        best_moves = [move for move in legal_moves if self.q_table[state][move] == best_value]
         return random.choice(best_moves)
 
     def play(self, game_model) -> str:
@@ -197,10 +204,11 @@ class QLearningAgent(Player):
         self.ensure_state_exists(state, legal_moves)
         self.previous_state = state
 
-        if random.random() < self.epsilon:
-            action = random.choice(legal_moves)
-        else:
-            action = self.exploit(game_model)
+        action = (
+            random.choice(legal_moves)
+            if random.random() < self.epsilon
+            else self.exploit(state, legal_moves)
+        )
 
         self.previous_action = action
         return action
@@ -208,22 +216,17 @@ class QLearningAgent(Player):
     def learn(
         self,
         reward: float,
-        new_state: str,
+        new_state: str | None,
         new_legal_moves: list[str],
         done: bool,
     ) -> None:
         """
         Update the Q-table after the agent has played one move.
 
-        The update uses:
-        - the previous state
-        - the previous action
-        - the reward obtained after the move
-        - the estimated value of the next state
-
         Args:
             reward: Immediate reward obtained after the action.
-            new_state: State reached after the action.
+            new_state: Next decision state reached by the agent, or None if the
+                game is over.
             new_legal_moves: Legal actions available in the new state.
             done: True if the game is over, False otherwise.
         """
@@ -235,14 +238,11 @@ class QLearningAgent(Player):
 
         self.ensure_state_exists(previous_state, [previous_action])
 
-        if done or not new_legal_moves:
+        if done or new_state is None or not new_legal_moves:
             max_next_q = 0.0
         else:
             self.ensure_state_exists(new_state, new_legal_moves)
-            max_next_q = max(
-                self.q_table[new_state][action]
-                for action in new_legal_moves
-            )
+            max_next_q = max(self.q_table[new_state][action] for action in new_legal_moves)
 
         current_q = self.q_table[previous_state][previous_action]
         target = reward + self.gamma * max_next_q
@@ -259,15 +259,16 @@ class QLearningAgent(Player):
         """
         Compute the reward from the AI point of view.
 
-        The reward is based on the score evolution:
-        - gaining territory for the AI increases the reward
-        - allowing the opponent to gain territory decreases the reward
+        The reward is based on the score evolution over a full transition
+        between two decision states of the AI:
+        - gaining territory increases the reward
+        - allowing the opponent to gain territory decreases the reward more strongly
         - a bonus is added for a victory
         - a penalty is added for a defeat
 
         Args:
-            old_score: Score before the move.
-            new_score: Score after the move.
+            old_score: Score at the beginning of the transition.
+            new_score: Score at the end of the transition.
             game_model: Current Cubee game model.
 
         Returns:
@@ -280,7 +281,10 @@ class QLearningAgent(Player):
             my_old, opp_old = old_score[1], old_score[0]
             my_new, opp_new = new_score[1], new_score[0]
 
-        reward = (my_new - my_old) - (opp_new - opp_old)
+        my_gain = my_new - my_old
+        opp_gain = opp_new - opp_old
+
+        reward = my_gain - 1.5 * opp_gain
 
         if game_model.is_game_over:
             if game_model.winner == self:
@@ -304,11 +308,12 @@ class QLearningAgent(Player):
         """
         Reset the temporary memory used between actions.
 
-        This is useful between two games to avoid reusing the last
-        state/action of the previous match.
+        This is useful between two games to avoid reusing information
+        from the previous match.
         """
         self.previous_state = None
         self.previous_action = None
+        self.previous_score = None
 
     def upload(self, filename: str = QTABLE_FILE) -> None:
         """
