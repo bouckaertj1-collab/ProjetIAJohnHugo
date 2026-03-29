@@ -150,7 +150,9 @@ class GameController:
             self.model.player2.next_epsilon()
             self.model.player2.reset_memory()
 
-        self.view.end_game(self.model.winner)
+        final_state = self.get_state_DTO()
+        message = self.get_status_message()
+        self.view.end_game(message, final_state)
         
     def get_status_message(self) -> str:
         """
