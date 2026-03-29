@@ -130,24 +130,6 @@ class QLearningAgent(Player):
             if move not in self.q_table[state]:
                 self.q_table[state][move] = 0.0
 
-    def exploit(self, state: str, legal_moves: list[str]) -> str:
-        """
-        Choose the best known action for a given state.
-
-        If several actions have the same best value, one of them is chosen
-        randomly.
-
-        Args:
-            state: Serialized state key.
-            legal_moves: Legal actions available in this state.
-
-        Returns:
-            The selected action.
-        """
-        best_value = max(self.q_table[state][move] for move in legal_moves)
-        best_moves = [move for move in legal_moves if self.q_table[state][move] == best_value]
-        return random.choice(best_moves)
-
     def play(self, game_model) -> str:
         """
         Choose an action using an epsilon-greedy strategy.
@@ -172,6 +154,24 @@ class QLearningAgent(Player):
         self.previous_action = action
         return action
 
+    def exploit(self, state: str, legal_moves: list[str]) -> str:
+        """
+        Choose the best known action for a given state.
+
+        If several actions have the same best value, one of them is chosen
+        randomly.
+
+        Args:
+            state: Serialized state key.
+            legal_moves: Legal actions available in this state.
+
+        Returns:
+            The selected action.
+        """
+        best_value = max(self.q_table[state][move] for move in legal_moves)
+        best_moves = [move for move in legal_moves if self.q_table[state][move] == best_value]
+        return random.choice(best_moves)
+    
     def learn(self, reward: float, game_model: "GameModel | None") -> None:
         """
         Update the Q-table after the previous action.
