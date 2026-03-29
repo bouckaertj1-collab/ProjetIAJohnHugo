@@ -41,28 +41,10 @@ class Player:
         """Record a draw for this player."""
         self.nb_draw += 1
         self.nb_game += 1
-    
-    def is_ai(self) -> bool:
-        """
-        Tell whether this player is controlled by the AI.
-
-        Returns:
-            False for a regular player.
-        """
-        return False
 
 
 class RandomAgent(Player):
     """Very simple AI that plays a random move."""
-
-    def is_ai(self) -> bool:
-        """
-        Tell whether this player is controlled by the AI.
-
-        Returns:
-            True for this AI player.
-        """
-        return True
 
     def play(self, game_model) -> str:
         """
@@ -95,21 +77,10 @@ class QLearningAgent(Player):
         self.alpha: float = 0.2
         self.gamma: float = 0.9
         self.previous_score: tuple[int, int] | None = None
-
-        # q_table[state][action] = estimated value
-        self.q_table: dict[str, dict[str, float]] = {}
-
         self.previous_state: str | None = None
         self.previous_action: str | None = None
 
-    def is_ai(self) -> bool:
-        """
-        Indicate that this player is controlled by the AI.
-
-        Returns:
-            True because this player is an AI.
-        """
-        return True
+        self.q_table: dict[str, dict[str, float]] = {}
 
     def get_state_key(self, game_model) -> str:
         """
