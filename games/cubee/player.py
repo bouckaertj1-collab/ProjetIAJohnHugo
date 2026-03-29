@@ -1,5 +1,9 @@
 import random
 from games.cubee.qtable_dao import QTableDAO
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from games.cubee.game_model import GameModel
 
 QTABLE_FILE = "games/cubee/cubee_qtable.json"
 
@@ -106,18 +110,6 @@ class QLearningAgent(Player):
             True because this player is an AI.
         """
         return True
-    
-    def remember_score(self, score: tuple[int, int]) -> None:
-        """
-        Store the score at the beginning of the learning transition.
-
-        This score is compared with the future score when the agent reaches
-        its next decision state.
-
-        Args:
-            score: Score before the agent action.
-        """
-        self.previous_score = score
 
     def get_state_key(self, game_model) -> str:
         """
@@ -204,58 +196,37 @@ class QLearningAgent(Player):
         self.ensure_state_exists(state, legal_moves)
         self.previous_state = state
 
-        action = (
-            random.choice(legal_moves)
-            if random.random() < self.epsilon
-            else self.exploit(state, legal_moves)
-        )
+        action = (random.choice(legal_moves) if random.random() < self.epsilon else self.exploit(state, legal_moves))
 
         self.previous_action = action
         return action
 
-    def learn(
-        self,
-        reward: float,
-        new_state: str | None,
-        new_legal_moves: list[str],
-        done: bool,
-    ) -> None:
+    def learn(self, reward: float, game_model: "GameModel | None") -> None:
         """
-        Update the Q-table after the agent has played one move.
+        Update the Q-table after the previous action.
 
         Args:
-            reward: Immediate reward obtained after the action.
-            new_state: Next decision state reached by the agent, or None if the
-                game is over.
-            new_legal_moves: Legal actions available in the new state.
-            done: True if the game is over, False otherwise.
+            reward: Reward obtained for the last transition.
+            game_model: Current game state, or None if the game is over.
         """
-        if self.previous_state is None or self.previous_action is None:
+        if self.previous_state is None:
             return
 
-        previous_state = self.previous_state
-        previous_action = self.previous_action
-
-        self.ensure_state_exists(previous_state, [previous_action])
-
-        if done or new_state is None or not new_legal_moves:
+        if game_model is None:
             max_next_q = 0.0
         else:
-            self.ensure_state_exists(new_state, new_legal_moves)
-            max_next_q = max(self.q_table[new_state][action] for action in new_legal_moves)
+            new_state = self.get_state_key(game_model)
+            legal_moves = game_model.available_moves()
+            self.ensure_state_exists(new_state, legal_moves)
+            max_next_q = max(self.q_table[new_state][move] for move in legal_moves)
 
-        current_q = self.q_table[previous_state][previous_action]
+        current_q = self.q_table[self.previous_state][self.previous_action]
         target = reward + self.gamma * max_next_q
-        updated_q = current_q + self.alpha * (target - current_q)
+        self.q_table[self.previous_state][self.previous_action] = (
+            current_q + self.alpha * (target - current_q)
+        )
 
-        self.q_table[previous_state][previous_action] = updated_q
-
-    def compute_reward(
-        self,
-        old_score: tuple[int, int],
-        new_score: tuple[int, int],
-        game_model,
-    ) -> float:
+    def compute_reward(self, old_score: tuple[int, int], new_score: tuple[int, int], game_model) -> float:
         """
         Compute the reward from the AI point of view.
 

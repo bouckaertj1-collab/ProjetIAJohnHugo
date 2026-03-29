@@ -75,12 +75,7 @@ class GameController:
                 self.model.score,
                 self.model,
             )
-            current_player.learn(
-                reward,
-                current_player.get_state_key(self.model),
-                self.model.available_moves(),
-                False,
-            )
+            current_player.learn(reward, self.model)
             current_player.previous_score = None
 
         old_score = self.model.score
@@ -90,7 +85,7 @@ class GameController:
         if not success:
             return False
 
-        current_player.remember_score(old_score)
+        current_player.previous_score = old_score
         self._update_view()
 
         if self.model.is_game_over:
@@ -130,27 +125,33 @@ class GameController:
         return self.handle_move(move)
 
     def handle_end_game(self) -> None:
-        """Notify the view that the game is over."""
-        for player in [self.model.player1, self.model.player2]:
-            if isinstance(player, QLearningAgent):
-                if player.previous_score is not None:
-                    reward = player.compute_reward(
-                        player.previous_score,
-                        self.model.score,
-                        self.model,
-                    )
-                    player.learn(reward, None, [], True)
-
-                player.upload()
-                player.next_epsilon()
-                player.reset_memory()
-
-        if self.view is not None:
-            self.view.end_game(
-                self.get_status_message(),
-                self.get_state_DTO(),
+        """
+        Process the end of the game and finalize Q-learning updates.
+        """
+        if isinstance(self.model.player1, QLearningAgent):
+            reward = self.model.player1.compute_reward(
+                self.model.player1.previous_score,
+                self.model.score,
+                self.model,
             )
+            self.model.player1.learn(reward, None)
+            self.model.player1.upload()
+            self.model.player1.next_epsilon()
+            self.model.player1.reset_memory()
 
+        if isinstance(self.model.player2, QLearningAgent):
+            reward = self.model.player2.compute_reward(
+                self.model.player2.previous_score,
+                self.model.score,
+                self.model,
+            )
+            self.model.player2.learn(reward, None)
+            self.model.player2.upload()
+            self.model.player2.next_epsilon()
+            self.model.player2.reset_memory()
+
+        self.view.end_game(self.model.winner)
+        
     def get_status_message(self) -> str:
         """
         Build the current game status message.
