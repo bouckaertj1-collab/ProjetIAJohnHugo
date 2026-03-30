@@ -10,7 +10,7 @@ QTABLE_FILE = "games/cubee/cubee_qtable.json"
 
 class Player:
     """Base class for a Cubee player."""
-
+    
     def __init__(self, name: str, position: tuple[int, int],) -> None:
         """
         Initialize a player.
@@ -180,7 +180,7 @@ class QLearningAgent(Player):
             reward: Reward obtained for the last transition.
             game_model: Current game state, or None if the game is over.
         """
-        if self.previous_state is None:
+        if self.previous_state is None or self.previous_action is None:
             return
 
         if game_model is None:

@@ -69,13 +69,13 @@ class LauncherController:
         Returns:
             A configured CubeeController.
         """
-        size: int = 6
+        size: int = 5
 
         player1: Player = Player("Human", (0, 0))
         player2: QLearningAgent = QLearningAgent("Q-Bot", (size - 1, size - 1))
 
         player2.download()
-        player2.epsilon = 0.9
+        player2.epsilon = 0.05
 
         model: CubeeModel = CubeeModel(player1, player2, size=size)
         controller: CubeeController = CubeeController(model)

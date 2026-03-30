@@ -128,7 +128,10 @@ class GameController:
         """
         Process the end of the game and finalize Q-learning updates.
         """
-        if isinstance(self.model.player1, QLearningAgent):
+        if (
+            isinstance(self.model.player1, QLearningAgent)
+            and self.model.player1.previous_score is not None
+        ):
             reward = self.model.player1.compute_reward(
                 self.model.player1.previous_score,
                 self.model.score,
@@ -139,7 +142,10 @@ class GameController:
             self.model.player1.next_epsilon()
             self.model.player1.reset_memory()
 
-        if isinstance(self.model.player2, QLearningAgent):
+        if (
+            isinstance(self.model.player2, QLearningAgent)
+            and self.model.player2.previous_score is not None
+        ):
             reward = self.model.player2.compute_reward(
                 self.model.player2.previous_score,
                 self.model.score,
@@ -152,7 +158,9 @@ class GameController:
 
         final_state = self.get_state_DTO()
         message = self.get_status_message()
-        self.view.end_game(message, final_state)
+
+        if self.view is not None:
+            self.view.end_game(message, final_state)
         
     def get_status_message(self) -> str:
         """
