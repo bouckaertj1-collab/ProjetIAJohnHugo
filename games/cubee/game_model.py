@@ -1,6 +1,8 @@
 import random
 from collections import deque
+
 from games.cubee.player import Player
+
 
 class GameModel:
     """Main model for the Cubee game."""
@@ -23,8 +25,11 @@ class GameModel:
         """
         self.size = size
 
-        self.player1 = player1 if isinstance(player1, Player) else Player(player1, (0, 0)) 
-        self.player2 = player2 if isinstance(player2, Player) else Player(player2, (size - 1, size - 1)) 
+        self.player1 = player1 if isinstance(player1, Player) else Player(player1, (0, 0))
+        self.player2 = player2 if isinstance(player2, Player) else Player(player2, (size - 1, size - 1))
+
+        self.player1.set_game_model(self)
+        self.player2.set_game_model(self)
 
         self.board: list[list[int]] = []
         self.is_game_over = False
@@ -39,17 +44,13 @@ class GameModel:
     def current_player(self) -> Player:
         """Return the player whose turn it is."""
         return self.player1 if self.player_turn == 1 else self.player2
-    
+
     def get_start_positions(self) -> tuple[tuple[int, int], tuple[int, int]]:
         """
         Return the starting positions for player1 and player2.
 
         The starting corners alternate every game to avoid training the AI
         only from one initial configuration.
-
-        Returns:
-            A tuple containing player1's start position and player2's start
-            position.
         """
         corner1 = (0, 0)
         corner2 = (self.size - 1, self.size - 1)
@@ -74,35 +75,23 @@ class GameModel:
         self.update_score()
 
     def is_in_bounds(self, position: tuple[int, int]) -> bool:
-        """
-        Check if a position is inside the board.
-
-        Args:
-            position: The position to check.
-
-        Returns:
-            True if the position is inside the board, False otherwise.
-        """
+        """Check if a position is inside the board."""
         row, col = position
         return 0 <= row < self.size and 0 <= col < self.size
 
-    def get_target_position(self, move: str) -> tuple[int, int]:
-        """
-        Return the target position for a move.
-
-        Args:
-            move: The move to apply.
-
-        Returns:
-            The new position after the move.
-        """
-        row, col = self.current_player.position
+    def get_target_position_for(self, player: Player, move: str) -> tuple[int, int]:
+        """Return the target position for a move played by a specific player."""
+        row, col = player.position
         d_row, d_col = self.MOVES[move]
         return row + d_row, col + d_col
 
-    def is_legal_move(self, move: str) -> bool:
+    def get_target_position(self, move: str) -> tuple[int, int]:
+        """Return the target position for the current player."""
+        return self.get_target_position_for(self.current_player, move)
+
+    def is_legal_move_for(self, player: Player, move: str) -> bool:
         """
-        Check whether a move is legal.
+        Check whether a move is legal for a specific player.
 
         A player can move:
         - to an empty cell
@@ -111,32 +100,26 @@ class GameModel:
         A player cannot move:
         - outside the board
         - to an opponent cell
-
-        Args:
-            move: The move to check.
-
-        Returns:
-            True if the move is legal, False otherwise.
         """
-        player = self.current_player
-        row, col = self.get_target_position(move)
-
+        row, col = self.get_target_position_for(player, move)
         if not self.is_in_bounds((row, col)):
             return False
 
         target_cell = self.board[row][col]
         opponent_value = 2 if player == self.player1 else 1
-
         return target_cell != opponent_value
 
-    def available_moves(self) -> list[str]: 
-        """
-        Return the list of legal moves for the current player.
+    def is_legal_move(self, move: str) -> bool:
+        """Check whether a move is legal for the current player."""
+        return self.is_legal_move_for(self.current_player, move)
 
-        Returns:
-            A list of move names.
-        """
-        return [move for move in self.MOVES if self.is_legal_move(move)]
+    def available_moves_for(self, player: Player) -> list[str]:
+        """Return the list of legal moves for a specific player."""
+        return [move for move in self.MOVES if self.is_legal_move_for(player, move)]
+
+    def available_moves(self) -> list[str]:
+        """Return the list of legal moves for the current player."""
+        return self.available_moves_for(self.current_player)
 
     def next_player(self) -> None:
         """Switch to the other player."""
@@ -167,6 +150,9 @@ class GameModel:
             self.player1.draw()
             self.player2.draw()
 
+        self.player1.on_game_over()
+        self.player2.on_game_over()
+
     def check_enclosure(self) -> None:
         """
         Fill enclosed empty cells with the current player's value.
@@ -176,7 +162,7 @@ class GameModel:
         """
         opponent = self.player2 if self.player_turn == 1 else self.player1
         current_value = self.player_turn
-        opponent_value = 2 if self.player_turn == 1 else 1
+        opponent_value = 2 if opponent == self.player2 else 1
 
         reachable = [[False for _ in range(self.size)] for _ in range(self.size)]
         queue = deque([opponent.position])
@@ -192,10 +178,8 @@ class GameModel:
 
                 if not self.is_in_bounds((new_row, new_col)):
                     continue
-
                 if reachable[new_row][new_col]:
                     continue
-
                 if self.board[new_row][new_col] in (0, opponent_value):
                     reachable[new_row][new_col] = True
                     queue.append((new_row, new_col))
@@ -234,19 +218,11 @@ class GameModel:
         return True
 
     def board_to_string(self) -> str:
-        """
-        Convert the board into a compact string.
-
-        Returns:
-            The board as a single string.
-        """
+        """Convert the board into a compact string."""
         return "".join(str(cell) for row in self.board for cell in row)
 
     def get_state_DTO(self) -> dict:
-        """
-          Returns:
-            A dictionary with the current game state.
-        """
+        """Return the current game state as a dictionary."""
         return {
             "size": self.size,
             "board": self.board_to_string(),

@@ -1,6 +1,11 @@
-from games.cubee.game_model import GameModel
-from games.cubee.game_view import GameView
-from games.cubee.player import QLearningAgent
+from typing import TYPE_CHECKING
+
+from games.cubee.player import QLearningAgent, RandomAgent
+
+if TYPE_CHECKING:
+    from games.cubee.game_model import GameModel
+    from games.cubee.game_view import GameView
+
 
 class GameController:
     """Main controller for the Cubee game."""
@@ -33,13 +38,13 @@ class GameController:
 
     def handle_move(self, move: str) -> bool:
         """
-        Apply a player move.
+        Apply a human move.
 
         Args:
             move: The move to play.
 
         Returns:
-            True if the move was handled, False if it failed.
+            True if the move was handled, False otherwise.
         """
         success = self.model.step(move)
         if not success:
@@ -56,42 +61,28 @@ class GameController:
 
     def handle_ai_move(self) -> bool:
         """
-        Let the AI play if it is the current player's turn.
-
-        The Q-learning update is performed when the AI reaches its next
-        decision state, so the reward includes the opponent response.
+        Let AI players play until it is no longer their turn.
 
         Returns:
-            True if an AI move was played successfully, False otherwise.
+            True if at least one AI move was played, False otherwise.
         """
-        current_player = self.model.current_player
+        has_played = False
 
-        if not isinstance(current_player, QLearningAgent):
-            return False
+        while not self.model.is_game_over and isinstance(
+            self.model.current_player,
+            (QLearningAgent, RandomAgent),
+        ):
+            success = self.model.current_player.play()
+            if not success:
+                return has_played
 
-        if current_player.previous_score is not None:
-            reward = current_player.compute_reward(
-                current_player.previous_score,
-                self.model.score,
-                self.model,
-            )
-            current_player.learn(reward, self.model)
-            current_player.previous_score = None
-
-        old_score = self.model.score
-        move = current_player.play(self.model)
-        success = self.model.step(move)
-
-        if not success:
-            return False
-
-        current_player.previous_score = old_score
-        self._update_view()
+            has_played = True
+            self._update_view()
 
         if self.model.is_game_over:
             self.handle_end_game()
 
-        return True
+        return has_played
 
     def handle_cell_click(self, row: int, col: int) -> bool:
         """
@@ -99,16 +90,8 @@ class GameController:
 
         The clicked cell is converted into a move if it is adjacent
         to the current player's position.
-
-        Args:
-            row: Clicked row.
-            col: Clicked column.
-
-        Returns:
-            True if the click produced a valid move, False otherwise.
         """
         state = self.get_state_DTO()
-
         current_row, current_col = state["pos_p1"] if state["turn"] == 1 else state["pos_p2"]
 
         moves = {
@@ -125,43 +108,13 @@ class GameController:
         return self.handle_move(move)
 
     def handle_end_game(self) -> None:
-        """
-        Process the end of the game and finalize Q-learning updates.
-        """
-        if (
-            isinstance(self.model.player1, QLearningAgent)
-            and self.model.player1.previous_score is not None
-        ):
-            reward = self.model.player1.compute_reward(
-                self.model.player1.previous_score,
-                self.model.score,
-                self.model,
-            )
-            self.model.player1.learn(reward, None)
-            self.model.player1.upload()
-            self.model.player1.next_epsilon()
-            self.model.player1.reset_memory()
-
-        if (
-            isinstance(self.model.player2, QLearningAgent)
-            and self.model.player2.previous_score is not None
-        ):
-            reward = self.model.player2.compute_reward(
-                self.model.player2.previous_score,
-                self.model.score,
-                self.model,
-            )
-            self.model.player2.learn(reward, None)
-            self.model.player2.upload()
-            self.model.player2.next_epsilon()
-            self.model.player2.reset_memory()
-
+        """Process the end of the game."""
         final_state = self.get_state_DTO()
         message = self.get_status_message()
 
         if self.view is not None:
             self.view.end_game(message, final_state)
-        
+
     def get_status_message(self) -> str:
         """
         Build the current game status message.
@@ -193,12 +146,6 @@ class GameController:
 
         return result + stats
 
-    def get_state_DTO(self) -> dict: 
-        """
-        Return the current game state.
-
-        Returns:
-            The current game state as a dictionary.
-        """
+    def get_state_DTO(self) -> dict:
+        """Return the current game state."""
         return self.model.get_state_DTO()
-    
