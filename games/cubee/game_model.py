@@ -150,8 +150,8 @@ class GameModel:
             self.player1.draw()
             self.player2.draw()
 
-        self.player1.on_game_over()
-        self.player2.on_game_over()
+        self.player1.finalize_learning()
+        self.player2.finalize_learning()        
 
     def check_enclosure(self) -> None:
         """
