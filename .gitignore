@@ -208,3 +208,5 @@ __marimo__/
 
 games/cubee/cubee_qtable.json
 *_qtable.json
+
+games/cubee/training_results/

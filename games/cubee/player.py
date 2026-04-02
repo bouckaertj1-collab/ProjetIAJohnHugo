@@ -1,4 +1,5 @@
 import random
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from games.cubee.qtable_dao import build_state_key, load_qtable, save_qtable
@@ -96,6 +97,29 @@ class QLearningAgent(Player):
         self.previous_score: tuple[int, int] | None = None
 
         self.q_table: dict[str, dict[str, float]] = {}
+
+        self.learning_enabled: bool = True
+        self.auto_save: bool = True
+        self.auto_decay: bool = True
+        self.qtable_filename: str = QTABLE_FILE
+
+    def configure_runtime(
+        self,
+        *,
+        learning_enabled: bool | None = None,
+        auto_save: bool | None = None,
+        auto_decay: bool | None = None,
+        qtable_filename: str | None = None,
+    ) -> None:
+        """Configure how the agent behaves during training or evaluation."""
+        if learning_enabled is not None:
+            self.learning_enabled = learning_enabled
+        if auto_save is not None:
+            self.auto_save = auto_save
+        if auto_decay is not None:
+            self.auto_decay = auto_decay
+        if qtable_filename is not None:
+            self.qtable_filename = qtable_filename
 
     def ensure_state_exists(self, state: str, legal_moves: list[str]) -> None:
         """
@@ -229,14 +253,15 @@ class QLearningAgent(Player):
             True if a move was played, False otherwise.
         """
         if self.previous_state and self.previous_action and self.previous_score:
-            new_score = self.get_current_scores()
-            reward = self.compute_reward(self.previous_score, new_score)
+            if self.learning_enabled:
+                new_score = self.get_current_scores()
+                reward = self.compute_reward(self.previous_score, new_score)
 
-            next_state = build_state_key(self.game_model, self)
-            legal_moves = self.game_model.available_moves_for(self)
-            self.ensure_state_exists(next_state, legal_moves)
+                next_state = build_state_key(self.game_model, self)
+                legal_moves = self.game_model.available_moves_for(self)
+                self.ensure_state_exists(next_state, legal_moves)
 
-            self.learn(self.previous_state, self.previous_action, reward, next_state)
+                self.learn(self.previous_state, self.previous_action, reward, next_state)
             self.reset_memory()
 
         state = build_state_key(self.game_model, self)
@@ -265,16 +290,18 @@ class QLearningAgent(Player):
         If the agent has a move still waiting to be evaluated, the final
         reward is computed here before saving the Q-table.
         """
-        if self.game_model and self.previous_state and self.previous_action and self.previous_score:
+        if self.learning_enabled and self.previous_state and self.previous_action and self.previous_score:
             new_score = self.get_current_scores()
             reward = self.compute_reward(self.previous_score, new_score)
             self.learn(self.previous_state, self.previous_action, reward, None)
             self.reset_memory()
 
-        self.upload()
-        self.next_epsilon()
+        if self.auto_save:
+            self.upload()
+        if self.auto_decay:
+            self.next_epsilon()
 
-    def next_epsilon(self, coef: float = 0.995, min_epsilon: float = 0.05) -> None:
+    def next_epsilon(self, coef: float = 0.9998, min_epsilon: float = 0.05) -> None:
         """
         Reduce exploration progressively after each game.
 
@@ -284,23 +311,26 @@ class QLearningAgent(Player):
         """
         self.epsilon = max(min_epsilon, self.epsilon * coef)
 
-    def upload(self, filename: str = QTABLE_FILE) -> None:
+    def upload(self, filename: str | None = None) -> None:
         """
         Save the Q-table and learning parameters to a file.
 
         Args:
             filename: Path of the JSON file used for persistence.
         """
-        save_qtable(filename, self.q_table, self.epsilon, self.alpha, self.gamma)
+        output = filename or self.qtable_filename
+        Path(output).parent.mkdir(parents=True, exist_ok=True)
+        save_qtable(output, self.q_table, self.epsilon, self.alpha, self.gamma)
 
-    def download(self, filename: str = QTABLE_FILE) -> None:
+    def download(self, filename: str | None = None) -> None:
         """
         Load the Q-table and learning parameters from a file.
 
         Args:
             filename: Path of the JSON file used for persistence.
         """
-        data = load_qtable(filename)
+        source = filename or self.qtable_filename
+        data = load_qtable(source)
         self.epsilon = data["epsilon"]
         self.alpha = data["alpha"]
         self.gamma = data["gamma"]
