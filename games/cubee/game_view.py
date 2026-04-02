@@ -104,7 +104,7 @@ class GameView(tk.Toplevel):
         self.score_label.config(text=f"Score: {score_p1} - {score_p2}")
 
         if state["is_game_over"]:
-            status = "Draw" if state["winner"] is None else f"{state['winner']} wins!"
+            status = "Draw" if not state["winner"] else f"{state['winner']} wins!"
         else:
             current_player = (
                 self.controller.model.player1

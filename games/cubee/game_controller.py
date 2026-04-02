@@ -102,7 +102,7 @@ class GameController:
         }
 
         move = moves.get((row - current_row, col - current_col))
-        if move is None:
+        if not move:
             return False
 
         return self.handle_move(move)
