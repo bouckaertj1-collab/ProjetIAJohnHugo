@@ -29,7 +29,7 @@ class Player:
         self.nb_draw: int = 0
         self.nb_game: int = 0
 
-    def on_game_over(self) -> None:
+    def finalize_learning(self) -> None:
         """
         Hook called by the model when the game ends.
 
@@ -258,7 +258,7 @@ class QLearningAgent(Player):
 
         return True
 
-    def on_game_over(self) -> None:
+    def finalize_learning(self) -> None:
         """
         Finalize the last pending transition when the game ends.
 
