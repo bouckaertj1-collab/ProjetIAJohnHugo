@@ -28,8 +28,8 @@ class GameModel:
         self.player1 = player1 if isinstance(player1, Player) else Player(player1, (0, 0))
         self.player2 = player2 if isinstance(player2, Player) else Player(player2, (size - 1, size - 1))
 
-        self.player1.set_game_model(self)
-        self.player2.set_game_model(self)
+        self.player1.game_model = self
+        self.player2.game_model = self
 
         self.board: list[list[int]] = []
         self.is_game_over = False

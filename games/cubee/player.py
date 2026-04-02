@@ -13,6 +13,13 @@ class Player:
     """Base class for a Cubee player."""
 
     def __init__(self, name: str, position: tuple[int, int]) -> None:
+        """
+        Initialize a player.
+
+        Args:
+            name: Player name.
+            position: Current position on the board.
+        """
         self.name = name
         self.position = position
         self.game_model: "GameModel | None" = None
@@ -22,31 +29,41 @@ class Player:
         self.nb_draw: int = 0
         self.nb_game: int = 0
 
-    def set_game_model(self, game_model: "GameModel") -> None:
-        """Attach the player to a game model."""
-        self.game_model = game_model
-
     def on_game_over(self) -> None:
-        """Hook called by the model when the game ends."""
+        """
+        Hook called by the model when the game ends.
+
+        The default implementation does nothing. AI players can override
+        this method to finalize learning or save their state.
+        """
+        pass
 
     def win(self) -> None:
+        """Record a win for this player."""
         self.nb_win += 1
         self.nb_game += 1
 
     def lose(self) -> None:
+        """Record a loss for this player."""
         self.nb_lose += 1
         self.nb_game += 1
 
     def draw(self) -> None:
+        """Record a draw for this player."""
         self.nb_draw += 1
         self.nb_game += 1
 
 
 class RandomAgent(Player):
-    """Very simple AI that plays a random move."""
+    """Simple AI that plays a random legal move."""
 
     def play(self) -> bool:
-        """Choose and apply a random legal move."""
+        """
+        Choose and apply a random legal move.
+
+        Returns:
+            True if a move was played, False otherwise.
+        """
         if not self.game_model:
             return False
 
@@ -61,6 +78,13 @@ class QLearningAgent(Player):
     """AI player for Cubee using a Q-learning strategy."""
 
     def __init__(self, name: str, position: tuple[int, int]) -> None:
+        """
+        Initialize a Q-learning agent.
+
+        Args:
+            name: Player name.
+            position: Initial position on the board.
+        """
         super().__init__(name, position)
 
         self.epsilon: float = 0.9
@@ -69,10 +93,18 @@ class QLearningAgent(Player):
 
         self.previous_state: str | None = None
         self.previous_action: str | None = None
+        self.previous_score: tuple[int, int] | None = None
 
         self.q_table: dict[str, dict[str, float]] = {}
 
     def ensure_state_exists(self, state: str, legal_moves: list[str]) -> None:
+        """
+        Ensure that a state and its legal actions exist in the Q-table.
+
+        Args:
+            state: Serialized state key.
+            legal_moves: Legal actions available in this state.
+        """
         if state not in self.q_table:
             self.q_table[state] = {}
 
@@ -80,17 +112,45 @@ class QLearningAgent(Player):
             self.q_table[state].setdefault(move, 0.0)
 
     def exploit(self, state: str, legal_moves: list[str]) -> str:
+        """
+        Choose the best known action for a given state.
+
+        If several actions share the same best value, one of them is
+        selected randomly.
+
+        Args:
+            state: Serialized state key.
+            legal_moves: Legal actions available in this state.
+
+        Returns:
+            One of the best actions for this state.
+        """
         best_value = max(self.q_table[state][move] for move in legal_moves)
         best_moves = [move for move in legal_moves if self.q_table[state][move] == best_value]
         return random.choice(best_moves)
 
     def choose_action(self, state: str, legal_moves: list[str]) -> str:
+        """
+        Choose an action with an epsilon-greedy policy.
+
+        Args:
+            state: Serialized state key.
+            legal_moves: Legal actions available in this state.
+
+        Returns:
+            The selected action.
+        """
         if random.random() < self.epsilon:
             return random.choice(legal_moves)
         return self.exploit(state, legal_moves)
 
     def get_current_scores(self) -> tuple[int, int]:
-        """Return the current score from the agent point of view."""
+        """
+        Return the current score from the agent point of view.
+
+        Returns:
+            A tuple (my_score, opponent_score).
+        """
         if not self.game_model:
             return 0, 0
 
@@ -99,22 +159,21 @@ class QLearningAgent(Player):
             return score_p1, score_p2
         return score_p2, score_p1
 
-    def get_scores_from_state(self, state: str) -> tuple[int, int]:
-        """Rebuild the score of a past state from its serialized board."""
-        board = state.split("|")[-1]
-        count_1 = board.count("1")
-        count_2 = board.count("2")
+    def compute_reward(self, old_score: tuple[int, int], new_score: tuple[int, int]) -> float:
+        """
+        Compute the reward from the agent point of view.
 
-        if self.game_model and self.game_model.player1 == self:
-            return count_1, count_2
-        return count_2, count_1
+        The reward compares the score before the agent move and the score
+        observed when the agent gets the hand back. A terminal bonus or
+        penalty is added if the game is over.
 
-    def compute_reward(
-        self,
-        old_score: tuple[int, int],
-        new_score: tuple[int, int],
-    ) -> float:
-        """Compute the reward from the agent point of view."""
+        Args:
+            old_score: Score before the agent move.
+            new_score: Score when the agent evaluates the full transition.
+
+        Returns:
+            The reward associated with the previous action.
+        """
         my_gain = new_score[0] - old_score[0]
         opponent_gain = new_score[1] - old_score[1]
         reward = my_gain - 1.5 * opponent_gain
@@ -127,14 +186,16 @@ class QLearningAgent(Player):
 
         return reward
 
-    def learn(
-        self,
-        state: str,
-        action: str,
-        reward: float,
-        next_state: str | None,
-    ) -> None:
-        """Apply the Q-learning update."""
+    def learn(self, state: str, action: str, reward: float, next_state: str | None) -> None:
+        """
+        Apply the Q-learning update.
+
+        Args:
+            state: Previous state.
+            action: Action played from that state.
+            reward: Reward obtained for the transition.
+            next_state: Next state, or None if the game is over.
+        """
         current_q = self.q_table[state][action]
 
         if not self.game_model or next_state is None:
@@ -150,28 +211,34 @@ class QLearningAgent(Player):
         target = reward + self.gamma * max_next_q
         self.q_table[state][action] = current_q + self.alpha * (target - current_q)
 
-    def play(self) -> bool:
-        """Play one move and learn from the previous full transition."""
-        if not self.game_model:
-            return False
+    def reset_memory(self) -> None:
+        """Reset the pending transition."""
+        self.previous_state = None
+        self.previous_action = None
+        self.previous_score = None
 
-        # 1. If the agent gets the hand back, finish learning
-        #    from the previous move + opponent response.
-        if self.previous_state is not None and self.previous_action is not None:
-            old_score = self.get_scores_from_state(self.previous_state)
+    def play(self) -> bool:
+        """
+        Play one move and learn from the previous full transition.
+
+        When the agent gets the hand back, it updates the Q-table from the
+        previously stored state, action and score. It then chooses a new
+        action, stores the current transition, and plays its move.
+
+        Returns:
+            True if a move was played, False otherwise.
+        """
+        if self.previous_state and self.previous_action and self.previous_score:
             new_score = self.get_current_scores()
-            reward = self.compute_reward(old_score, new_score)
+            reward = self.compute_reward(self.previous_score, new_score)
 
             next_state = build_state_key(self.game_model, self)
             legal_moves = self.game_model.available_moves_for(self)
             self.ensure_state_exists(next_state, legal_moves)
 
             self.learn(self.previous_state, self.previous_action, reward, next_state)
+            self.reset_memory()
 
-            self.previous_state = None
-            self.previous_action = None
-
-        # 2. Choose the next action
         state = build_state_key(self.game_model, self)
         legal_moves = self.game_model.available_moves_for(self)
         if not legal_moves:
@@ -180,45 +247,59 @@ class QLearningAgent(Player):
         self.ensure_state_exists(state, legal_moves)
         action = self.choose_action(state, legal_moves)
 
-        # 3. Keep this transition in memory until the agent gets the hand back
         self.previous_state = state
         self.previous_action = action
+        self.previous_score = self.get_current_scores()
 
-        # 4. Play
         success = self.game_model.step(action)
         if not success:
-            self.previous_state = None
-            self.previous_action = None
+            self.reset_memory()
             return False
 
         return True
 
     def on_game_over(self) -> None:
-        """Finalize the last pending transition if the game ends before the agent plays again."""
-        if (
-            self.game_model
-            and self.previous_state is not None
-            and self.previous_action is not None
-        ):
-            old_score = self.get_scores_from_state(self.previous_state)
+        """
+        Finalize the last pending transition when the game ends.
+
+        If the agent has a move still waiting to be evaluated, the final
+        reward is computed here before saving the Q-table.
+        """
+        if self.game_model and self.previous_state and self.previous_action and self.previous_score:
             new_score = self.get_current_scores()
-            reward = self.compute_reward(old_score, new_score)
-
+            reward = self.compute_reward(self.previous_score, new_score)
             self.learn(self.previous_state, self.previous_action, reward, None)
-
-            self.previous_state = None
-            self.previous_action = None
+            self.reset_memory()
 
         self.upload()
         self.next_epsilon()
 
     def next_epsilon(self, coef: float = 0.995, min_epsilon: float = 0.05) -> None:
+        """
+        Reduce exploration progressively after each game.
+
+        Args:
+            coef: Multiplicative decay coefficient.
+            min_epsilon: Minimum exploration rate allowed.
+        """
         self.epsilon = max(min_epsilon, self.epsilon * coef)
 
     def upload(self, filename: str = QTABLE_FILE) -> None:
+        """
+        Save the Q-table and learning parameters to a file.
+
+        Args:
+            filename: Path of the JSON file used for persistence.
+        """
         save_qtable(filename, self.q_table, self.epsilon, self.alpha, self.gamma)
 
     def download(self, filename: str = QTABLE_FILE) -> None:
+        """
+        Load the Q-table and learning parameters from a file.
+
+        Args:
+            filename: Path of the JSON file used for persistence.
+        """
         data = load_qtable(filename)
         self.epsilon = data["epsilon"]
         self.alpha = data["alpha"]
