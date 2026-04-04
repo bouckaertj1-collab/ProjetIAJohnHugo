@@ -25,9 +25,6 @@ def play_full_game(model: GameModel) -> None:
     """
     while not model.is_game_over:
         success = model.current_player.play()
-        if not success:
-            raise RuntimeError(f"Illegal move produced by {model.current_player.name}")
-
 
 def train_vs_random(alpha: float, gamma: float, size: int, train_games: int) -> str:
     """
@@ -45,12 +42,7 @@ def train_vs_random(alpha: float, gamma: float, size: int, train_games: int) -> 
     learner.alpha = alpha
     learner.gamma = gamma
     learner.epsilon = 0.9
-    learner.configure_runtime(
-        learning_enabled=True,
-        auto_save=False,
-        auto_decay=True,
-        qtable_filename=str(qtable_path),
-    )
+    learner.configure_runtime(learning_enabled=True, auto_save=False, auto_decay=True, qtable_filename=str(qtable_path))
 
     model = GameModel(random_agent, learner, size=size)
 
@@ -79,12 +71,7 @@ def evaluate_vs_random(qtable_path: str, alpha: float, gamma: float, size: int, 
     evaluator = QLearningAgent("Q-Bot", (size - 1, size - 1))
     evaluator.alpha = alpha
     evaluator.gamma = gamma
-    evaluator.configure_runtime(
-        learning_enabled=False,
-        auto_save=False,
-        auto_decay=False,
-        qtable_filename=qtable_path,
-    )
+    evaluator.configure_runtime(learning_enabled=False, auto_save=False, auto_decay=False, qtable_filename=qtable_path)
     evaluator.download(qtable_path)
     evaluator.epsilon = 0.0
 
@@ -180,12 +167,7 @@ def train_self_play(alpha: float, gamma: float, size: int, games: int) -> dict:
         agent.gamma = gamma
         agent.epsilon = 0.9
         agent.q_table = shared_q_table
-        agent.configure_runtime(
-            learning_enabled=True,
-            auto_save=False,
-            auto_decay=True,
-            qtable_filename=str(qtable_path),
-        )
+        agent.configure_runtime(learning_enabled=True, auto_save=False, auto_decay=True, qtable_filename=str(qtable_path))
 
     model = GameModel(agent1, agent2, size=size)
 
@@ -198,13 +180,7 @@ def train_self_play(alpha: float, gamma: float, size: int, games: int) -> dict:
 
     agent1.upload()
 
-    return {
-        "alpha": alpha,
-        "gamma": gamma,
-        "board_size": size,
-        "train_games": games,
-        "shared_qtable": str(qtable_path),
-    }
+    return {"alpha": alpha, "gamma": gamma, "board_size": size, "train_games": games, "shared_qtable": str(qtable_path)}
 
 
 def main() -> None:
