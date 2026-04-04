@@ -301,7 +301,7 @@ class QLearningAgent(Player):
         if self.auto_decay:
             self.next_epsilon()
 
-    def next_epsilon(self, coef: float = 0.9998, min_epsilon: float = 0.05) -> None:
+    def next_epsilon(self, coef: float = 0.995, min_epsilon: float = 0.05) -> None:
         """
         Reduce exploration progressively after each game.
 
