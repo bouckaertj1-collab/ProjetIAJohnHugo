@@ -117,10 +117,6 @@ class GameModel:
         """Return the list of legal moves for a specific player."""
         return [move for move in self.MOVES if self.is_legal_move_for(player, move)]
 
-    def available_moves(self) -> list[str]:
-        """Return the list of legal moves for the current player."""
-        return self.available_moves_for(self.current_player)
-
     def next_player(self) -> None:
         """Switch to the other player."""
         self.player_turn = 3 - self.player_turn
