@@ -31,7 +31,7 @@ class LauncherView(tk.Tk):
         self.title("Projet IA")
         self.geometry("1200x600")
         self.minsize(1100, 500)
-        self.resizable(False,False)
+        self.resizable(False, False)
 
         self._build_ui()
 
@@ -68,7 +68,11 @@ class LauncherView(tk.Tk):
         )
         card2.grid(row=0, column=1, padx=30)
 
-        card3: tk.Frame = self._create_card(main_frame, "PixelKart", disabled=True)
+        card3: tk.Frame = self._create_card(
+            main_frame,
+            "PixelKart",
+            command=self.controller.on_pixelkart
+        )
         card3.grid(row=0, column=2, padx=30)
 
     def _create_card(

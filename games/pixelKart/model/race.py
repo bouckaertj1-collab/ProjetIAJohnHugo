@@ -1,0 +1,247 @@
+from __future__ import annotations
+
+from games.pixelKart.model.circuit import Circuit
+from games.pixelKart.model.dto import RaceDTO
+from games.pixelKart.model.movement import Action
+from games.pixelKart.model.kart import Kart
+
+
+class Race:
+    """Represents a PixelKart race and its game rules."""
+
+    def __init__(self, circuit: Circuit, karts: list[Kart], total_laps: int) -> None:
+        """
+        Initialize a race.
+
+        Args:
+            circuit: Circuit used for the race.
+            karts: List of karts participating in the race.
+            total_laps: Number of laps required to win.
+
+        Raises:
+            ValueError: If the race configuration is invalid.
+        """
+        if not karts:
+            raise ValueError("A race must contain at least one kart.")
+        if total_laps <= 0:
+            raise ValueError("The number of laps must be strictly positive.")
+
+        self.circuit = circuit
+        self.karts = karts
+        self.total_laps = total_laps
+        self.time = 0
+        self.current_player_index = 0
+        self.finished = False
+        self.winner_name: str | None = None
+
+    def get_current_kart(self) -> Kart:
+        """Return the kart whose turn is currently being played."""
+        return self.karts[self.current_player_index]
+
+    def get_kart_at_position(
+        self,
+        position: tuple[int, int],
+        exclude_kart: Kart | None = None,
+    ) -> Kart | None:
+        """
+        Return the alive kart located at the given position, if any.
+
+        Args:
+            position: Position to check.
+            exclude_kart: Optional kart to ignore in the search.
+
+        Returns:
+            The kart at the given position, or None.
+        """
+        for kart in self.karts:
+            if kart is exclude_kart or not kart.is_alive:
+                continue
+            if kart.position == position:
+                return kart
+        return None
+
+    def is_position_occupied(
+        self,
+        position: tuple[int, int],
+        exclude_kart: Kart | None = None,
+    ) -> bool:
+        """
+        Check whether a position is occupied by an alive kart.
+
+        Args:
+            position: Position to check.
+            exclude_kart: Optional kart to ignore in the search.
+
+        Returns:
+            True if the position is occupied, False otherwise.
+        """
+        return self.get_kart_at_position(position, exclude_kart) is not None
+
+    def play_current_turn(self, action: Action) -> None:
+        """
+        Play the current kart turn with the given action.
+
+        Args:
+            action: Action chosen for this turn.
+        """
+        if self.finished:
+            return
+
+        kart = self.get_current_kart()
+        if not kart.is_alive:
+            self.next_player()
+            self.check_end_game()
+            return
+
+        old_position = kart.position
+        kart.apply_action(action)
+
+        traversed_positions = self.apply_movement(kart)
+        self.update_lap_if_needed(kart, old_position, traversed_positions)
+        self.check_end_game()
+
+        if not self.finished:
+            self.next_player()
+
+    def play_current_ai_turn(self) -> None:
+        """
+        Play the turn of the current AI kart.
+
+        Raises:
+            ValueError: If the current kart is not an AI kart.
+        """
+        kart = self.get_current_kart()
+        if not kart.is_ai:
+            raise ValueError("The current kart is not AI-controlled.")
+
+        self.play_current_turn(kart.choose_action())
+
+    def apply_movement(self, kart: Kart) -> list[tuple[int, int]]:
+        """
+        Apply the kart movement according to its current speed and direction.
+
+        Args:
+            kart: Kart to move.
+
+        Returns:
+            The list of actual traversed positions.
+        """
+        traversed_positions: list[tuple[int, int]] = []
+
+        if kart.speed == 0:
+            return traversed_positions
+
+        if kart.speed > 0:
+            row_step, col_step = kart.direction.to_vector()
+        else:
+            row_step, col_step = kart.direction.opposite().to_vector()
+
+        remaining_steps = abs(kart.speed)
+
+        if self.circuit.is_grass(kart.position):
+            remaining_steps //= 2
+
+        while remaining_steps > 0:
+            row, col = kart.position
+            next_position = (row + row_step, col + col_step)
+
+            if not self.circuit.is_inside(next_position):
+                kart.reset_speed()
+                return traversed_positions
+
+            if self.circuit.is_wall(next_position):
+                kart.eliminate()
+                kart.reset_speed()
+                return traversed_positions
+
+            if self.is_position_occupied(next_position, exclude_kart=kart):
+                kart.reset_speed()
+                return traversed_positions
+
+            kart.position = next_position
+            traversed_positions.append(next_position)
+            remaining_steps -= 1
+
+            if self.circuit.is_grass(kart.position):
+                remaining_steps //= 2
+
+        return traversed_positions
+
+    def update_lap_if_needed(
+        self,
+        kart: Kart,
+        old_position: tuple[int, int],
+        traversed_positions: list[tuple[int, int]],
+    ) -> None:
+        """
+        Update the kart lap count if the finish line was crossed towards the east.
+
+        A lap is counted only if the kart actually moves from left to right
+        across the finish line.
+
+        Args:
+            kart: Kart to update.
+            old_position: Kart position before movement.
+            traversed_positions: Positions effectively traversed during movement.
+        """
+        if not traversed_positions or not kart.is_alive:
+            return
+
+        previous_position = old_position
+
+        for position in traversed_positions:
+            if position[0] != previous_position[0] or position[1] != previous_position[1] + 1:
+                return
+            previous_position = position
+
+        if any(self.circuit.is_finish(position) for position in traversed_positions):
+            kart.complete_lap()
+
+    def next_player(self) -> None:
+        """
+        Move to the next alive kart.
+
+        The race time is increased when a full round has been completed.
+        """
+        if self.finished:
+            return
+
+        previous_index = self.current_player_index
+
+        for step in range(1, len(self.karts) + 1):
+            next_index = (previous_index + step) % len(self.karts)
+
+            if not self.karts[next_index].is_alive:
+                continue
+
+            self.current_player_index = next_index
+            if next_index <= previous_index:
+                self.time += 1
+            return
+
+    def check_end_game(self) -> None:
+        """Check whether the race is over and update the winner if needed."""
+        for kart in self.karts:
+            if kart.is_alive and kart.laps_done >= self.total_laps:
+                self.finished = True
+                self.winner_name = kart.name
+                return
+
+        if not any(kart.is_alive for kart in self.karts):
+            self.finished = True
+            self.winner_name = None
+
+    def to_dto(self) -> RaceDTO:
+        """
+        Convert the race to a RaceDTO.
+
+        Returns:
+            A RaceDTO representing the current race state.
+        """
+        return RaceDTO(
+            time=self.time,
+            total_laps=self.total_laps,
+            current_player_index=self.current_player_index,
+            finished=self.finished,
+            winner_name=self.winner_name,
+        )
