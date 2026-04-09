@@ -7,14 +7,17 @@ Responsibilities:
     - Start the selected game
 """
 
+import random
+import tkinter as tk
+
 from launcher.view import LauncherView
 from games.matchsticks.game_controller import GameController
 from games.matchsticks.player import AI, HumanGUI
 from games.cubee.game_model import GameModel as CubeeModel
 from games.cubee.game_controller import GameController as CubeeController
 from games.cubee.game_view import GameView as CubeeView
-from games.cubee.player import Player, QLearningAgent , RandomAgent
-import random
+from games.cubee.player import Player, QLearningAgent, RandomAgent
+from games.pixelKart.controller.game_controller import GameController as PixelKartController
 
 
 class LauncherController:
@@ -99,3 +102,20 @@ class LauncherController:
 
         view.grab_set()
         view.focus_set()
+
+    def _create_pixelkart_controller(self) -> PixelKartController:
+        """
+        Create the controller for a PixelKart game.
+
+        Returns:
+            A configured PixelKartController.
+        """
+        return PixelKartController(self.view)
+
+
+    def on_pixelkart(self) -> None:
+        """
+        Launch the PixelKart game when the user clicks the card.
+        """
+        controller = self._create_pixelkart_controller()
+        controller.start()
