@@ -128,7 +128,6 @@ class Race:
 
             if self.circuit.is_wall(next_position):
                 kart.eliminate()
-                kart.reset_speed()
                 return traversed_positions
 
             if self.is_position_occupied(next_position):
