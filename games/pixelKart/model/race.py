@@ -195,7 +195,7 @@ class Race:
                 self.winner_name = kart.name
                 return
 
-        if self.len(self.karts) == 1:
+        if len(self.karts) == 1:
             if not self.karts[0].is_alive:
                 self.finished = True
                 self.winner_name = None
