@@ -14,11 +14,11 @@ intelligence artificielle basée sur l’apprentissage par renforcement.
 
 2. JEUX DISPONIBLES
 ----------------
-Actuellement, les jeux suivants sont disponibles :
+Les jeux suivants sont disponibles :
 
-- Matchsticks (disponible)
-- Cubee (disponible)
-- PixelKart (à venir)
+- Matchsticks
+- Cubee 
+- PixelKart 
 
 Chaque jeu est isolé dans son propre dossier afin de garder une
 structure claire.
@@ -53,6 +53,9 @@ ProjetIAJohnHugo/
 │   │   ├── game_model.py
 │   │   ├── game_view.py
 │   │   ├── player.py
+│   │   ├── qtable_dao.py
+│   │   ├── trainer.py
+│   │   ├── training_results/
 │   │   └── tests/
 │   │       └── test_game_model.py
 │   ├── matchsticks/
@@ -65,7 +68,25 @@ ProjetIAJohnHugo/
 │   │   ├── alice_training.json
 │   │   ├── bob_training.json
 │   │   └── randy_training.json
-│   └── pixel_kart/
+│   └── pixelKart/
+│       ├── README.md
+│       ├── controller/
+│       └── circuits.txt
+│       │   ├── game_controller.py
+│       │   ├── menu_controller.py
+│       │   └── race_controller.py
+│       ├── dao/
+│       │   └── circuit_dao.py
+│       ├── model/
+│       │   ├── circuit.py
+│       │   ├── dto.py
+│       │   ├── kart.py
+│       │   └── race.py
+│       ├── view/
+│       │   ├── circuit_editor.py
+│       │   ├── circuit_frames.py
+│       │   ├── menu_view.py
+│       │   └── race_view.py
 
 5. PRÉREQUIS
 ---------
@@ -122,6 +143,8 @@ Ou seulement pour Cubee :
 - L’utilisateur sélectionne le jeu souhaité dans le menu principal.
 - Une nouvelle fenêtre s’ouvre contenant l’interface du jeu choisi.
 - Chaque jeu possède ses propres règles et son propre fonctionnement.
+- PixelKart propose en plus un éditeur de circuits permettant de créer,
+  modifier et sauvegarder des circuits personnalisés.
 
 11. SPÉCIFICATIONS ET BONNES PRATIQUES
 ---------------------------------
@@ -130,6 +153,7 @@ Ou seulement pour Cubee :
 - Toutes les classes, méthodes et fonctions sont documentées avec des docstrings.
 - Le code est rédigé en anglais.
 - L’interface graphique est réalisée exclusivement avec Tkinter.
+- PixelKart utilise également un **DAO** pour la persistance des circuits.
 
 12. AUTEURS
 -------

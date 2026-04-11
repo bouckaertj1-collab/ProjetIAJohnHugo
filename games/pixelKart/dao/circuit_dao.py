@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
+import os
 
 from games.pixelKart.model.dto import CircuitDTO
 
 
-FILE_PATH = Path(__file__).resolve().parent.parent / "circuits.txt"
+FILE_PATH = "games/pixelKart/circuits.txt"
 
 
 def get_all() -> dict[str, CircuitDTO]:
@@ -17,10 +17,10 @@ def get_all() -> dict[str, CircuitDTO]:
     """
     circuits: dict[str, CircuitDTO] = {}
 
-    if not FILE_PATH.exists():
+    if not os.path.exists(FILE_PATH):
         return circuits
 
-    with FILE_PATH.open("r", encoding="utf-8") as file:
+    with open(FILE_PATH, "r", encoding="utf-8") as file:
         for raw_line in file:
             line = raw_line.strip()
 
@@ -122,6 +122,6 @@ def _write_all(circuits: dict[str, CircuitDTO]) -> None:
     Args:
         circuits: Circuits to persist.
     """
-    with FILE_PATH.open("w", encoding="utf-8") as file:
+    with open(FILE_PATH, "w", encoding="utf-8") as file:
         lines = [f"{dto.name}:{dto.grid}" for dto in circuits.values()]
         file.write("\n".join(lines))
