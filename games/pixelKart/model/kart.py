@@ -3,7 +3,6 @@ from __future__ import annotations
 import random
 
 from games.pixelKart.model.dto import KartDTO
-from games.pixelKart.model.movement import Action, Direction
 
 
 class Kart:
@@ -17,7 +16,7 @@ class Kart:
         name: str,
         color: str,
         position: tuple[int, int],
-        direction: Direction = Direction.EAST,
+        direction: str = "EAST",
         speed: int = 0,
         laps_done: int = 0,
         is_alive: bool = True,
@@ -47,21 +46,73 @@ class Kart:
         """Return whether the kart is controlled by an AI."""
         return False
 
-    def apply_action(self, action: Action) -> None:
+    def turn_left(self) -> None:
+        """Turn the kart 90 degrees to the left."""
+        if self.direction == "NORTH":
+            self.direction = "WEST"
+        elif self.direction == "WEST":
+            self.direction = "SOUTH"
+        elif self.direction == "SOUTH":
+            self.direction = "EAST"
+        else:
+            self.direction = "NORTH"
+
+    def turn_right(self) -> None:
+        """Turn the kart 90 degrees to the right."""
+        if self.direction == "NORTH":
+            self.direction = "EAST"
+        elif self.direction == "EAST":
+            self.direction = "SOUTH"
+        elif self.direction == "SOUTH":
+            self.direction = "WEST"
+        else:
+            self.direction = "NORTH"
+
+    def opposite_direction(self) -> str:
+        """Return the opposite of the current direction."""
+        if self.direction == "NORTH":
+            return "SOUTH"
+        if self.direction == "SOUTH":
+            return "NORTH"
+        if self.direction == "EAST":
+            return "WEST"
+        return "EAST"
+
+    def direction_to_vector(self, direction: str | None = None) -> tuple[int, int]:
+        """
+        Convert a direction to a movement vector.
+
+        Args:
+            direction: Direction to convert. If None, use the current kart direction.
+
+        Returns:
+            A movement vector as (row_step, col_step).
+        """
+        target_direction = self.direction if direction is None else direction
+
+        if target_direction == "NORTH":
+            return -1, 0
+        if target_direction == "EAST":
+            return 0, 1
+        if target_direction == "SOUTH":
+            return 1, 0
+        return 0, -1
+
+    def apply_action(self, action: str) -> None:
         """
         Apply an action to the kart state.
 
         Args:
             action: Action chosen for this turn.
         """
-        if action == Action.ACCELERATE:
+        if action == "accelerate":
             self.speed = min(self.speed + 1, self.MAX_SPEED)
-        elif action == Action.BRAKE:
+        elif action == "brake":
             self.speed = max(self.speed - 1, self.MIN_SPEED)
-        elif action == Action.TURN_LEFT:
-            self.direction = self.direction.turn_left()
-        elif action == Action.TURN_RIGHT:
-            self.direction = self.direction.turn_right()
+        elif action == "turn_left":
+            self.turn_left()
+        elif action == "turn_right":
+            self.turn_right()
 
     def reset_speed(self) -> None:
         """Reset the kart speed to zero."""
@@ -86,7 +137,7 @@ class Kart:
             name=self.name,
             color=self.color,
             position=self.position,
-            direction=self.direction.name,
+            direction=self.direction,
             speed=self.speed,
             laps_done=self.laps_done,
             is_ai=self.is_ai,
@@ -106,11 +157,13 @@ class RandomAIKart(Kart):
         """Return True because this kart is AI-controlled."""
         return True
 
-    def choose_action(self) -> Action:
+    def choose_action(self) -> str:
         """
         Choose a random action among all available actions.
 
         Returns:
             A randomly selected action.
         """
-        return random.choice(list(Action))
+        return random.choice(
+            ["accelerate", "brake", "turn_left", "turn_right", "pass"]
+        )

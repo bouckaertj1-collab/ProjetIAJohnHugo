@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from games.pixelKart.model.circuit import Circuit
 from games.pixelKart.model.dto import RaceDTO
-from games.pixelKart.model.movement import Action
 from games.pixelKart.model.kart import Kart
 
 
@@ -45,13 +44,6 @@ class Race:
     ) -> Kart | None:
         """
         Return the alive kart located at the given position, if any.
-
-        Args:
-            position: Position to check.
-            exclude_kart: Optional kart to ignore in the search.
-
-        Returns:
-            The kart at the given position, or None.
         """
         for kart in self.karts:
             if kart is exclude_kart or not kart.is_alive:
@@ -65,19 +57,10 @@ class Race:
         position: tuple[int, int],
         exclude_kart: Kart | None = None,
     ) -> bool:
-        """
-        Check whether a position is occupied by an alive kart.
-
-        Args:
-            position: Position to check.
-            exclude_kart: Optional kart to ignore in the search.
-
-        Returns:
-            True if the position is occupied, False otherwise.
-        """
+        """Check whether a position is occupied by an alive kart."""
         return self.get_kart_at_position(position, exclude_kart) is not None
 
-    def play_current_turn(self, action: Action) -> None:
+    def play_current_turn(self, action: str) -> None:
         """
         Play the current kart turn with the given action.
 
@@ -132,9 +115,9 @@ class Race:
             return traversed_positions
 
         if kart.speed > 0:
-            row_step, col_step = kart.direction.to_vector()
+            row_step, col_step = kart.direction_to_vector()
         else:
-            row_step, col_step = kart.direction.opposite().to_vector()
+            row_step, col_step = kart.direction_to_vector(kart.opposite_direction())
 
         remaining_steps = abs(kart.speed)
 
@@ -175,14 +158,6 @@ class Race:
     ) -> None:
         """
         Update the kart lap count if the finish line was crossed towards the east.
-
-        A lap is counted only if the kart actually moves from left to right
-        across the finish line.
-
-        Args:
-            kart: Kart to update.
-            old_position: Kart position before movement.
-            traversed_positions: Positions effectively traversed during movement.
         """
         if not traversed_positions or not kart.is_alive:
             return

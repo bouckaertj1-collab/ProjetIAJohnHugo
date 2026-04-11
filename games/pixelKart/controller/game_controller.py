@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import tkinter as tk
 
+from games.pixelKart.controller.menu_controller import MenuController
+from games.pixelKart.controller.race_controller import RaceController
 from games.pixelKart.model.race import Race
 from games.pixelKart.view.menu_view import MenuView
 from games.pixelKart.view.race_view import RaceView
-from games.pixelKart.controller.menu_controller import MenuController
-from games.pixelKart.controller.race_controller import RaceController
 
 
 class GameController:
@@ -22,7 +22,7 @@ class GameController:
         self.parent = parent
         self.window = tk.Toplevel(parent)
         self.window.title("PixelKart")
-        self.window.geometry("1100x700")
+        self._center_window()
 
         self.current_view: tk.Widget | None = None
         self.current_controller = None
@@ -52,7 +52,11 @@ class GameController:
 
         view = RaceView(self.window)
         self.current_view = view
-        self.current_controller = RaceController(race=race, view=view)
+        self.current_controller = RaceController(
+            race=race,
+            view=view,
+            on_back_to_menu=self.show_menu,
+        )
 
     def start(self) -> None:
         """Show the PixelKart window."""
@@ -64,3 +68,15 @@ class GameController:
         if self.current_view is not None:
             self.current_view.destroy()
             self.current_view = None
+
+    def _center_window(self, width: int = 1100, height: int = 700) -> None:
+        """Center the PixelKart window on screen."""
+        self.window.update_idletasks()
+
+        screen_width = self.window.winfo_screenwidth()
+        screen_height = self.window.winfo_screenheight()
+
+        x = (screen_width - width) // 2
+        y = (screen_height - height) // 2
+
+        self.window.geometry(f"{width}x{height}+{x}+{y}")
