@@ -195,15 +195,16 @@ class Race:
                 self.winner_name = kart.name
                 return
 
-        if not any(kart.is_alive for kart in self.karts):
-            self.finished = True
-            self.winner_name = None
+        if self.len(self.karts) == 1:
+            if not self.karts[0].is_alive:
+                self.finished = True
+                self.winner_name = None
+        else:
+            alive_karts = [kart for kart in self.karts if kart.is_alive]
 
-        alive_karts = [kart for kart in self.karts if kart.is_alive]
-
-        if len(alive_karts) == 1:
-            self.finished = True
-            self.winner_name = alive_karts[0].name
+            if len(alive_karts) == 1:
+                self.finished = True
+                self.winner_name = alive_karts[0].name
 
     def to_dto(self) -> RaceDTO:
         """
