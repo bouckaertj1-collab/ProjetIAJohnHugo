@@ -37,28 +37,34 @@ class Race:
         """Return the kart whose turn is currently being played."""
         return self.karts[self.current_player_index]
 
-    def get_kart_at_position(
-        self,
-        position: tuple[int, int],
-        exclude_kart: Kart | None = None,
-    ) -> Kart | None:
+    def get_kart_at_position(self, position: tuple[int, int]) -> Kart | None:
         """
         Return the alive kart located at the given position, if any.
+
+        Args:
+            position: Position to check.
+
+        Returns:
+            The kart at the given position, or None.
         """
         for kart in self.karts:
-            if kart is exclude_kart or not kart.is_alive:
+            if not kart.is_alive:
                 continue
             if kart.position == position:
                 return kart
         return None
 
-    def is_position_occupied(
-        self,
-        position: tuple[int, int],
-        exclude_kart: Kart | None = None,
-    ) -> bool:
-        """Check whether a position is occupied by an alive kart."""
-        return self.get_kart_at_position(position, exclude_kart) is not None
+    def is_position_occupied(self, position: tuple[int, int]) -> bool:
+        """
+        Check whether a position is occupied by an alive kart.
+
+        Args:
+            position: Position to check.
+
+        Returns:
+            True if the position is occupied, False otherwise.
+        """
+        return self.get_kart_at_position(position) is not None
 
     def play_current_turn(self, action: str) -> None:
         """
@@ -137,7 +143,7 @@ class Race:
                 kart.reset_speed()
                 return traversed_positions
 
-            if self.is_position_occupied(next_position, exclude_kart=kart):
+            if self.is_position_occupied(next_position):
                 kart.reset_speed()
                 return traversed_positions
 
