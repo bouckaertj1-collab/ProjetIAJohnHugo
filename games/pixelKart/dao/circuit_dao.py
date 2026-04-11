@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from games.pixelKart.model.dto import CircuitDTO
+from games.PixelKart.model.dto import CircuitDTO
 
 
 FILE_PATH = Path(__file__).resolve().parent.parent / "circuits.txt"

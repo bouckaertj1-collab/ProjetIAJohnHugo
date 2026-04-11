@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from games.pixelKart.model.race import Race
-from games.pixelKart.view.race_view import RaceView
+from games.PixelKart.model.race import Race
+from games.PixelKart.view.race_view import RaceView
 
 
 class RaceController:

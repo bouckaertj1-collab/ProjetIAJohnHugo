@@ -3,12 +3,12 @@ from __future__ import annotations
 from collections.abc import Callable
 import tkinter as tk
 
-from games.pixelKart.dao import circuit_dao as dao
-from games.pixelKart.model.circuit import Circuit
-from games.pixelKart.model.kart import HumanKart, RandomAIKart
-from games.pixelKart.model.race import Race
-from games.pixelKart.view.circuit_editor import CircuitEditor
-from games.pixelKart.view.menu_view import MenuView
+from games.PixelKart.dao import circuit_dao as dao
+from games.PixelKart.model.circuit import Circuit
+from games.PixelKart.model.kart import HumanKart, RandomAIKart
+from games.PixelKart.model.race import Race
+from games.PixelKart.view.circuit_editor import CircuitEditor
+from games.PixelKart.view.menu_view import MenuView
 
 
 class MenuController:

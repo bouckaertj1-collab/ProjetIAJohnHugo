@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from games.pixelKart.controller.menu_controller import MenuController
-from games.pixelKart.controller.race_controller import RaceController
-from games.pixelKart.model.race import Race
-from games.pixelKart.view.menu_view import MenuView
-from games.pixelKart.view.race_view import RaceView
+from games.PixelKart.controller.menu_controller import MenuController
+from games.PixelKart.controller.race_controller import RaceController
+from games.PixelKart.model.race import Race
+from games.PixelKart.view.menu_view import MenuView
+from games.PixelKart.view.race_view import RaceView
 
 
 class GameController:

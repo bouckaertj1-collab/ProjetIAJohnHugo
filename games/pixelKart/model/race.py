@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from games.pixelKart.model.circuit import Circuit
-from games.pixelKart.model.dto import RaceDTO
-from games.pixelKart.model.kart import Kart
+from games.PixelKart.model.circuit import Circuit
+from games.PixelKart.model.dto import RaceDTO
+from games.PixelKart.model.kart import Kart
 
 
 class Race:
@@ -199,6 +199,12 @@ class Race:
         if not any(kart.is_alive for kart in self.karts):
             self.finished = True
             self.winner_name = None
+
+        alive_karts = [kart for kart in self.karts if kart.is_alive]
+
+        if len(alive_karts) == 1:
+            self.finished = True
+            self.winner_name = alive_karts[0].name
 
     def to_dto(self) -> RaceDTO:
         """

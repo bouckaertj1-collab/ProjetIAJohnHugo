@@ -3,8 +3,8 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import Tk, ttk
 
-from games.pixelKart.dao import circuit_dao as dao
-from games.pixelKart.view.circuit_frames import CircuitEditorFrame
+from games.PixelKart.dao import circuit_dao as dao
+from games.PixelKart.view.circuit_frames import CircuitEditorFrame
 
 
 class CircuitEditor(tk.Toplevel):

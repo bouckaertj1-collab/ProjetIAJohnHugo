@@ -17,7 +17,7 @@ from games.cubee.game_model import GameModel as CubeeModel
 from games.cubee.game_controller import GameController as CubeeController
 from games.cubee.game_view import GameView as CubeeView
 from games.cubee.player import Player, QLearningAgent, RandomAgent
-from games.pixelKart.controller.app_controller import GameController as PixelKartController
+from games.PixelKart.controller.app_controller import GameController as PixelKartController
 
 
 class LauncherController:
