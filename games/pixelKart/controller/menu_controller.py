@@ -5,7 +5,6 @@ import tkinter as tk
 
 from games.pixelKart.dao import circuit_dao as dao
 from games.pixelKart.model.circuit import Circuit
-from games.pixelKart.model.movement import Direction
 from games.pixelKart.model.kart import HumanKart, RandomAIKart
 from games.pixelKart.model.race import Race
 from games.pixelKart.view.circuit_editor import CircuitEditor
@@ -60,9 +59,6 @@ class MenuController:
     def on_circuit_chosen(self, circuit_name: str) -> None:
         """
         Handle the circuit selected from the editor.
-
-        Args:
-            circuit_name: Name of the selected circuit.
         """
         self.refresh_circuits()
         if circuit_name:
@@ -97,7 +93,7 @@ class MenuController:
                         name=f"Player {index + 1}",
                         color=self.KART_COLORS[index % len(self.KART_COLORS)],
                         position=start_positions[index],
-                        direction=Direction.EAST,
+                        direction="EAST",
                     )
                 )
 
@@ -108,7 +104,7 @@ class MenuController:
                         name=f"AI {index + 1}",
                         color=self.KART_COLORS[color_index % len(self.KART_COLORS)],
                         position=start_positions[color_index],
-                        direction=Direction.EAST,
+                        direction="EAST",
                     )
                 )
 

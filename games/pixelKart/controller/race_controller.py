@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from games.pixelKart.model.movement import Action
+from collections.abc import Callable
+
 from games.pixelKart.model.race import Race
 from games.pixelKart.view.race_view import RaceView
 
@@ -8,24 +9,32 @@ from games.pixelKart.view.race_view import RaceView
 class RaceController:
     """Coordinate the race model and the race view."""
 
-    def __init__(self, race: Race, view: RaceView) -> None:
+    def __init__(
+        self,
+        race: Race,
+        view: RaceView,
+        on_back_to_menu: Callable[[], None] | None = None,
+    ) -> None:
         """
         Initialize the race controller.
 
         Args:
             race: Race model instance.
             view: Race view instance.
+            on_back_to_menu: Callback used to go back to the menu.
         """
         self.race = race
         self.view = view
+        self.on_back_to_menu = on_back_to_menu
 
         self.view.bind_action(self.on_action_selected)
+        self.view.bind_back_to_menu(self.back_to_menu)
         self.view.set_circuit(self.race.circuit.to_dto().grid)
 
         self.refresh_view()
         self.play_ai_turns_if_needed()
 
-    def on_action_selected(self, action: Action) -> None:
+    def on_action_selected(self, action: str) -> None:
         """
         Handle a human action selected from the view.
 
@@ -41,6 +50,11 @@ class RaceController:
 
         self.race.play_current_turn(action)
         self.play_ai_turns_if_needed()
+
+    def back_to_menu(self) -> None:
+        """Ask the parent controller to go back to the menu."""
+        if self.on_back_to_menu is not None:
+            self.on_back_to_menu()
 
     def play_ai_turns_if_needed(self) -> None:
         """Play consecutive AI turns until a human turn or the end of the race."""

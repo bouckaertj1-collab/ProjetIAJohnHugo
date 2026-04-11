@@ -5,7 +5,6 @@ import tkinter as tk
 from tkinter import ttk
 
 from games.pixelKart.model.dto import KartDTO, RaceDTO
-from games.pixelKart.model.movement import Action
 from games.pixelKart.view.circuit_frames import CircuitRaceFrame
 
 
@@ -23,7 +22,7 @@ class RaceView(ttk.Frame):
         self.pack(fill="both", expand=True)
 
         self.circuit_frame: CircuitRaceFrame | None = None
-        self.action_callback: Callable[[Action], None] | None = None
+        self.action_callback: Callable[[str], None] | None = None
 
         self.columnconfigure(0, weight=3)
         self.columnconfigure(1, weight=2)
@@ -79,29 +78,35 @@ class RaceView(ttk.Frame):
 
         self.players_container.bind(
             "<Configure>",
-            lambda event: self.players_canvas.configure(scrollregion=self.players_canvas.bbox("all")),
+            lambda event: self.players_canvas.configure(
+                scrollregion=self.players_canvas.bbox("all")
+            ),
         )
         self.players_canvas.bind(
             "<Configure>",
-            lambda event: self.players_canvas.itemconfigure(self.players_window, width=event.width),
+            lambda event: self.players_canvas.itemconfigure(
+                self.players_window,
+                width=event.width,
+            ),
         )
 
-    def bind_action(self, callback: Callable[[Action], None]) -> None:
-        """
-        Bind all action buttons to one callback.
+        game_frame = ttk.LabelFrame(right_frame, text="Game", padding=10)
+        game_frame.grid(row=1, column=0, sticky="ew", pady=(10, 0))
+        game_frame.columnconfigure(0, weight=1)
 
-        Args:
-            callback: Function receiving the selected action.
-        """
+        self.back_to_menu_button = ttk.Button(game_frame, text="Back to menu", width=18)
+        self.back_to_menu_button.grid(row=0, column=0, pady=5)
+
+    def bind_action(self, callback: Callable[[str], None]) -> None:
+        """Bind all action buttons to one callback."""
         self.action_callback = callback
 
-    def set_circuit(self, serialized_grid: str) -> None:
-        """
-        Create or refresh the circuit widget.
+    def bind_back_to_menu(self, callback) -> None:
+        """Bind the back-to-menu button."""
+        self.back_to_menu_button.config(command=callback)
 
-        Args:
-            serialized_grid: Serialized circuit grid.
-        """
+    def set_circuit(self, serialized_grid: str) -> None:
+        """Create or refresh the circuit widget."""
         if self.circuit_frame is not None:
             self.circuit_frame.destroy()
 
@@ -109,14 +114,7 @@ class RaceView(ttk.Frame):
         self.circuit_frame.grid(row=0, column=0, sticky="nsew")
 
     def update_view(self, race_dto: RaceDTO, kart_dtos: list[KartDTO], current_kart_name: str) -> None:
-        """
-        Update the view of the full race screen.
-
-        Args:
-            race_dto: Global race state.
-            kart_dtos: State of all karts.
-            current_kart_name: Name of the current kart.
-        """
+        """Update the full race screen."""
         self.time_label.config(text=f"Time: {race_dto.time}")
         self.turns_label.config(text=f"Turns to do: {race_dto.total_laps}")
 
@@ -139,11 +137,7 @@ class RaceView(ttk.Frame):
             row = index // 2
             column = index % 2
 
-            panel = ttk.LabelFrame(
-                self.players_container,
-                text=f"Kart {kart_dto.name}",
-                padding=10,
-            )
+            panel = ttk.LabelFrame(self.players_container, text=f"Kart {kart_dto.name}", padding=10)
             panel.grid(row=row, column=column, sticky="nsew", padx=5, pady=5)
             panel.columnconfigure(0, weight=1)
             panel.columnconfigure(1, weight=1)
@@ -193,7 +187,7 @@ class RaceView(ttk.Frame):
                 text="Accelerate",
                 width=12,
                 state=state,
-                command=lambda: self._on_action(Action.ACCELERATE),
+                command=lambda: self._on_action("accelerate"),
             ).grid(row=0, column=0, columnspan=2, pady=4)
 
             ttk.Button(
@@ -201,7 +195,7 @@ class RaceView(ttk.Frame):
                 text="Turn Left",
                 width=10,
                 state=state,
-                command=lambda: self._on_action(Action.TURN_LEFT),
+                command=lambda: self._on_action("turn_left"),
             ).grid(row=1, column=0, padx=4, pady=4)
 
             ttk.Button(
@@ -209,7 +203,7 @@ class RaceView(ttk.Frame):
                 text="Turn Right",
                 width=10,
                 state=state,
-                command=lambda: self._on_action(Action.TURN_RIGHT),
+                command=lambda: self._on_action("turn_right"),
             ).grid(row=1, column=1, padx=4, pady=4)
 
             ttk.Button(
@@ -217,7 +211,7 @@ class RaceView(ttk.Frame):
                 text="Brake",
                 width=12,
                 state=state,
-                command=lambda: self._on_action(Action.BRAKE),
+                command=lambda: self._on_action("brake"),
             ).grid(row=2, column=0, columnspan=2, pady=4)
 
             ttk.Button(
@@ -225,7 +219,7 @@ class RaceView(ttk.Frame):
                 text="Pass",
                 width=12,
                 state=state,
-                command=lambda: self._on_action(Action.PASS),
+                command=lambda: self._on_action("pass"),
             ).grid(row=3, column=0, columnspan=2, pady=4)
 
             if kart_dto.is_alive:
@@ -234,12 +228,8 @@ class RaceView(ttk.Frame):
         if self.circuit_frame is not None:
             self.circuit_frame.update_view(circuit_karts)
 
-    def _on_action(self, action: Action) -> None:
-        """
-        Call the bound action callback.
-
-        Args:
-            action: Selected action.
-        """
+    def _on_action(self, action: str) -> None:
+        """Call the bound action callback."""
         if self.action_callback is not None:
             self.action_callback(action)
+    
