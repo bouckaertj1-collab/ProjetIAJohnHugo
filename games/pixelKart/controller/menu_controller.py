@@ -72,10 +72,6 @@ class MenuController:
             human_players, ai_players, total_laps, circuit_name = self.view.get_config()
             total_players = human_players + ai_players
 
-            if total_players <= 0:
-                raise ValueError("You must select at least one player.")
-            if total_laps <= 0:
-                raise ValueError("The number of laps must be greater than 0.")
             if not circuit_name:
                 raise ValueError("You must select a circuit.")
 
