@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 import tkinter as tk
 
-from games.pixelKart.dao import circuit_dao as dao
+from games.pixelKart.dao import circuit_dao 
 from games.pixelKart.model.circuit import Circuit
 from games.pixelKart.model.kart import HumanKart, RandomAIKart
 from games.pixelKart.model.race import Race
@@ -44,7 +44,7 @@ class MenuController:
 
     def refresh_circuits(self) -> None:
         """Reload circuits from the DAO and refresh the menu view."""
-        circuit_names = sorted(dao.get_all().keys())
+        circuit_names = sorted(circuit_dao.get_all().keys())
         self.view.set_circuits(circuit_names)
 
         if circuit_names:
@@ -75,7 +75,7 @@ class MenuController:
             if not circuit_name:
                 raise ValueError("You must select a circuit.")
 
-            circuit_dto = dao.get_by_name(circuit_name)
+            circuit_dto = circuit_dao.get_by_name(circuit_name)
             if circuit_dto is None:
                 raise ValueError(f"Unknown circuit: {circuit_name}")
 

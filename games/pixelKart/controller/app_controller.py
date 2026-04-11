@@ -9,7 +9,7 @@ from games.pixelKart.view.menu_view import MenuView
 from games.pixelKart.view.race_view import RaceView
 
 
-class GameController:
+class AppController:
     """Main controller of PixelKart."""
 
     def __init__(self, parent: tk.Misc) -> None:
