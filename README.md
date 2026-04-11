@@ -70,10 +70,9 @@ ProjetIAJohnHugo/
 │   │   └── randy_training.json
 │   └── pixelKart/
 │       ├── README.md
+│       ├── circuits.txt
 │       ├── controller/
-│       └── circuits.txt
-│       │   ├── game_controller.py
-│       │   ├── menu_controller.py
+│       │   ├── app_controller.py
 │       │   └── race_controller.py
 │       ├── dao/
 │       │   └── circuit_dao.py
