@@ -14,7 +14,11 @@ from games.cubee.game_model import GameModel as CubeeModel
 from games.cubee.game_controller import GameController as CubeeController
 from games.cubee.game_view import GameView as CubeeView
 from games.cubee.player import Player, QLearningAgent , RandomAgent
+from games.PixelKart.game_controller import GameController as PixelKartController
+from games.PixelKart.game_model.game_model import GameModel as PixelKartModel
+from games.PixelKart.game_view import GameView as PixelKartView
 import random
+from games.PixelKart.__init__ import __all__
 
 
 class LauncherController:
@@ -88,6 +92,29 @@ class LauncherController:
         """
         controller: CubeeController = self._create_cubee_controller()
         view: CubeeView = CubeeView(self.view, controller, size=controller.model.size)
+
+        controller.view = view
+        controller.start()
+
+        view.grab_set()
+        view.focus_set()
+
+    def _create_pixelkart_controller(self) -> PixelKartController:
+        """
+        Create the controller for a PixelKart game.
+
+        Returns:
+            A configured PixelKartController.
+        """
+        model = PixelKartModel()
+        return PixelKartController(model)
+
+    def on_pixelkart(self) -> None:
+        """
+        Launch PixelKart when the user clicks the card.
+        """
+        controller = self._create_pixelkart_controller()
+        view = PixelKartView(self.view, controller)
 
         controller.view = view
         controller.start()
