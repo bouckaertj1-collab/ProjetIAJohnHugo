@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 
 from games.PixelKart.model.dto import KartDTO
+from games.PixelKart.dao.Q_table_dao import Q
 
 
 class Kart:
@@ -179,4 +180,29 @@ class RandomAIKart(Kart):
         )
     
 class QLearningKart(Kart):
-    pass
+    def __init__(self, name, color, position, direction = "EAST", speed = 0, laps_done = 0, is_alive = True, has_finished = False):
+        super().__init__(name, color, position, direction, speed, laps_done, is_alive, has_finished)
+    
+    def get_state(self,circuit):
+        pass
+
+    def is_danger_front(self,circuit): 
+        pass
+
+    def is_blocked(self, circuit, side):
+        if side == "left":
+            direction = self.LEFT_TURN[self.direction]
+        elif side == "right":
+            direction = self.RIGHT_TURN[self.direction]
+        else:
+            raise ValueError("side must be 'left' or 'right'")
+
+        delta_row, delta_col = self.direction_to_vector(direction)
+        row, col = self.position
+
+        next_pos = (row + delta_row, col + delta_col)
+
+        return 1 if circuit.is_wall(next_pos) else 0
+        
+
+

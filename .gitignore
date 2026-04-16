@@ -210,3 +210,6 @@ games/cubee/cubee_qtable.json
 *_qtable.json
 
 games/cubee/training_results/
+
+#Data base of AI's Q-tables
+q_tables.db
