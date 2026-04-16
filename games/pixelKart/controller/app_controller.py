@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from games.pixelKart.dao import circuit_dao
-from games.pixelKart.model.circuit import Circuit
-from games.pixelKart.model.kart import HumanKart, RandomAIKart
-from games.pixelKart.model.race import Race
-from games.pixelKart.view.circuit_editor import CircuitEditor
-from games.pixelKart.view.menu_view import MenuView
-from games.pixelKart.view.race_view import RaceView
-from games.pixelKart.controller.race_controller import RaceController
+from games.PixelKart.dao import circuit_dao
+from games.PixelKart.model.circuit import Circuit
+from games.PixelKart.model.kart import HumanKart, RandomAIKart
+from games.PixelKart.model.race import Race
+from games.PixelKart.view.circuit_editor import CircuitEditor
+from games.PixelKart.view.menu_view import MenuView
+from games.PixelKart.view.race_view import RaceView
+from games.PixelKart.controller.race_controller import RaceController
 
 
 class AppController:

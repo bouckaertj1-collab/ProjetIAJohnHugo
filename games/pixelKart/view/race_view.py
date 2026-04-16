@@ -2,8 +2,8 @@ from collections.abc import Callable
 import tkinter as tk
 from tkinter import ttk
 
-from games.pixelKart.model.dto import KartDTO, RaceDTO
-from games.pixelKart.view.circuit_frames import CircuitRaceFrame
+from games.PixelKart.model.dto import KartDTO, RaceDTO
+from games.PixelKart.view.circuit_frames import CircuitRaceFrame
 
 
 class RaceView(ttk.Frame):
