@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 
-from games.pixelKart.model.dto import KartDTO
+from games.PixelKart.model.dto import KartDTO
 
 
 class Kart:
@@ -177,3 +177,6 @@ class RandomAIKart(Kart):
         return random.choice(
             ["accelerate", "brake", "turn_left", "turn_right", "pass"]
         )
+    
+class QLearningKart(Kart):
+    pass

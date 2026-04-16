@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from games.pixelKart.model.circuit import Circuit
-from games.pixelKart.model.dto import RaceDTO
-from games.pixelKart.model.kart import Kart
+from games.PixelKart.model.circuit import Circuit
+from games.PixelKart.model.dto import RaceDTO
+from games.PixelKart.model.kart import Kart
 
 
 class Race:
