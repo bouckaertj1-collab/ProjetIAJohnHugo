@@ -27,6 +27,8 @@ class AppController:
         self.parent = parent
         self.window = tk.Toplevel(parent)
         self.window.title("PixelKart")
+        self.window.minsize(1000, 650)
+        self.window.resizable(True, True)
         self._center_window()
 
         self.current_view: tk.Widget | None = None

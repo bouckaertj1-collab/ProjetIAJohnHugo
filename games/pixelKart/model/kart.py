@@ -11,6 +11,34 @@ class Kart:
     MIN_SPEED = -1
     MAX_SPEED = 2
 
+    LEFT_TURN = {
+        "NORTH": "WEST",
+        "WEST": "SOUTH",
+        "SOUTH": "EAST",
+        "EAST": "NORTH",
+    }
+
+    RIGHT_TURN = {
+        "NORTH": "EAST",
+        "EAST": "SOUTH",
+        "SOUTH": "WEST",
+        "WEST": "NORTH",
+    }
+
+    OPPOSITE = {
+        "NORTH": "SOUTH",
+        "SOUTH": "NORTH",
+        "EAST": "WEST",
+        "WEST": "EAST",
+    }
+
+    VECTORS = {
+        "NORTH": (-1, 0),
+        "EAST": (0, 1),
+        "SOUTH": (1, 0),
+        "WEST": (0, -1),
+    }
+
     def __init__(
         self,
         name: str,
@@ -20,6 +48,7 @@ class Kart:
         speed: int = 0,
         laps_done: int = 0,
         is_alive: bool = True,
+        has_finished: bool = False,
     ) -> None:
         """
         Initialize a kart.
@@ -32,6 +61,7 @@ class Kart:
             speed: Current speed.
             laps_done: Number of completed laps.
             is_alive: Whether the kart is still in the race.
+            has_finished: Whether the kart has finished the race.
         """
         self.name = name
         self.color = color
@@ -40,43 +70,29 @@ class Kart:
         self.speed = max(self.MIN_SPEED, min(self.MAX_SPEED, speed))
         self.laps_done = laps_done
         self.is_alive = is_alive
+        self.has_finished = has_finished
 
     @property
     def is_ai(self) -> bool:
         """Return whether the kart is controlled by an AI."""
         return False
 
+    def finish(self) -> None:
+        """Mark the kart as finished."""
+        self.has_finished = True
+        self.speed = 0
+
     def turn_left(self) -> None:
         """Turn the kart 90 degrees to the left."""
-        if self.direction == "NORTH":
-            self.direction = "WEST"
-        elif self.direction == "WEST":
-            self.direction = "SOUTH"
-        elif self.direction == "SOUTH":
-            self.direction = "EAST"
-        else:
-            self.direction = "NORTH"
+        self.direction = self.LEFT_TURN[self.direction]
 
     def turn_right(self) -> None:
         """Turn the kart 90 degrees to the right."""
-        if self.direction == "NORTH":
-            self.direction = "EAST"
-        elif self.direction == "EAST":
-            self.direction = "SOUTH"
-        elif self.direction == "SOUTH":
-            self.direction = "WEST"
-        else:
-            self.direction = "NORTH"
+        self.direction = self.RIGHT_TURN[self.direction]
 
     def opposite_direction(self) -> str:
         """Return the opposite of the current direction."""
-        if self.direction == "NORTH":
-            return "SOUTH"
-        if self.direction == "SOUTH":
-            return "NORTH"
-        if self.direction == "EAST":
-            return "WEST"
-        return "EAST"
+        return self.OPPOSITE[self.direction]
 
     def direction_to_vector(self, direction: str | None = None) -> tuple[int, int]:
         """
@@ -89,14 +105,7 @@ class Kart:
             A movement vector as (row_step, col_step).
         """
         target_direction = self.direction if direction is None else direction
-
-        if target_direction == "NORTH":
-            return -1, 0
-        if target_direction == "EAST":
-            return 0, 1
-        if target_direction == "SOUTH":
-            return 1, 0
-        return 0, -1
+        return self.VECTORS[target_direction]
 
     def apply_action(self, action: str) -> None:
         """
@@ -133,16 +142,17 @@ class Kart:
         Returns:
             A KartDTO representing the current kart state.
         """
-        return KartDTO(
-            name=self.name,
-            color=self.color,
-            position=self.position,
-            direction=self.direction,
-            speed=self.speed,
-            laps_done=self.laps_done,
-            is_ai=self.is_ai,
-            is_alive=self.is_alive,
-        )
+        return {
+            "name": self.name,
+            "color": self.color,
+            "position": self.position,
+            "direction": self.direction,
+            "speed": self.speed,
+            "laps_done": self.laps_done,
+            "is_ai": self.is_ai,
+            "is_alive": self.is_alive,
+            "has_finished": self.has_finished,
+        }
 
 
 class HumanKart(Kart):

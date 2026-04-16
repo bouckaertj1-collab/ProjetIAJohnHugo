@@ -13,7 +13,7 @@ def get_all() -> dict[str, CircuitDTO]:
     Retrieve all circuits from the file.
 
     Returns:
-        A dictionary mapping circuit names to CircuitDTO objects.
+        A dictionary mapping circuit names to serialized circuit dictionaries.
     """
     circuits: dict[str, CircuitDTO] = {}
 
@@ -32,7 +32,10 @@ def get_all() -> dict[str, CircuitDTO]:
             grid = grid.strip()
 
             if name and grid:
-                circuits[name] = CircuitDTO(name=name, grid=grid)
+                circuits[name] = {
+                    "name": name,
+                    "grid": grid,
+                }
 
     return circuits
 
@@ -45,7 +48,7 @@ def get_by_name(name: str) -> CircuitDTO | None:
         name: Circuit name.
 
     Returns:
-        The matching CircuitDTO, or None if not found.
+        The matching circuit dictionary, or None if not found.
     """
     return get_all().get(name)
 
@@ -72,7 +75,10 @@ def save_circuit(name: str, grid: str) -> None:
     if name in circuits:
         raise ValueError(f"The circuit '{name}' already exists.")
 
-    circuits[name] = CircuitDTO(name=name, grid=grid)
+    circuits[name] = {
+        "name": name,
+        "grid": grid,
+    }
     _write_all(circuits)
 
 
@@ -92,7 +98,10 @@ def update_circuit(name: str, grid: str) -> None:
     if name not in circuits:
         raise ValueError(f"The circuit '{name}' does not exist.")
 
-    circuits[name] = CircuitDTO(name=name, grid=grid)
+    circuits[name] = {
+        "name": name,
+        "grid": grid,
+    }
     _write_all(circuits)
 
 
@@ -123,5 +132,5 @@ def _write_all(circuits: dict[str, CircuitDTO]) -> None:
         circuits: Circuits to persist.
     """
     with open(FILE_PATH, "w", encoding="utf-8") as file:
-        lines = [f"{dto.name}:{dto.grid}" for dto in circuits.values()]
+        lines = [f'{dto["name"]}:{dto["grid"]}' for dto in circuits.values()]
         file.write("\n".join(lines))

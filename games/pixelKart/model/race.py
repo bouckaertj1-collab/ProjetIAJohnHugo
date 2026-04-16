@@ -39,7 +39,7 @@ class Race:
 
     def is_position_occupied(self, position: tuple[int, int]) -> bool:
         """
-        Check whether a position is occupied by an alive kart.
+        Check whether a position is occupied by a kart still in the race.
 
         Args:
             position: Position to check.
@@ -48,7 +48,7 @@ class Race:
             True if the position is occupied, False otherwise.
         """
         for kart in self.karts:
-            if not kart.is_alive:
+            if not kart.is_alive or kart.has_finished:
                 continue
             if kart.position == position:
                 return True
@@ -65,7 +65,7 @@ class Race:
             return
 
         kart = self.get_current_kart()
-        if not kart.is_alive:
+        if not kart.is_alive or kart.has_finished:
             self.next_player()
             self.check_end_game()
             return
@@ -75,6 +75,12 @@ class Race:
 
         traversed_positions = self.apply_movement(kart)
         self.update_lap_if_needed(kart, old_position, traversed_positions)
+
+        if kart.laps_done >= self.total_laps:
+            if self.winner_name is None:
+                self.winner_name = kart.name
+            kart.finish()
+
         self.check_end_game()
 
         if not self.finished:
@@ -95,13 +101,17 @@ class Race:
 
     def apply_movement(self, kart: Kart) -> list[tuple[int, int]]:
         """
-        Apply the kart movement according to its current speed and direction.
+        Apply the kart movement according to its speed and direction.
+
+        The finish line can only be crossed towards the east.
+        If the kart tries to cross it towards the west, its speed is reset
+        and the movement stops.
 
         Args:
             kart: Kart to move.
 
         Returns:
-            The list of actual traversed positions.
+            The list of traversed positions.
         """
         traversed_positions: list[tuple[int, int]] = []
 
@@ -131,6 +141,12 @@ class Race:
                 return traversed_positions
 
             if self.is_position_occupied(next_position):
+                kart.reset_speed()
+                return traversed_positions
+
+            if col_step == -1 and (
+                self.circuit.is_finish(kart.position) or self.circuit.is_finish(next_position)
+            ):
                 kart.reset_speed()
                 return traversed_positions
 
@@ -167,7 +183,7 @@ class Race:
 
     def next_player(self) -> None:
         """
-        Move to the next alive kart.
+        Move to the next kart still in the race.
 
         The race time is increased when a full round has been completed.
         """
@@ -179,7 +195,7 @@ class Race:
         for step in range(1, len(self.karts) + 1):
             next_index = (previous_index + step) % len(self.karts)
 
-            if not self.karts[next_index].is_alive:
+            if not self.karts[next_index].is_alive or self.karts[next_index].has_finished:
                 continue
 
             self.current_player_index = next_index
@@ -188,16 +204,11 @@ class Race:
             return
 
     def check_end_game(self) -> None:
-        """Check whether the race is over and update the winner if needed."""
-        for kart in self.karts:
-            if kart.is_alive and kart.laps_done >= self.total_laps:
-                self.finished = True
-                self.winner_name = kart.name
-                return
-
-        if not any(kart.is_alive for kart in self.karts):
+        """
+        End the race when all karts are either finished or eliminated.
+        """
+        if all(not kart.is_alive or kart.has_finished for kart in self.karts):
             self.finished = True
-            self.winner_name = None
 
     def to_dto(self) -> RaceDTO:
         """
@@ -206,10 +217,10 @@ class Race:
         Returns:
             A RaceDTO representing the current race state.
         """
-        return RaceDTO(
-            time=self.time,
-            total_laps=self.total_laps,
-            current_player_index=self.current_player_index,
-            finished=self.finished,
-            winner_name=self.winner_name,
-        )
+        return {
+            "time": self.time,
+            "total_laps": self.total_laps,
+            "current_player_index": self.current_player_index,
+            "finished": self.finished,
+            "winner_name": self.winner_name,
+        }

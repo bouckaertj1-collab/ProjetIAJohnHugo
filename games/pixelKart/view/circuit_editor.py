@@ -22,6 +22,8 @@ class CircuitEditor(tk.Toplevel):
         """
         super().__init__(parent)
         self.title("Circuit Editor")
+        self.minsize(800, 600)
+        self.resizable(True, True)
 
         self.callback = callback
         self.length_var = tk.StringVar(value="20")
@@ -64,7 +66,7 @@ class CircuitEditor(tk.Toplevel):
             side="left",
             padx=5,
         )
-        ttk.Button(save_frame, text="Choose", command=self.choose).pack(
+        ttk.Button(save_frame, text="Select for race", command=self.select_for_race).pack(
             side="left",
             padx=5,
         )
@@ -84,9 +86,10 @@ class CircuitEditor(tk.Toplevel):
 
         self.circuit_var.set(circuit_names[0] if circuit_names else "")
 
-    def choose(self) -> None:
-        """Call the callback with the selected circuit name."""
+    def select_for_race(self) -> None:
+        """Send the selected circuit to the main window and close the editor."""
         self.callback(self.circuit_var.get())
+        self.destroy()
 
     def import_circuit(self) -> None:
         """Import the selected circuit into the grid."""
@@ -96,7 +99,7 @@ class CircuitEditor(tk.Toplevel):
         if dto is None:
             return
 
-        self.grid_frame.dto_to_grid(dto.grid)
+        self.grid_frame.dto_to_grid(dto["grid"])
         self.length_var.set(str(self.grid_frame.cols))
         self.width_var.set(str(self.grid_frame.rows))
 

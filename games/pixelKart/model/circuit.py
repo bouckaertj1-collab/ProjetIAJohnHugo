@@ -47,9 +47,9 @@ class Circuit:
         Returns:
             A Circuit instance.
         """
-        rows_data = dto.grid.strip().split(",")
+        rows_data = dto["grid"].strip().split(",")
         grid = [list(row_data) for row_data in rows_data]
-        return cls(dto.name, grid)
+        return cls(dto["name"], grid)
 
     def to_dto(self) -> CircuitDTO:
         """
@@ -59,7 +59,10 @@ class Circuit:
             A serialized representation of the circuit.
         """
         grid = ",".join("".join(cell for cell in row) for row in self.grid)
-        return CircuitDTO(name=self.name, grid=grid)
+        return {
+            "name": self.name,
+            "grid": grid,
+        }
 
     def is_inside(self, position: tuple[int, int]) -> bool:
         """Check whether a position is inside the circuit boundaries."""

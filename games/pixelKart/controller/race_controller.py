@@ -29,7 +29,7 @@ class RaceController:
 
         self.view.bind_action(self.on_action_selected)
         self.view.bind_back_to_menu(self.back_to_menu)
-        self.view.set_circuit(self.race.circuit.to_dto().grid)
+        self.view.set_circuit(self.race.circuit.to_dto()["grid"])
 
         self.refresh_view()
         self.play_ai_turns_if_needed()

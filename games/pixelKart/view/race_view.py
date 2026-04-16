@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections.abc import Callable
 import tkinter as tk
 from tkinter import ttk
@@ -115,15 +113,15 @@ class RaceView(ttk.Frame):
 
     def update_view(self, race_dto: RaceDTO, kart_dtos: list[KartDTO], current_kart_name: str) -> None:
         """Update the full race screen."""
-        self.time_label.config(text=f"Time: {race_dto.time}")
-        self.turns_label.config(text=f"Turns to do: {race_dto.total_laps}")
+        self.time_label.config(text=f'Time: {race_dto["time"]}')
+        self.turns_label.config(text=f'Turns to do: {race_dto["total_laps"]}')
 
-        if not race_dto.finished:
+        if not race_dto["finished"]:
             self.status_label.config(text=f"Current player: {current_kart_name}")
-        elif race_dto.winner_name is None:
+        elif race_dto["winner_name"] is None:
             self.status_label.config(text="Race finished: no winner")
         else:
-            self.status_label.config(text=f"Race finished: winner is {race_dto.winner_name}")
+            self.status_label.config(text=f'Race finished: winner is {race_dto["winner_name"]}')
 
         for child in self.players_container.winfo_children():
             child.destroy()
@@ -137,26 +135,31 @@ class RaceView(ttk.Frame):
             row = index // 2
             column = index % 2
 
-            panel = ttk.LabelFrame(self.players_container, text=f"Kart {kart_dto.name}", padding=10)
+            panel = ttk.LabelFrame(self.players_container, text=f'Kart {kart_dto["name"]}', padding=10)
             panel.grid(row=row, column=column, sticky="nsew", padx=5, pady=5)
             panel.columnconfigure(0, weight=1)
             panel.columnconfigure(1, weight=1)
 
-            ttk.Label(panel, text=f"Position : {kart_dto.position}").grid(
+            ttk.Label(panel, text=f'Position : {kart_dto["position"]}').grid(
                 row=0, column=0, columnspan=2, sticky="w", padx=5, pady=4
             )
-            ttk.Label(panel, text=f"Direction : {kart_dto.direction}").grid(
+            ttk.Label(panel, text=f'Direction : {kart_dto["direction"]}').grid(
                 row=1, column=0, columnspan=2, sticky="w", padx=5, pady=4
             )
-            ttk.Label(panel, text=f"Speed : {kart_dto.speed}").grid(
+            ttk.Label(panel, text=f'Speed : {kart_dto["speed"]}').grid(
                 row=2, column=0, columnspan=2, sticky="w", padx=5, pady=4
             )
-            ttk.Label(panel, text=f"Turns done : {kart_dto.laps_done}").grid(
+            ttk.Label(panel, text=f'Turns done : {kart_dto["laps_done"]}').grid(
                 row=3, column=0, columnspan=2, sticky="w", padx=5, pady=4
             )
 
             next_row = 4
-            if not kart_dto.is_alive:
+            if kart_dto["has_finished"]:
+                ttk.Label(panel, text="Status : finished").grid(
+                    row=next_row, column=0, columnspan=2, sticky="w", padx=5, pady=4
+                )
+                next_row += 1
+            elif not kart_dto["is_alive"]:
                 ttk.Label(panel, text="Status : eliminated").grid(
                     row=next_row, column=0, columnspan=2, sticky="w", padx=5, pady=4
                 )
@@ -175,10 +178,11 @@ class RaceView(ttk.Frame):
             play_frame.columnconfigure(1, weight=1)
 
             enabled = (
-                not race_dto.finished
-                and kart_dto.is_alive
-                and not kart_dto.is_ai
-                and kart_dto.name == current_kart_name
+                not race_dto["finished"]
+                and kart_dto["is_alive"]
+                and not kart_dto["has_finished"]
+                and not kart_dto["is_ai"]
+                and kart_dto["name"] == current_kart_name
             )
             state = "normal" if enabled else "disabled"
 
@@ -222,8 +226,11 @@ class RaceView(ttk.Frame):
                 command=lambda: self._on_action("pass"),
             ).grid(row=3, column=0, columnspan=2, pady=4)
 
-            if kart_dto.is_alive:
-                circuit_karts[kart_dto.position] = (kart_dto.color, kart_dto.direction)
+            if kart_dto["is_alive"] and not kart_dto["has_finished"]:
+                circuit_karts[kart_dto["position"]] = (
+                    kart_dto["color"],
+                    kart_dto["direction"],
+                )
 
         if self.circuit_frame is not None:
             self.circuit_frame.update_view(circuit_karts)
@@ -232,4 +239,3 @@ class RaceView(ttk.Frame):
         """Call the bound action callback."""
         if self.action_callback is not None:
             self.action_callback(action)
-    
