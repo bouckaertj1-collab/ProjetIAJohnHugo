@@ -114,7 +114,9 @@ class RaceView(ttk.Frame):
     def update_view(self, race_dto: RaceDTO, kart_dtos: list[KartDTO], current_kart_name: str) -> None:
         """Update the full race screen."""
         self.time_label.config(text=f'Time: {race_dto["time"]}')
-        self.turns_label.config(text=f'Turns to do: {race_dto["total_laps"]}')
+        current_kart_dto = next(k for k in kart_dtos if k["name"] == current_kart_name)
+        turns_left = race_dto["total_laps"] - current_kart_dto["laps_done"]
+        self.turns_label.config(text=f"Turns to do: {turns_left}")
 
         if not race_dto["finished"]:
             self.status_label.config(text=f"Current player: {current_kart_name}")
