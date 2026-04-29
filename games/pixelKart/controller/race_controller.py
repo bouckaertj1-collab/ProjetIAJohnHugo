@@ -4,6 +4,7 @@ from collections.abc import Callable
 
 from games.PixelKart.model.race import Race
 from games.PixelKart.view.race_view import RaceView
+from games.PixelKart.dao.q_table_service import *
 
 
 class RaceController:
@@ -27,29 +28,40 @@ class RaceController:
         self.view = view
         self.on_back_to_menu = on_back_to_menu
 
-        self.view.bind_action(self.on_action_selected)
+        self.view.bind_action(self.handle_human_turn)
         self.view.bind_back_to_menu(self.back_to_menu)
         self.view.set_circuit(self.race.circuit.to_dto()["grid"])
 
         self.refresh_view()
-        self.play_ai_turns_if_needed()
+        self.step_game(self.race.get_current_kart)
 
-    def on_action_selected(self, action: str) -> None:
-        """
-        Handle a human action selected from the view.
 
-        Args:
-            action: Selected action.
-        """
+    def step_game(self, action: str | None = None) -> None:
+        """"""
         if self.race.finished:
             return
 
-        current_kart = self.race.get_current_kart()
-        if current_kart.is_ai or not current_kart.is_alive:
-            return
+        kart = self.race.get_current_kart()
 
-        self.race.play_current_turn(action)
-        self.play_ai_turns_if_needed()
+        if kart.is_ai:
+            self.race.play_current_turn()
+        else:
+            if action is None:
+                return 
+            self.race.play_current_turn(action)
+
+    
+        while not self.race.finished and self.race.get_current_kart().is_ai:
+            kart = self.race.get_current_kart()
+
+            if not kart.is_alive:
+                self.race.next_player()
+                self.race.check_end_game()
+                continue
+
+            self.race.play_current_turn()
+        
+        self.refresh_view()
 
     def back_to_menu(self) -> None:
         """Ask the parent controller to go back to the menu."""

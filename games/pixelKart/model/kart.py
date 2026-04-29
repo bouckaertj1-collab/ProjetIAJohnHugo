@@ -168,7 +168,7 @@ class RandomAIKart(Kart):
         """Return True because this kart is AI-controlled."""
         return True
 
-    def choose_action(self) -> str:
+    def choose_action(self,state=None) -> str:
         """
         Choose a random action among all available actions.
 
@@ -182,27 +182,126 @@ class RandomAIKart(Kart):
 class QLearningKart(Kart):
     def __init__(self, name, color, position, direction = "EAST", speed = 0, laps_done = 0, is_alive = True, has_finished = False):
         super().__init__(name, color, position, direction, speed, laps_done, is_alive, has_finished)
+
+    ACTIONS = ["accelerate", "brake", "turn_left", "turn_right", "pass"]
+
+    def ensure_state_exists(self, state: tuple) -> None:
+        """
+        Ensure that a state and its legal actions exist in the Q-table.
+
+        Args:
+            state: Serialized state key.
+        """
+        if state not in self.q_table:
+            self.q_table[state] = {}
+
+        for action in self.ACTIONS:
+            self.q_table[state].setdefault(action, 0.0)
+
+    def exploit(self, state: tuple) -> str:
+        """
+        Choose the best known action for a given state.
+
+        If several actions share the same best value, one of them is
+        selected randomly.
+
+        Args:
+            state: Serialized state key.
+            legal_moves: Legal actions available in this state.
+
+        Returns:
+            One of the best actions for this state.
+        """
+        self.ensure_state_exists(state)
+
+        best_value = max(self.q_table[state][action] for action in self.ACTIONS)
+        best_actions = [action for action in self.ACTIONS if self.q_table[state][action] == best_value]
+        return random.choice(best_actions)
+
+    def choose_action(self, state: tuple) -> str:
+        """
+        Choose an action with an epsilon-greedy policy.
+
+        Args:
+            state: Serialized state key.
+            legal_moves: Legal actions available in this state.
+
+        Returns:
+            The selected action.
+        """
+        self.ensure_state_exists(state)
+
+        if random.random() < self.epsilon:
+            return random.choice(self.ACTIONS)
+        return self.exploit(state)
+
+    def learn(self, state: tuple, action: str, reward: float, next_state: tuple | None) -> None:
+        """
+        Apply the Q-learning update.
+
+        Args:
+            state: Previous state.
+            action: Action played from that state.
+            reward: Reward obtained for the transition.
+            next_state: Next state, or None if the game is over.
+        """
+
+        
+        current_q = self.ensure_state_exists(state)
+
+        if not self.game_model or next_state is None:
+            max_next_q = 0.0
+        else:
+            self.ensure_state_exists(next_state)
+            max_next_q = max(self.q_table[next_state][action] for action in self.ACTIONS)
+
+        target = reward + self.gamma * max_next_q
+        self.q_table[state][action] = current_q + self.alpha * (target - current_q)
+
     
+    def compute_reward(self, crash, finished, old_speed, new_speed):
+    
+        if crash:
+            return -100
+
+        if finished:
+            return +100
+
+        reward = -1
+
+        if new_speed > old_speed:
+            reward += 0.5
+        elif new_speed < old_speed:
+            reward -= 0.5
+
+        return reward
+
     def get_state(self,circuit):
         return (
                 self.is_danger_front(circuit),
                 self.is_blocked(circuit,"left"),
-                self.is_blocked(circuit,"right")
-                self.get_speed_level()
+                self.is_blocked(circuit,"right"),
+                self.get_speed_level(),
+                self.direction
             )
 
     def is_danger_front(self, circuit):
-
+        """Return if there is a danger front off the kart using the speed to determine if the danger
+            Args : circuit
+            Return : int
+        """
         direction = self.direction
 
         if self.speed < 0:
             direction = self.OPPOSITE[self.direction]
 
-        dr, dc = self.direction_to_vector(direction)
-        r, c = self.position
+        delta_row, delta_col = self.direction_to_vector(direction)
+        row, col = self.position
 
-        for i in range(1, abs(self.speed) + 1):
-            pos = (r + dr * i, c + dc * i)
+        steps = max(1,abs(self.speed))
+
+        for i in range(1, steps + 1):
+            pos = (row + delta_row * i, col + delta_col * i)
 
             if circuit.is_wall(pos):
                 return 1

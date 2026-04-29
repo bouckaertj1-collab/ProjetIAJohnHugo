@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from games.PixelKart.model.circuit import Circuit
 from games.PixelKart.model.dto import RaceDTO
-from games.PixelKart.model.kart import Kart
-
+from games.PixelKart.model.kart import Kart,QLearningKart
 
 class Race:
     """Represents a PixelKart race and its game rules."""
@@ -54,23 +53,31 @@ class Race:
                 return True
         return False
 
-    def play_current_turn(self, action: str) -> None:
-        """
-        Play the current kart turn with the given action.
-
-        Args:
-            action: Action chosen for this turn.
-        """
+    def play_current_turn(self, action: str | None = None) -> None:
         if self.finished:
             return
 
         kart = self.get_current_kart()
+
         if not kart.is_alive or kart.has_finished:
             self.next_player()
             self.check_end_game()
             return
 
+        if kart.is_ai:
+            if isinstance(kart, QLearningKart):
+                state = kart.get_state(self.circuit)
+                action = kart.choose_action(state)
+                old_speed = kart.speed
+            else:
+                action = kart.choose_action()
+        else:
+            if action is None:
+                raise ValueError("Human player needs an action")
+
+
         old_position = kart.position
+
         kart.apply_action(action)
 
         traversed_positions = self.apply_movement(kart)
@@ -83,21 +90,19 @@ class Race:
 
         self.check_end_game()
 
+        if kart.is_ai and isinstance(kart, QLearningKart):
+            crash = not kart.is_alive
+            finished = kart.has_finished
+
+            reward = kart.compute_reward(crash, finished, old_speed, kart.speed)
+
+            next_state = None if crash or finished else kart.get_state(self.circuit)
+
+            kart.learn(state, action, reward, next_state)
+
         if not self.finished:
             self.next_player()
 
-    def play_current_ai_turn(self) -> None:
-        """
-        Play the turn of the current AI kart.
-
-        Raises:
-            ValueError: If the current kart is not an AI kart.
-        """
-        kart = self.get_current_kart()
-        if not kart.is_ai:
-            raise ValueError("The current kart is not AI-controlled.")
-
-        self.play_current_turn(kart.choose_action())
 
     def apply_movement(self, kart: Kart) -> list[tuple[int, int]]:
         """
