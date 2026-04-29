@@ -184,11 +184,31 @@ class QLearningKart(Kart):
         super().__init__(name, color, position, direction, speed, laps_done, is_alive, has_finished)
     
     def get_state(self,circuit):
-        pass
+        return (
+                self.is_danger_front(circuit),
+                self.is_blocked(circuit,"left"),
+                self.is_blocked(circuit,"right")
+                self.get_speed_level()
+            )
 
-    def is_danger_front(self,circuit): 
-        pass
+    def is_danger_front(self, circuit):
 
+        direction = self.direction
+
+        if self.speed < 0:
+            direction = self.OPPOSITE[self.direction]
+
+        dr, dc = self.direction_to_vector(direction)
+        r, c = self.position
+
+        for i in range(1, abs(self.speed) + 1):
+            pos = (r + dr * i, c + dc * i)
+
+            if circuit.is_wall(pos):
+                return 1
+
+        return 0
+    
     def is_blocked(self, circuit, side):
         if side == "left":
             direction = self.LEFT_TURN[self.direction]
@@ -203,6 +223,18 @@ class QLearningKart(Kart):
         next_pos = (row + delta_row, col + delta_col)
 
         return 1 if circuit.is_wall(next_pos) else 0
+    
+    def get_speed_level(self):
+        """
+        This function return a level of the speed depending the real speed of the kart
+            return : int
+        """
         
+        if self.speed <= 0:
+            return 0
+        elif self.speed < 2:
+            return 1
+        else:
+            return 2       
 
 
