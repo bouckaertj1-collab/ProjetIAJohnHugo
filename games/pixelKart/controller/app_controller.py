@@ -4,7 +4,7 @@ import tkinter as tk
 
 from games.PixelKart.dao import circuit_dao
 from games.PixelKart.model.circuit import Circuit
-from games.PixelKart.model.kart import HumanKart, RandomAIKart
+from games.PixelKart.model.kart_factory import KartFactory 
 from games.PixelKart.model.race import Race
 from games.PixelKart.view.circuit_editor import CircuitEditor
 from games.PixelKart.view.menu_view import MenuView
@@ -89,8 +89,8 @@ class AppController:
         self.current_view.set_message("")
 
         try:
-            human_players, ai_players, total_laps, circuit_name = self.current_view.get_config()
-            total_players = human_players + ai_players
+            human_players, random_ais,ql_ais, total_laps, circuit_name = self.current_view.get_config()
+            total_players = human_players + random_ais + ql_ais
 
             if not circuit_name:
                 raise ValueError("You must select a circuit.")
@@ -101,34 +101,41 @@ class AppController:
 
             circuit = Circuit.from_dto(circuit_dto)
             start_positions = circuit.get_random_start_positions(total_players)
+
+            player_config = (
+                ["human"] * human_players +
+                ["random"] * random_ais +
+                ["ql"] * ql_ais
+            )
+
             karts = []
 
-            for index in range(human_players):
-                karts.append(
-                    HumanKart(
-                        name=f"Player {index + 1}",
-                        color=self.KART_COLORS[index % len(self.KART_COLORS)],
-                        position=start_positions[index],
-                        direction="EAST",
-                    )
-                )
+            counters = {"human": 0, "random": 0, "ql": 0}
 
-            for index in range(ai_players):
-                color_index = human_players + index
-                karts.append(
-                    RandomAIKart(
-                        name=f"AI {index + 1}",
-                        color=self.KART_COLORS[color_index % len(self.KART_COLORS)],
-                        position=start_positions[color_index],
-                        direction="EAST",
-                    )
+            if len(start_positions) != len(player_config):
+                raise ValueError("Mismatch between players and start positions")
+
+            for i, kart_type in enumerate(player_config):
+
+                counters[kart_type] += 1
+                name = f"{kart_type.upper()} {counters[kart_type]}"
+                
+                kart = KartFactory.create(
+                    kart_type=kart_type,
+                    config = {
+                        "name":name,
+                        "color":self.KART_COLORS[i % len(self.KART_COLORS)],
+                        "position":start_positions[i]
+                    }
                 )
+                karts.append(kart)
 
             race = Race(circuit=circuit, karts=karts, total_laps=total_laps)
             self.show_race(race)
 
         except ValueError as error:
             self.current_view.set_message(str(error))
+
 
     def show_race(self, race: Race) -> None:
         """

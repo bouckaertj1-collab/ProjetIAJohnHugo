@@ -1,7 +1,9 @@
-from sqlalchemy import Column, Integer, String,Float,create_engine,ForeignKey
-from sqlalchemy.orm import DeclarativeBase,relationship,sessionmaker,Mapped,mapped_column
+from sqlalchemy import String,Float,create_engine,ForeignKey
+from sqlalchemy.orm import DeclarativeBase,relationship,Mapped,mapped_column,sessionmaker
 
 engine = create_engine("sqlite:///q_tables.db")
+
+SessionLocal = sessionmaker(bind=engine)
 
 class Base(DeclarativeBase):
     pass
@@ -46,7 +48,6 @@ def set_q_value(session, agent_id, state, action, value):
         )
         session.add(q)
 
-    session.commit()
 
 def get_q_values(session, agent_id, state):
     state_str = ",".join(map(str, state))
@@ -59,3 +60,4 @@ def get_q_values(session, agent_id, state):
     return {q.action: q.value for q in results}
 
 
+Base.metadata.create_all(engine)

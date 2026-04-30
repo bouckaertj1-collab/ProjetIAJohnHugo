@@ -53,7 +53,8 @@ class Race:
                 return True
         return False
 
-    def play_current_turn(self, action: str | None = None) -> None:
+    def step(self, action: str | None = None) -> None:
+
         if self.finished:
             return
 
@@ -63,18 +64,6 @@ class Race:
             self.next_player()
             self.check_end_game()
             return
-
-        if kart.is_ai:
-            if isinstance(kart, QLearningKart):
-                state = kart.get_state(self.circuit)
-                action = kart.choose_action(state)
-                old_speed = kart.speed
-            else:
-                action = kart.choose_action()
-        else:
-            if action is None:
-                raise ValueError("Human player needs an action")
-
 
         old_position = kart.position
 
@@ -90,19 +79,8 @@ class Race:
 
         self.check_end_game()
 
-        if kart.is_ai and isinstance(kart, QLearningKart):
-            crash = not kart.is_alive
-            finished = kart.has_finished
-
-            reward = kart.compute_reward(crash, finished, old_speed, kart.speed)
-
-            next_state = None if crash or finished else kart.get_state(self.circuit)
-
-            kart.learn(state, action, reward, next_state)
-
         if not self.finished:
             self.next_player()
-
 
     def apply_movement(self, kart: Kart) -> list[tuple[int, int]]:
         """

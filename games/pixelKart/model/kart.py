@@ -3,7 +3,6 @@ from __future__ import annotations
 import random
 
 from games.PixelKart.model.dto import KartDTO
-from games.PixelKart.dao.Q_table_dao import Q
 
 
 class Kart:
@@ -183,7 +182,17 @@ class QLearningKart(Kart):
     def __init__(self, name, color, position, direction = "EAST", speed = 0, laps_done = 0, is_alive = True, has_finished = False):
         super().__init__(name, color, position, direction, speed, laps_done, is_alive, has_finished)
 
+        self.epsilon: float = 0.9
+        self.alpha: float = 0.2
+        self.gamma: float = 0.9
+        self.q_table = {}
+
     ACTIONS = ["accelerate", "brake", "turn_left", "turn_right", "pass"]
+    
+    @property
+    def is_ai(self) -> bool:
+        """Return True because this kart is AI-controlled."""
+        return True
 
     def ensure_state_exists(self, state: tuple) -> None:
         """
@@ -246,18 +255,17 @@ class QLearningKart(Kart):
             next_state: Next state, or None if the game is over.
         """
 
-        
-        current_q = self.ensure_state_exists(state)
+        self.ensure_state_exists(state)
+        current_q = self.q_table[state][action] 
 
-        if not self.game_model or next_state is None:
+        if next_state is None:
             max_next_q = 0.0
         else:
             self.ensure_state_exists(next_state)
-            max_next_q = max(self.q_table[next_state][action] for action in self.ACTIONS)
+            max_next_q = max(self.q_table[next_state].values())
 
         target = reward + self.gamma * max_next_q
         self.q_table[state][action] = current_q + self.alpha * (target - current_q)
-
     
     def compute_reward(self, crash, finished, old_speed, new_speed):
     
@@ -336,4 +344,12 @@ class QLearningKart(Kart):
         else:
             return 2       
 
+def next_epsilon(self, coef: float = 0.995, min_epsilon: float = 0.05) -> None:
+        """
+        Reduce exploration progressively after each game.
 
+        Args:
+            coef: Multiplicative decay coefficient.
+            min_epsilon: Minimum exploration rate allowed.
+        """
+        self.epsilon = max(min_epsilon, self.epsilon * coef)

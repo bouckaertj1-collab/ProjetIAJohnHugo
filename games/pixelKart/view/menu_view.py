@@ -18,7 +18,9 @@ class MenuView(ttk.Frame):
         self.pack(fill="both", expand=True)
 
         self.human_players_var = tk.IntVar(value=1)
-        self.ai_players_var = tk.IntVar(value=1)
+        self.random_ais_var = tk.IntVar(value=1)
+        self.ql_ais_var = tk.IntVar(value=1)
+
         self.laps_var = tk.IntVar(value=3)
         self.selected_circuit_var = tk.StringVar(value="")
 
@@ -43,7 +45,7 @@ class MenuView(ttk.Frame):
             width=10,
         ).grid(row=0, column=1, sticky="w", padx=5, pady=5)
 
-        ttk.Label(config_frame, text="AI players:").grid(
+        ttk.Label(config_frame, text="Random AIS :").grid(
             row=1,
             column=0,
             sticky="w",
@@ -54,12 +56,28 @@ class MenuView(ttk.Frame):
             config_frame,
             from_=0,
             to=4,
-            textvariable=self.ai_players_var,
+            textvariable=self.random_ais_var,
             width=10,
         ).grid(row=1, column=1, sticky="w", padx=5, pady=5)
 
-        ttk.Label(config_frame, text="Laps:").grid(
+
+        ttk.Label(config_frame, text="QLearning AIS :").grid(
             row=2,
+            column=0,
+            sticky="w",
+            padx=5,
+            pady=5,
+        )
+        ttk.Spinbox(
+            config_frame,
+            from_=0,
+            to=4,
+            textvariable=self.ql_ais_var,
+            width=10,
+        ).grid(row=2, column=1, sticky="w", padx=5, pady=5)
+
+        ttk.Label(config_frame, text="Laps:").grid(
+            row=3,
             column=0,
             sticky="w",
             padx=5,
@@ -71,10 +89,10 @@ class MenuView(ttk.Frame):
             to=20,
             textvariable=self.laps_var,
             width=10,
-        ).grid(row=2, column=1, sticky="w", padx=5, pady=5)
+        ).grid(row=3, column=1, sticky="w", padx=5, pady=5)
 
         ttk.Label(config_frame, text="Circuit:").grid(
-            row=3,
+            row=4,
             column=0,
             sticky="w",
             padx=5,
@@ -86,7 +104,7 @@ class MenuView(ttk.Frame):
             state="readonly",
             width=20,
         )
-        self.circuit_combobox.grid(row=3, column=1, sticky="w", padx=5, pady=5)
+        self.circuit_combobox.grid(row=4, column=1, sticky="w", padx=5, pady=5)
 
         button_frame = ttk.Frame(self)
         button_frame.pack(pady=10)
@@ -125,7 +143,8 @@ class MenuView(ttk.Frame):
         """
         return (
             self.human_players_var.get(),
-            self.ai_players_var.get(),
+            self.random_ais_var.get(),
+            self.ql_ais_var.get(),
             self.laps_var.get(),
             self.selected_circuit_var.get().strip(),
         )

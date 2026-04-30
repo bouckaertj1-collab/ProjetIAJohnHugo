@@ -5,6 +5,10 @@ from collections.abc import Callable
 from games.PixelKart.model.race import Race
 from games.PixelKart.view.race_view import RaceView
 from games.PixelKart.dao.q_table_service import *
+from games.PixelKart.dao.q_table_dao import *
+from games.PixelKart.model.kart import QLearningKart
+from games.PixelKart.dao.q_table_dao import SessionLocal
+
 
 
 class RaceController:
@@ -27,63 +31,94 @@ class RaceController:
         self.race = race
         self.view = view
         self.on_back_to_menu = on_back_to_menu
+        
 
-        self.view.bind_action(self.handle_human_turn)
+        self.q_learning_karts = [
+            kart for kart in self.race.karts if isinstance(kart, QLearningKart)
+        ]
+
+        if self.q_learning_karts:
+            self._init_q_learning()
+
+        self.view.bind_action(self.handle_turn)
         self.view.bind_back_to_menu(self.back_to_menu)
         self.view.set_circuit(self.race.circuit.to_dto()["grid"])
 
         self.refresh_view()
-        self.step_game(self.race.get_current_kart)
 
+    def _init_q_learning(self):
+        self.session = SessionLocal()
 
-    def step_game(self, action: str | None = None) -> None:
+        db_agent = create_agent(self.session)
+        self.agent_id = db_agent.id
+
+        for kart in self.q_learning_karts:
+            load_q_table(kart,self.agent_id,self.session)
+
+    def _save_q_learning(self):
+        for kart in self.q_learning_karts:
+            save_q_table(kart,self.agent_id,self.session)
+
+    def handle_turn(self, action: str | None = None) -> None:
         """"""
         if self.race.finished:
+            self._save_q_learning()
             return
 
         kart = self.race.get_current_kart()
 
         if kart.is_ai:
-            self.race.play_current_turn()
+            self._play_ai_turn()
         else:
             if action is None:
-                return 
-            self.race.play_current_turn(action)
-
-    
-        while not self.race.finished and self.race.get_current_kart().is_ai:
-            kart = self.race.get_current_kart()
-
-            if not kart.is_alive:
-                self.race.next_player()
-                self.race.check_end_game()
-                continue
-
-            self.race.play_current_turn()
+                return
+            self.player_human_turn(action)
         
         self.refresh_view()
+
+        if not self.race.finished and self.race.get_current_kart().is_ai:
+            self.view.after(50, self.handle_turn)
 
     def back_to_menu(self) -> None:
         """Ask the parent controller to go back to the menu."""
         if self.on_back_to_menu is not None:
             self.on_back_to_menu()
 
-    def play_ai_turns_if_needed(self) -> None:
-        """Play consecutive AI turns until a human turn or the end of the race."""
-        while not self.race.finished:
-            current_kart = self.race.get_current_kart()
+    def _play_ai_turn(self):
 
-            if not current_kart.is_alive:
-                self.race.next_player()
-                self.race.check_end_game()
-                continue
+            kart = self.race.get_current_kart()
+            
+            if isinstance(kart, QLearningKart):
+                state = kart.get_state(self.race.circuit)
 
-            if not current_kart.is_ai:
-                break
+                old_speed = kart.speed
 
-            self.race.play_current_ai_turn()
+                action = kart.choose_action(state)
+                self.race.step(action)
 
-        self.refresh_view()
+                crash = not kart.is_alive
+                finished = kart.has_finished
+                current_speed = kart.speed
+
+                reward = kart.compute_reward(crash, finished, old_speed, current_speed)
+
+                next_state = None if crash or finished else kart.get_state(self.race.circuit)
+
+                kart.learn(state, action, reward, next_state)
+                
+            else:
+                action = kart.choose_action()
+                self.race.step(action)
+
+    def player_human_turn(self,action):
+        self.race.step(action)
+    
+    def _schedule_next_if_ai(self):
+        if not self.race.finished:
+            next_kart = self.race.get_current_kart()
+
+            if next_kart.is_ai:
+                self.view.after(0, self.handle_turn)
 
     def refresh_view(self) -> None:
         """Refresh the race view from the current model state."""
