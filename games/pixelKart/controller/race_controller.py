@@ -45,6 +45,8 @@ class RaceController:
         self.view.set_circuit(self.race.circuit.to_dto()["grid"])
 
         self.refresh_view()
+        if self.race.get_current_kart().is_ai:
+            self.view.after(0, self.handle_turn)
 
     def _init_q_learning(self):
         self.session = SessionLocal()
@@ -52,8 +54,15 @@ class RaceController:
         db_agent = create_agent(self.session)
         self.agent_id = db_agent.id
 
+        shared_q = {}
+        temp_agent = QLearningKart("temp",None,(0,0))
+        temp_agent.q_table = shared_q
+        
+        load_q_table(temp_agent,self.agent_id,self.session)
+
         for kart in self.q_learning_karts:
-            load_q_table(kart,self.agent_id,self.session)
+            kart.q_table = shared_q
+            
 
     def _save_q_learning(self):
         for kart in self.q_learning_karts:
@@ -68,13 +77,13 @@ class RaceController:
         kart = self.race.get_current_kart()
 
         if kart.is_ai:
-            self._play_ai_turn()
+            self.play_ai_turn()
         else:
             if action is None:
                 return
             self.player_human_turn(action)
-            self._play_ai_turn()
-        
+            self.play_ai_turn()
+            
         self.refresh_view()
 
     def back_to_menu(self) -> None:
@@ -82,38 +91,40 @@ class RaceController:
         if self.on_back_to_menu is not None:
             self.on_back_to_menu()
 
-    def _play_ai_turn(self):
-
-            kart = self.race.get_current_kart()
+    def play_ai_turn(self):
+            """"""
             
-            if isinstance(kart, QLearningKart):
-                state = kart.get_state(self.race.circuit)
-
-                old_speed = kart.speed
-
-                action = kart.choose_action(state)
-                self.race.step(action)
-
-                crash = not kart.is_alive
-                finished = kart.has_finished
-                current_speed = kart.speed
-
-                reward = kart.compute_reward(crash, finished, old_speed, current_speed)
-
-                next_state = None if crash or finished else kart.get_state(self.race.circuit)
-
-                kart.learn(state, action, reward, next_state)
+            while not self.race.finished and isinstance(self.race.get_current_kart(),(QLearningKart,RandomAIKart)):
                 
-            elif isinstance(kart,RandomAIKart):
-                action = kart.choose_action()
-                self.race.step(action)
-            else:
-                return
+                kart = self.race.get_current_kart()
+
+
+                if isinstance(kart, QLearningKart):
+                    state = kart.get_state(self.race.circuit)
+
+                    old_position = kart.position
+
+                    action = kart.choose_action(state)
+                    self.race.step(action)
+
+                    crash = not kart.is_alive
+                    finished = kart.has_finished
+                    current_position = kart.position
+
+                    reward = kart.compute_reward(crash, finished, old_position, current_position)
+
+                    next_state = None if crash or finished else kart.get_state(self.race.circuit)
+
+                    kart.learn(state, action, reward, next_state)
+                
+                else:
+                    action = kart.choose_action()
+                    self.race.step(action)
+            return
 
     def player_human_turn(self,action):
         self.race.step(action)
     
-
     def refresh_view(self) -> None:
         """Refresh the race view from the current model state."""
         self.view.update_view(

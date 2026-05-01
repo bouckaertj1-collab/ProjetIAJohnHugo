@@ -267,56 +267,58 @@ class QLearningKart(Kart):
         target = reward + self.gamma * max_next_q
         self.q_table[state][action] = current_q + self.alpha * (target - current_q)
     
-    def compute_reward(self, crash, finished, old_speed, new_speed):
-    
+    def compute_reward(self, crash, finished, old_position, new_position):
         if crash:
             return -100
-
         if finished:
             return +100
 
-        reward = -1
+        reward = -0.1
 
-        if new_speed > old_speed:
-            reward += 0.5
-        elif new_speed < old_speed:
+        if new_position[1] > old_position[1]:
+            reward += 1.0
+        elif new_position[1] < old_position[1]:
             reward -= 0.5
+
+        if self.speed == 0:
+            reward -= 0.3
 
         return reward
 
     def get_state(self,circuit):
+        """"""
         return (
-                self.is_danger_front(circuit),
-                self.is_blocked(circuit,"left"),
-                self.is_blocked(circuit,"right"),
-                self.get_speed_level(),
-                self.direction
+                self.position,
+                self.distance_to_obstacle_front(circuit),
+                self.level_of_blocked_moves(circuit,"left"),
+                self.level_of_blocked_moves(circuit,"right"),
+                self.speed_level(),
+                self.direction,
             )
 
-    def is_danger_front(self, circuit):
-        """Return if there is a danger front off the kart using the speed to determine if the danger
-            Args : circuit
-            Return : int
+    def distance_to_obstacle_front(self, circuit) -> int:
         """
-        direction = self.direction
-
-        if self.speed < 0:
-            direction = self.OPPOSITE[self.direction]
-
-        delta_row, delta_col = self.direction_to_vector(direction)
+        Returns a bucketed distance to the next wall/edge ahead.
+        0 = imminent (≤1 step), 1 = close (2 steps), 2 = medium (3-4), 3 = far (5+)
+        """
+        direction = self.direction if self.speed >= 0 else self.OPPOSITE[self.direction]
+        d_row, d_col = self.direction_to_vector(direction)
         row, col = self.position
 
-        steps = max(1,abs(self.speed))
-
-        for i in range(1, steps + 1):
-            pos = (row + delta_row * i, col + delta_col * i)
-
-            if circuit.is_wall(pos):
-                return 1
-
-        return 0
+        for i in range(1, 6):
+            pos = (row + d_row * i, col + d_col * i)
+            if not circuit.is_inside(pos) or circuit.is_wall(pos):
+                if i <= 1: return 0
+                if i == 2: return 1
+                if i <= 4: return 2
+                return 3
+        return 3
     
-    def is_blocked(self, circuit, side):
+    def terrain_type(self, circuit) -> int:
+        """0 = road/finish, 1 = grass"""
+        return 1 if circuit.is_grass(self.position) else 0
+
+    def level_of_blocked_moves(self, circuit, side):
         if side == "left":
             direction = self.LEFT_TURN[self.direction]
         elif side == "right":
@@ -331,7 +333,7 @@ class QLearningKart(Kart):
 
         return 1 if circuit.is_wall(next_pos) else 0
     
-    def get_speed_level(self):
+    def speed_level(self):
         """
         This function return a level of the speed depending the real speed of the kart
             return : int
@@ -343,8 +345,8 @@ class QLearningKart(Kart):
             return 1
         else:
             return 2       
-
-def next_epsilon(self, coef: float = 0.995, min_epsilon: float = 0.05) -> None:
+        
+    def next_epsilon(self, coef: float = 0.995, min_epsilon: float = 0.05) -> None:
         """
         Reduce exploration progressively after each game.
 
