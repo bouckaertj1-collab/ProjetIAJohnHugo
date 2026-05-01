@@ -6,7 +6,7 @@ from games.PixelKart.model.race import Race
 from games.PixelKart.view.race_view import RaceView
 from games.PixelKart.dao.q_table_service import *
 from games.PixelKart.dao.q_table_dao import *
-from games.PixelKart.model.kart import QLearningKart
+from games.PixelKart.model.kart import QLearningKart,RandomAIKart
 from games.PixelKart.dao.q_table_dao import SessionLocal
 
 
@@ -73,11 +73,9 @@ class RaceController:
             if action is None:
                 return
             self.player_human_turn(action)
+            self._play_ai_turn()
         
         self.refresh_view()
-
-        if not self.race.finished and self.race.get_current_kart().is_ai:
-            self.view.after(50, self.handle_turn)
 
     def back_to_menu(self) -> None:
         """Ask the parent controller to go back to the menu."""
@@ -106,19 +104,15 @@ class RaceController:
 
                 kart.learn(state, action, reward, next_state)
                 
-            else:
+            elif isinstance(kart,RandomAIKart):
                 action = kart.choose_action()
                 self.race.step(action)
+            else:
+                return
 
     def player_human_turn(self,action):
         self.race.step(action)
     
-    def _schedule_next_if_ai(self):
-        if not self.race.finished:
-            next_kart = self.race.get_current_kart()
-
-            if next_kart.is_ai:
-                self.view.after(0, self.handle_turn)
 
     def refresh_view(self) -> None:
         """Refresh the race view from the current model state."""
