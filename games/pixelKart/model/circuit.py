@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 
-from games.PixelKart.model.dto import CircuitDTO
+from model.dto import CircuitDTO
 
 
 class Circuit:

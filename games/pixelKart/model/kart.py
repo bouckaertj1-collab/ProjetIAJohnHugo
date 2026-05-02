@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 
-from games.PixelKart.model.dto import KartDTO
+from model.dto import KartDTO
 
 
 class Kart:
@@ -183,8 +183,8 @@ class QLearningKart(Kart):
         super().__init__(name, color, position, direction, speed, laps_done, is_alive, has_finished)
 
         self.epsilon: float = 0.9
-        self.alpha: float = 0.2
-        self.gamma: float = 0.9
+        self.alpha: float = 0.3
+        self.gamma: float = 0.8
         self.q_table = {}
 
     ACTIONS = ["accelerate", "brake", "turn_left", "turn_right", "pass"]
@@ -267,35 +267,47 @@ class QLearningKart(Kart):
         target = reward + self.gamma * max_next_q
         self.q_table[state][action] = current_q + self.alpha * (target - current_q)
     
-    def compute_reward(self, crash, finished, old_position, new_position):
+    def compute_reward(self, crash, finished, old_position, new_position,circuit):
         if crash:
-            return -100
+            return -50 
         if finished:
-            return +100
-
-        reward = -0.1
-
+            return +500
+        reward = 0.0
+        if new_position[0] > old_position[0]:
+            reward += 1.0
+        elif new_position[0] < old_position[0]:
+            reward -= 0.5
         if new_position[1] > old_position[1]:
             reward += 1.0
         elif new_position[1] < old_position[1]:
             reward -= 0.5
-
+        if circuit.is_grass(new_position):
+            reward -= 1.0
         if self.speed == 0:
-            reward -= 0.3
-
+            reward -= 0.2
         return reward
+    
 
     def get_state(self,circuit):
         """"""
+        direction_int = ["NORTH", "EAST", "SOUTH", "WEST"].index(self.direction)
         return (
-                self.position,
+
+                self.dist_to_finish_line(circuit),
+                self.center_bucket(circuit),
                 self.distance_to_obstacle_front(circuit),
                 self.level_of_blocked_moves(circuit,"left"),
                 self.level_of_blocked_moves(circuit,"right"),
                 self.speed_level(),
-                self.direction,
+                self.terrain_type(circuit),
+                direction_int,
             )
-
+    
+    def center_bucket(self,circuit):
+        center_col = len(circuit.grid[0]) // 2
+        dist_to_center = abs(self.position[1] - center_col)
+        return  min(dist_to_center // 2, 3)
+        
     def distance_to_obstacle_front(self, circuit) -> int:
         """
         Returns a bucketed distance to the next wall/edge ahead.
@@ -314,6 +326,19 @@ class QLearningKart(Kart):
                 return 3
         return 3
     
+    def dist_to_finish_line(self,circuit):
+        """État généralisable avec distance à l'objectif."""
+        
+        finish_positions = circuit.get_start_positions()
+        if finish_positions:
+            dist = min(abs(self.position[0]-r) + abs(self.position[1]-c)
+                    for r, c in finish_positions)
+            dist_to_finish = min(dist // 5, 3)  # 0=très proche, 3=loin
+        else:
+            dist_to_finish = 3
+
+        return dist_to_finish
+
     def terrain_type(self, circuit) -> int:
         """0 = road/finish, 1 = grass"""
         return 1 if circuit.is_grass(self.position) else 0
@@ -346,7 +371,7 @@ class QLearningKart(Kart):
         else:
             return 2       
         
-    def next_epsilon(self, coef: float = 0.995, min_epsilon: float = 0.05) -> None:
+    def next_epsilon(self, coef: float = 0.95, min_epsilon: float = 0.05) -> None:
         """
         Reduce exploration progressively after each game.
 

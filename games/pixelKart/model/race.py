@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from games.PixelKart.model.circuit import Circuit
-from games.PixelKart.model.dto import RaceDTO
-from games.PixelKart.model.kart import Kart,QLearningKart
+from model.circuit import Circuit
+from model.dto import RaceDTO
+from model.kart import Kart
 
 class Race:
     """Represents a PixelKart race and its game rules."""

@@ -30,14 +30,14 @@ class QValue(Base):
 
 def serialize_state(state) -> str:
     """Convertit un état (tuple éventuellement imbriqué) en string stable."""
-    return repr(state)
+    return repr(state).replace(" ", "")
 
 def deserialize_state(state_str: str) -> tuple:
     """Reconstruit l'état depuis sa représentation string."""
     return ast.literal_eval(state_str)
 
 def set_q_value(session, agent_id, state, action, value):
-    state_str = serialize_state(state)   # ← utilise repr maintenant
+    state_str = serialize_state(state)
     q = session.query(QValue).filter_by(
         agent_id=agent_id,
         state=state_str,
@@ -49,10 +49,12 @@ def set_q_value(session, agent_id, state, action, value):
     else:
         q = QValue(agent_id=agent_id, state=state_str, action=action, value=value)
         session.add(q)
+        
 
 def get_q_values(session, agent_id, state):
     state_str = serialize_state(state)
     results = session.query(QValue).filter_by(agent_id=agent_id, state=state_str).all()
     return {q.action: q.value for q in results}
 
-Base.metadata.create_all(engine)
+def init_db():
+    Base.metadata.create_all(engine)

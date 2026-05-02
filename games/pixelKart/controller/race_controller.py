@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from games.PixelKart.model.race import Race
-from games.PixelKart.view.race_view import RaceView
-from games.PixelKart.dao.q_table_service import *
-from games.PixelKart.dao.q_table_dao import *
-from games.PixelKart.model.kart import QLearningKart,RandomAIKart
-from games.PixelKart.dao.q_table_dao import SessionLocal
+from model.race import Race
+from view.race_view import RaceView
+from dao.q_table_service import *
+from dao.q_table_dao import *
+from model.kart import QLearningKart,RandomAIKart
+from dao.q_table_dao import SessionLocal,_DB_PATH
 
 
 
@@ -31,6 +31,7 @@ class RaceController:
         self.race = race
         self.view = view
         self.on_back_to_menu = on_back_to_menu
+        self.save_counter = 0
         
 
         self.q_learning_karts = [
@@ -49,28 +50,44 @@ class RaceController:
             self.view.after(0, self.handle_turn)
 
     def _init_q_learning(self):
-        self.session = SessionLocal()
-
-        db_agent = create_agent(self.session)
+        session = SessionLocal()
+        
+        db_agent = create_agent(session)
+        session.commit()
         self.agent_id = db_agent.id
 
         shared_q = {}
         temp_agent = QLearningKart("temp",None,(0,0))
         temp_agent.q_table = shared_q
-        
-        load_q_table(temp_agent,self.agent_id,self.session)
+     
+        load_q_table(temp_agent,self.agent_id,session)
+       
+
+        session.close()
 
         for kart in self.q_learning_karts:
             kart.q_table = shared_q
             
-
     def _save_q_learning(self):
-        for kart in self.q_learning_karts:
-            save_q_table(kart,self.agent_id,self.session)
+
+        if not self.q_learning_karts: 
+            return
+        session = SessionLocal()
+        self.q_learning_karts[0].next_epsilon()
+
+        try:   
+            save_q_table(self.q_learning_karts[0], self.agent_id, session)
+            session.commit()
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde: {e}")
+            session.rollback()
+        finally:
+            session.close()
 
     def handle_turn(self, action: str | None = None) -> None:
         """"""
         if self.race.finished:
+            self.refresh_view()
             self._save_q_learning()
             return
 
@@ -84,7 +101,13 @@ class RaceController:
             self.player_human_turn(action)
             self.play_ai_turn()
             
+        if self.race.finished:
+            self.refresh_view()
+            self._save_q_learning()
+            return    
+        
         self.refresh_view()
+        
 
     def back_to_menu(self) -> None:
         """Ask the parent controller to go back to the menu."""
