@@ -10,6 +10,9 @@ from games.PixelKart.view.circuit_editor import CircuitEditor
 from games.PixelKart.view.menu_view import MenuView
 from games.PixelKart.view.race_view import RaceView
 from games.PixelKart.controller.race_controller import RaceController
+from games.PixelKart.dao.q_table_dao import SessionLocal
+from games.PixelKart.dao.q_table_service import load_q_table,create_agent
+from games.PixelKart.model.kart import QLearningKart 
 
 
 class AppController:
@@ -89,12 +92,12 @@ class AppController:
         self.current_view.set_message("")
 
         try:
-            human_players, random_ais,ql_ais, total_laps, circuit_name = self.current_view.get_config()
+            human_players, random_ais, ql_ais, total_laps, circuit_name = self.current_view.get_config()
             total_players = human_players + random_ais + ql_ais
 
             if not circuit_name:
                 raise ValueError("You must select a circuit.")
-
+            
             circuit_dto = circuit_dao.get_by_name(circuit_name)
             if circuit_dto is None:
                 raise ValueError(f"Unknown circuit: {circuit_name}")
@@ -109,25 +112,42 @@ class AppController:
             )
 
             karts = []
-
             counters = {"human": 0, "random": 0, "ql": 0}
+
+            shared_q_table = {}
+            if ql_ais > 0:
+                session = SessionLocal()
+                try:
+                    db_agent = create_agent(session)
+                    agent_id = db_agent.id
+                    session.commit() 
+                    temp_agent = QLearningKart("temp", None, (0, 0))
+                    temp_agent.epsilon = 0.1
+                    temp_agent.gamma = 0.5
+                    load_q_table(temp_agent, agent_id=agent_id, session=session)
+                    shared_q_table = temp_agent.q_table.copy()
+
+                    print(f"[INFO] Q-table chargée pour agent {agent_id}: {len(shared_q_table)} états")
+                finally:
+                    session.close()  
 
             if len(start_positions) != len(player_config):
                 raise ValueError("Mismatch between players and start positions")
 
             for i, kart_type in enumerate(player_config):
-
                 counters[kart_type] += 1
                 name = f"{kart_type.upper()} {counters[kart_type]}"
-                
-                kart = KartFactory.create(
-                    kart_type=kart_type,
-                    config = {
-                        "name":name,
-                        "color":self.KART_COLORS[i % len(self.KART_COLORS)],
-                        "position":start_positions[i]
-                    }
-                )
+
+                config = {
+                    "name": name,
+                    "color": self.KART_COLORS[i % len(self.KART_COLORS)],
+                    "position": start_positions[i]
+                }
+
+                if kart_type == "ql":
+                    config["q_table"] = shared_q_table
+
+                kart = KartFactory.create(kart_type=kart_type, config=config)
                 karts.append(kart)
 
             race = Race(circuit=circuit, karts=karts, total_laps=total_laps)
@@ -135,7 +155,6 @@ class AppController:
 
         except ValueError as error:
             self.current_view.set_message(str(error))
-
 
     def show_race(self, race: Race) -> None:
         """

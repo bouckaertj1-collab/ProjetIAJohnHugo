@@ -51,22 +51,23 @@ class RaceController:
 
     def _init_q_learning(self):
         session = SessionLocal()
-        
-        db_agent = create_agent(session)
-        session.commit()
-        self.agent_id = db_agent.id
+        try:
+            db_agent = create_agent(session)
+            self.agent_id = db_agent.id
+            shared_q = {}
 
-        shared_q = {}
-        temp_agent = QLearningKart("temp",None,(0,0))
-        temp_agent.q_table = shared_q
-     
-        load_q_table(temp_agent,self.agent_id,session)
-       
+            temp_agent = QLearningKart("temp", None, (0, 0))
+            temp_agent.q_table = shared_q
+            load_q_table(temp_agent, self.agent_id, session)
 
-        session.close()
+            for kart in self.q_learning_karts:
+                kart.q_table = shared_q
 
-        for kart in self.q_learning_karts:
-            kart.q_table = shared_q
+        except Exception as e:
+            print(f"[ERREUR] Chargement Q-table: {e}")
+            raise
+        finally:
+            session.close()
             
     def _save_q_learning(self):
 
@@ -76,7 +77,7 @@ class RaceController:
         self.q_learning_karts[0].next_epsilon()
 
         try:   
-            save_q_table(self.q_learning_karts[0], self.agent_id, session)
+            save_q_table(self.q_learning_karts[0], session, self.agent_id)
             session.commit()
         except Exception as e:
             print(f"Erreur lors de la sauvegarde: {e}")
@@ -138,9 +139,6 @@ class RaceController:
                     if action == "pass":
                         reward -= 10
                     
-                    if reward < -50 or reward > 50:
-                        print(f"[DEBUG] State: {state}, Action: {action}, Reward: {reward}, Crash: {crash}, Finished: {finished}")
-
                     next_state = None if crash or finished else kart.get_state(self.race.circuit)
 
                     kart.learn(state, action, reward, next_state)

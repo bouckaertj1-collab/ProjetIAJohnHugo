@@ -1,6 +1,6 @@
 import ast
 from sqlalchemy import String, Float, create_engine, ForeignKey
-from sqlalchemy.orm import DeclarativeBase, relationship, Mapped, mapped_column, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, relationship, Mapped, mapped_column, sessionmaker,Session
 import os
 from pathlib import Path
 
@@ -37,18 +37,17 @@ def deserialize_state(state_str: str) -> tuple:
     return ast.literal_eval(state_str)
 
 def set_q_value(session, agent_id, state, action, value):
-    state_str = serialize_state(state)
-    q = session.query(QValue).filter_by(
+    """
+    Met à jour ou crée une entrée dans la Q-table.
+    Utilise merge() pour éviter les conflits d'unicité.
+    """
+    q = QValue(
         agent_id=agent_id,
-        state=state_str,
-        action=action
-    ).first()
-
-    if q:
-        q.value = value
-    else:
-        q = QValue(agent_id=agent_id, state=state_str, action=action, value=value)
-        session.add(q)
+        state=state,
+        action=action,
+        value=value
+    )
+    session.merge(q)
         
 
 def get_q_values(session, agent_id, state):

@@ -16,10 +16,8 @@ import matplotlib.pyplot as plt
 
 
 def run_automated_races(num_races=10, total_laps=3):
-    # Initialisation
     init_db()
 
-    # Lire circuits.txt
     circuits_file = Path(__file__).parent / "circuits.txt"
     circuit_dto = None
 
@@ -36,14 +34,13 @@ def run_automated_races(num_races=10, total_laps=3):
     circuit = Circuit.from_dto(circuit_dto)
 
     print(f"[INFO] Circuit utilisé: {circuit.name}\n")
-    # Créer/Charger l'agent et la Q-table UNE SEULE FOIS
+
     session = SessionLocal()
     db_agent = create_agent(session)
     agent_id = db_agent.id
     session.commit()
     session.close()
 
-    # Créer le kart
     kart = KartFactory.create(
         kart_type="ql",
         config={"name": "QL Kart", "color": "red", "position": (0, 0)}
@@ -105,12 +102,19 @@ def run_automated_races(num_races=10, total_laps=3):
 
     print("\n[SAUVEGARDE FINALE]...")
     session = SessionLocal()
-    save_q_table(kart, agent_id, session)
+    save_q_table(kart, session, agent_id)
     session.commit()
     session.close()
     print("[SAUVEGARDE FINALE] Terminée !")
 
     reward_evolution(reward_list,num_races)
+
+    session = SessionLocal()
+    try:
+        save_q_table(kart, session, agent_id)
+        session.commit()
+    finally:
+        session.close()
 
 def reward_evolution(rewards,nb_courses):
     plt.plot(range(len(rewards)), rewards)
