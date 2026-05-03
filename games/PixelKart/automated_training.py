@@ -76,10 +76,7 @@ def run_automated_races(num_races=10, total_laps=3):
 
         while not race.finished and kart.is_alive:
             current_kart = race.get_current_kart()
-            if not isinstance(current_kart, QLearningKart):
-                race.step(current_kart.choose_action())
-                continue
-
+        
             state = current_kart.get_state(race.circuit)
             action = current_kart.choose_action(state,race.circuit)
             old_position = current_kart.position
@@ -90,7 +87,7 @@ def run_automated_races(num_races=10, total_laps=3):
             finished = current_kart.has_finished
             
             reward = current_kart.compute_reward(crash, finished, old_position, current_kart.position, circuit,action)
-                    
+
             total_reward += reward
 
         if crash:
@@ -113,15 +110,15 @@ def run_automated_races(num_races=10, total_laps=3):
     session.close()
     print("[SAUVEGARDE FINALE] Terminée !")
 
-    reward_evolution(reward_list)
+    reward_evolution(reward_list,num_races)
 
-def reward_evolution(rewards):
+def reward_evolution(rewards,nb_courses):
     plt.plot(range(len(rewards)), rewards)
     plt.xlabel("Episode")
     plt.ylabel("Récompense totale")
-    plt.title("Évolution des récompenses sur 100 courses")
+    plt.title(f"Évolution des récompenses sur {nb_courses} courses")
     plt.show()
 
 
 if __name__ == "__main__":
-    run_automated_races(num_races=30, total_laps=1)
+    run_automated_races(num_races=30, total_laps=3)

@@ -233,30 +233,26 @@ class QLearningKart(Kart):
 
     def choose_action(self, state: tuple,circuit) -> str:
         front = self.distance_to_obstacle_front(circuit)
-        behind = self.distance_to_obstacle_behind(circuit)  
         left = self.distance_to_obstacle_left(circuit)
         right = self.distance_to_obstacle_right(circuit)
 
-        if front <= 1 and self.speed > 0:
-            return "brake"
-
-        if behind <= 1 and self.speed < 0:
-            return "brake"
-
-        if front == 0 and self.speed == 0:
-            if left > 0 and right > 0:
-                return random.choice(["turn_left", "turn_right"])
-            elif left > 0:
-                return "turn_left"
-            elif right > 0:
-                return "turn_right"
+        if front == 0:
+            if self.speed > 0:
+                return "brake"
             else:
-                return random.choice(["turn_left", "turn_right"])
+                if left > 0 and right > 0:
+                    return random.choice(["turn_left", "turn_right"])
+                elif left > 0:
+                    return "turn_left"
+                elif right > 0:
+                    return "turn_right"
+                else:
+                    return random.choice(["turn_left", "turn_right"])
 
         if random.random() < self.epsilon:
             return random.choice(self.ACTIONS)
         return self.exploit(state)
-
+    
     def learn(self, state: tuple, action: str, reward: float, next_state: tuple | None) -> None:
         """
         Apply the Q-learning update.
@@ -308,40 +304,6 @@ class QLearningKart(Kart):
 
         return reward
     
-
-    def get_state(self,circuit):
-        """"""
-        return (
-                self.terrain_behind(circuit),
-                self.distance_to_obstacle_front(circuit),
-                self.distance_to_obstacle_behind(circuit),
-                self.distance_to_obstacle_right(circuit),
-                self.distance_to_obstacle_left(circuit),
-                self.center_bucket(circuit),
-                self.speed_level(),
-                self.terrain_type(circuit),
-                ["NORTH", "EAST", "SOUTH", "WEST"].index(self.direction),
-            )
-    
-    def center_bucket(self,circuit):
-        center_col = len(circuit.grid[0]) // 2
-        dist_to_center = abs(self.position[1] - center_col)
-        return  min(dist_to_center // 2, 3)
-    
-    def terrain_behind(self, circuit) -> int:
-        """Retourne 0 si route/finish, 1 si herbe, 2 si mur (derrière)."""
-        behind_pos = (
-            self.position[0] + self.direction_to_vector(self.OPPOSITE[self.direction])[0],
-            self.position[1] + self.direction_to_vector(self.OPPOSITE[self.direction])[1]
-        )
-        if not circuit.is_inside(behind_pos):
-            return 2
-        if circuit.is_wall(behind_pos):
-            return 2
-        if circuit.is_grass(behind_pos):
-            return 1
-        return 0 
-
     def distance_to_obstacle(self, circuit, direction: str) -> int:
         """
         Calcule la distance à l'obstacle dans une direction donnée.
@@ -385,6 +347,41 @@ class QLearningKart(Kart):
     def distance_to_obstacle_right(self, circuit) -> int:
         """Distance à l'obstacle À DROITE du kart."""
         return self.distance_to_obstacle(circuit, self.RIGHT_TURN[self.direction])
+
+    def get_state(self,circuit):
+        """"""
+        return (
+                self.terrain_behind(circuit),
+                self.distance_to_obstacle_front(circuit),
+                self.distance_to_obstacle_behind(circuit),
+                self.distance_to_obstacle_right(circuit),
+                self.distance_to_obstacle_left(circuit),
+                self.center_bucket(circuit),
+                self.speed_level(),
+                self.terrain_type(circuit),
+                ["NORTH", "EAST", "SOUTH", "WEST"].index(self.direction),
+            )
+    
+    def center_bucket(self,circuit):
+        center_col = len(circuit.grid[0]) // 2
+        dist_to_center = abs(self.position[1] - center_col)
+        return  min(dist_to_center // 2, 3)
+    
+    def terrain_behind(self, circuit) -> int:
+        """Retourne 0 si route/finish, 1 si herbe, 2 si mur (derrière)."""
+        behind_pos = (
+            self.position[0] + self.direction_to_vector(self.OPPOSITE[self.direction])[0],
+            self.position[1] + self.direction_to_vector(self.OPPOSITE[self.direction])[1]
+        )
+        if not circuit.is_inside(behind_pos):
+            return 2
+        if circuit.is_wall(behind_pos):
+            return 2
+        if circuit.is_grass(behind_pos):
+            return 1
+        return 0 
+
+
 
 
     def dist_to_finish_line(self,circuit):

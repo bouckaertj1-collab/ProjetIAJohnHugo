@@ -121,7 +121,6 @@ class RaceController:
                 
                 kart = self.race.get_current_kart()
 
-
                 if isinstance(kart, QLearningKart):
                     state = kart.get_state(self.race.circuit)
 
