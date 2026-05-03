@@ -1,4 +1,4 @@
-from dao.q_table_dao import *
+from games.PixelKart.dao.q_table_dao import *
 
 def load_q_table(agent, agent_id, session):
     results = session.query(QValue).filter_by(agent_id=agent_id).all()

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from model.race import Race
-from view.race_view import RaceView
-from dao.q_table_service import *
-from dao.q_table_dao import *
-from model.kart import QLearningKart,RandomAIKart
-from dao.q_table_dao import SessionLocal,_DB_PATH
+from games.PixelKart.model.race import Race
+from games.PixelKart.view.race_view import RaceView
+from games.PixelKart.dao.q_table_service import *
+from games.PixelKart.dao.q_table_dao import *
+from games.PixelKart.model.kart import QLearningKart,RandomAIKart
+from games.PixelKart.dao.q_table_dao import SessionLocal
 
 
 
@@ -127,14 +127,20 @@ class RaceController:
 
                     old_position = kart.position
 
-                    action = kart.choose_action(state)
+                    action = kart.choose_action(state,self.race.circuit)
                     self.race.step(action)
 
                     crash = not kart.is_alive
                     finished = kart.has_finished
                     current_position = kart.position
 
-                    reward = kart.compute_reward(crash, finished, old_position, current_position)
+                    reward = kart.compute_reward(crash, finished, old_position, current_position,self.race.circuit,action)
+                    
+                    if action == "pass":
+                        reward -= 10
+                    
+                    if reward < -50 or reward > 50:
+                        print(f"[DEBUG] State: {state}, Action: {action}, Reward: {reward}, Crash: {crash}, Finished: {finished}")
 
                     next_state = None if crash or finished else kart.get_state(self.race.circuit)
 

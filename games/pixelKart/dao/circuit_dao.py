@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-from model.dto import CircuitDTO
+from games.PixelKart.model.dto import CircuitDTO
 
 
 FILE_PATH = "games/pixelKart/circuits.txt"

@@ -1,4 +1,4 @@
-from model.kart import HumanKart,RandomAIKart,QLearningKart 
+from games.PixelKart.model.kart import HumanKart,RandomAIKart,QLearningKart 
 
 class KartFactory:
     """

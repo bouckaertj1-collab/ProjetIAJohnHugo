@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from model.circuit import Circuit
-from model.dto import RaceDTO
-from model.kart import Kart
+from games.PixelKart.model.circuit import Circuit
+from games.PixelKart.model.dto import RaceDTO
+from games.PixelKart.model.kart import Kart
 
 class Race:
     """Represents a PixelKart race and its game rules."""
@@ -76,7 +76,6 @@ class Race:
             if self.winner_name is None:
                 self.winner_name = kart.name
             kart.finish()
-
         self.check_end_game()
 
         if not self.finished:
