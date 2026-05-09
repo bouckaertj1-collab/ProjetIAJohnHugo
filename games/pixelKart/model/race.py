@@ -54,6 +54,12 @@ class Race:
         return False
 
     def step(self, action: str | None = None) -> None:
+        """
+        Execute one step of the race for the current kart.
+
+        Args:
+            action: Action to perform (for human karts). If None, the kart is AI-controlled.
+        """
 
         if self.finished:
             return
@@ -89,6 +95,16 @@ class Race:
             self.next_player()
 
     def apply_movement(self, kart: Kart) -> list[tuple[int, int]]:
+        """
+        Apply movement to the kart based on its speed and direction.
+
+        Args:
+            kart: Kart to move.
+
+        Returns:
+            List of positions traversed by the kart during this movement.
+        """
+
         traversed_positions: list[tuple[int, int]] = []
 
         if kart.speed == 0:
@@ -138,6 +154,15 @@ class Race:
 
    
     def update_lap_if_needed(self, kart, old_position, traversed_positions):
+        """
+        Update the kart's lap count if it crosses the finish line.
+
+        Args:
+            kart: Kart to check for lap completion.
+            old_position: Previous position of the kart.
+            traversed_positions: List of positions traversed by the kart during this movement.
+        """
+        
         if not traversed_positions or not kart.is_alive:
             return
 

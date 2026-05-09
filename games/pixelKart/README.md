@@ -64,29 +64,25 @@ Le projet est structuré selon le modèle MVC :
 
 4. ARBORESCENCE DU PROJET
 -------------------------
-games/pixelKart/
-|
-|-- controller/
-|   |-- app_controller.py
-|   └── race_controller.py
-|
-|-- dao/
-|   └── circuit_dao.py
-|
-|-- model/
-|   |-- circuit.py
-|   |-- dto.py
-|   |-- kart.py
-|   └── race.py
-|
-|-- view/
-|   |-- circuit_editor.py
-|   |-- circuit_frames.py
-|   |-- menu_view.py
-|   └── race_view.py
-|
-|-- circuits.txt
-└── README.md
+│   └── PixelKart/
+│       ├── dao/                  # Accès à la base de données (Q-tables, circuits)
+│       │   ├── Q_table_dao.py    # Gestion des Q-tables en SQLite
+│       │   └── q_table_service.py
+│       ├── model/                # Logique métier
+│       │   ├── kart.py           # Classes Kart, QLearningKart, etc.
+│       │   ├── circuit.py        # Gestion des circuits
+│       │   ├── race.py           # Logique des courses
+│       │   └── kart_factory.py   # Factory pour créer des karts
+│       ├── view/                 # Interface utilisateur (Tkinter)
+│       │   ├── race_view.py      # Affichage de la course
+│       │   └── menu_view.py      # Menu principal
+│       └── controller/           # Contrôleurs
+│           ├── race_controller.py
+│           └── app_controller.py
+├── launcher/                     # Point d'entrée du jeu
+├── circuits.txt                  # Liste des circuits personnalisés
+├── requirements.txt              # Dépendances Python
+└── README.md                     # Documentation
 
 5. IA
 -----
@@ -106,12 +102,34 @@ L’objectif principal de cette IA est de permettre :
 - de jouer contre des adversaires automatiques,
 - et de respecter la structure demandée avec humains + IA.
 
-6. PRÉREQUIS
+## ⚠️ Problèmes connus
+
+- Les karts Q-Learning peuvent parfois tourner en rond sur des circuits complexes.
+- La détection de la ligne d'arrivée peut être sensible à la direction du kart.
+- Les performances dépendent fortement des hyperparamètres (`epsilon`, `alpha`, `gamma`).
+
+6. ✨ Fonctionnalités
+------------
+
+- **Création de circuits** : Éditeur intégré pour concevoir des circuits personnalisés (murs, herbe, ligne d'arrivée).
+- **Types de karts** :
+  - **Humain** : Contrôlé via l'interface graphique.
+  - **IA aléatoire** : Prend des décisions aléatoires.
+  - **IA Q-Learning** : Apprend à optimiser ses trajectoires via l'apprentissage par renforcement.
+- **Entraînement automatique** : Script pour entraîner un kart Q-Learning sur N courses et sauvegarder sa Q-table.
+- **Sauvegarde des progrès** : Persistance des Q-tables en base de données SQLite.
+- **Métriques de suivi** : Affichage des récompenses, du nombre d'états explorés, et des tours complétés.
+
+
+7. PRÉREQUIS
 ------------
 - Python >= 3.10
 - Tkinter (inclus par défaut avec Python)
+- sqlalchemy>=2.0.0
+- matplotlib>=3.7.0
+- numpy>=1.24.0
 
-7. INSTALLATION
+8. INSTALLATION
 ---------------
 Installer les dépendances avec :
 
@@ -121,10 +139,10 @@ Remarque :
 Tkinter fait partie de la bibliothèque standard Python et ne nécessite pas
 d’installation supplémentaire.
 
-8. LANCEMENT DU PROGRAMME
+9. LANCEMENT DU PROGRAMME
 -------------------------
 
-8.1 Lancer le projet
+9.1 Lancer le projet
 --------------------
 Le jeu PixelKart se lance depuis le launcher principal du projet.
 
@@ -134,7 +152,7 @@ Depuis la racine du projet, exécuter :
 
 Ensuite, sélectionner **PixelKart** dans la fenêtre du launcher.
 
-8.2 Fenêtres du jeu
+9.2 Fenêtres du jeu
 -------------------
 Le launcher ouvre PixelKart dans une fenêtre dédiée.
 
@@ -143,7 +161,7 @@ Le jeu propose :
 - un éditeur de circuits,
 - une fenêtre de course.
 
-9. UTILISATION
+10. UTILISATION
 --------------
 - Dans le menu, choisir :
   - le nombre de joueurs humains,
@@ -168,7 +186,7 @@ Le jeu propose :
   - l’état global de la course.
 - Le bouton **Back to menu** permet de revenir à l’écran de configuration.
 
-10. SAUVEGARDE DES CIRCUITS
+11. SAUVEGARDE DES CIRCUITS
 ---------------------------
 Les circuits sont stockés dans le fichier :
 
@@ -188,7 +206,7 @@ Le DAO permet :
 - d’enregistrer un nouveau circuit,
 - de mettre à jour l’ensemble du fichier.
 
-11. AUTEURS
+12. AUTEURS
 -----------
 Projet réalisé par :
 Bouckaert John / Hugo Fievet
@@ -197,6 +215,6 @@ Cadre :
 Projet pédagogique – Python / Tkinter
 Année : 2025–2026
 
-12. LICENSE
+13. LICENSE
 -----------
 This project is licensed under the MIT License.

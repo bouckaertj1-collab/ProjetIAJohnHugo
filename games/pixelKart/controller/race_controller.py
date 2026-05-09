@@ -51,6 +51,9 @@ class RaceController:
             self.view.after(0, self.handle_turn)
 
     def _save_q_learning(self):
+        """
+        Save the Q-table of QLearning karts to the database.
+        """
 
         if not self.q_learning_karts: 
             return
@@ -65,7 +68,13 @@ class RaceController:
             session.close()
 
     def handle_turn(self, action: str | None = None) -> None:
-        """"""
+        """
+        Handle a turn for the current kart (human or AI).
+
+        Args:
+            action: Action chosen by the human player (if applicable).
+        """
+
         if self.race.finished:
             self.refresh_view()
             self._save_q_learning()
@@ -95,8 +104,10 @@ class RaceController:
             self.on_back_to_menu()
 
     def play_ai_turn(self):
-            """"""
-            
+            """
+            Play a turn for all AI karts (QLearning or Random) until the race ends or max steps are reached.
+            """
+
             max_steps = 2000
             steps = 0
             while not self.race.finished and isinstance(self.race.get_current_kart(),(QLearningKart,RandomAIKart)) and steps < max_steps:
@@ -146,6 +157,12 @@ class RaceController:
             return
 
     def player_human_turn(self,action):
+        """
+        Play a turn for a human-controlled kart.
+
+        Args:
+            action: Action chosen by the human player.
+        """
         self.race.step(action)
     
     def refresh_view(self) -> None:

@@ -1,2 +1,11 @@
 # Python >= 3.10
 pytest>=8.0
+
+# Base de données
+sqlalchemy>=2.0.0
+
+# Visualisation des récompenses
+matplotlib>=3.7.0
+
+# Calculs mathématiques (atan2, degrees)
+numpy>=1.24.0

@@ -195,7 +195,7 @@ class QLearningKart(Kart):
         laps_done: int = 0,
         is_alive: bool = True,
         has_finished: bool = False,
-        q_table: dict | None = None,
+        q_table: dict[tuple, dict[str, float]] | None = None,
         epsilon: float = 0.9,
         alpha: float = 0.2,
         gamma: float = 0.95,
@@ -248,6 +248,16 @@ class QLearningKart(Kart):
         return random.choice(best_actions)
 
     def choose_action(self, state: tuple, circuit) -> str:
+        """
+        Choose an action using an epsilon-greedy policy or forced logic for specific conditions.
+
+        Args:
+            state: Serialized state key representing the current environment.
+            circuit: Circuit instance to check obstacles and finish line.
+
+        Returns:
+            The chosen action as a string.
+        """
         current_dir = self.direction if self.speed >= 0 else self.OPPOSITE[self.direction]
 
         if state not in self.q_table:
@@ -291,6 +301,21 @@ class QLearningKart(Kart):
         self.q_table[state][action] = current_q + self.alpha * (target - current_q)
     
     def compute_reward(self, crash, finished, old_position, new_position, circuit, action):
+        """
+        Compute the reward for the kart based on its state and action.
+
+        Args:
+            crash: Whether the kart crashed.
+            finished: Whether the kart finished the race.
+            old_position: Previous position of the kart.
+            new_position: Current position of the kart.
+            circuit: Circuit instance to check positions.
+            action: Action taken by the kart.
+
+        Returns:
+            The computed reward as a float.
+        """
+
         if crash:
             return -100_000_000 
         if finished:
@@ -320,6 +345,16 @@ class QLearningKart(Kart):
         return reward
 
     def get_state(self, circuit):
+        """
+        Generate a serialized state for the Q-learning algorithm.
+
+        Args:
+            circuit: Circuit instance to check obstacles and finish line.
+
+        Returns:
+            A tuple representing the current state of the kart.
+        """
+
         current_dir = self.direction if self.speed >= 0 else self.OPPOSITE[self.direction]
         front_real = self.distance_to_obstacle(circuit, current_dir)
         left_real = self.distance_to_obstacle(circuit, self.LEFT_TURN[current_dir])
@@ -337,7 +372,16 @@ class QLearningKart(Kart):
         )
     
     def direction_to_finish_line(self,circuit):
-        """"""
+        """
+        Calculate the discretized angle (in 45-degree increments) from the kart to the closest finish line.
+
+        Args:
+            circuit: Circuit instance to get finish line positions.
+
+        Returns:
+            The discretized angle as an integer.
+        """
+
         finish_positions = circuit.get_start_positions()
 
         closest_finish = min(finish_positions, key=lambda pos: abs(self.position[0] - pos[0]) + abs(self.position[1] - pos[1]))
@@ -350,6 +394,17 @@ class QLearningKart(Kart):
         return angle_to_finish
 
     def distance_to_obstacle(self, circuit, direction: str) -> int:
+        """
+        Calculate the distance to the nearest obstacle in a given direction.
+
+        Args:
+            circuit: Circuit instance to check for obstacles.
+            direction: Direction to check (e.g., "NORTH", "EAST").
+
+        Returns:
+            Distance to the obstacle (0 to 3).
+        """
+        
         delta_row, delta_col = self.direction_to_vector(direction)
         row, col = self.position
 

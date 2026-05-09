@@ -11,10 +11,18 @@ from games.PixelKart.dao.q_table_service import save_q_table, load_q_table,creat
 from games.PixelKart.model.circuit import Circuit
 from games.PixelKart.model.kart_factory import KartFactory
 from games.PixelKart.model.race import Race
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 
 def run_automated_races(num_races=10, total_laps=3):
+    """
+    Run automated races for a QLearning kart to train it.
+
+    Args:
+        num_races: Number of races to run.
+        total_laps: Number of laps required to finish a race.
+    """
+
     init_db()
 
     circuits_file = Path(__file__).parent / "circuits.txt"
@@ -121,10 +129,20 @@ def run_automated_races(num_races=10, total_laps=3):
         session.commit()
     finally:
         session.close()
+    
+    reward_evolution(reward_list,num_races)
 
     
 
 def reward_evolution(rewards,nb_courses):
+    """
+    Plot the evolution of rewards over the races.
+
+    Args:
+        rewards: List of total rewards obtained in each race.
+        nb_courses: Total number of races.
+    """
+
     plt.plot(range(len(rewards)), rewards)
     plt.xlabel("Episode")
     plt.ylabel("Récompense totale")
