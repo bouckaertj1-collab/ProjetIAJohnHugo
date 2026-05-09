@@ -1,4 +1,4 @@
-from games.PixelKart.dao.q_table_dao import *
+from games.PixelKart.dao.Q_table_dao import *
 
 def load_q_table(agent, agent_id, session):
     """

@@ -69,6 +69,12 @@ class Race:
 
         kart.apply_action(action)
 
+        if kart.laps_done >= self.total_laps:
+            kart.finish()
+            kart.speed = 0  
+            self.check_end_game()
+            return 
+
         traversed_positions = self.apply_movement(kart)
         self.update_lap_if_needed(kart, old_position, traversed_positions)
 
@@ -76,25 +82,13 @@ class Race:
             if self.winner_name is None:
                 self.winner_name = kart.name
             kart.finish()
+            
         self.check_end_game()
 
         if not self.finished:
             self.next_player()
 
     def apply_movement(self, kart: Kart) -> list[tuple[int, int]]:
-        """
-        Apply the kart movement according to its speed and direction.
-
-        The finish line can only be crossed towards the east.
-        If the kart tries to cross it towards the west, its speed is reset
-        and the movement stops.
-
-        Args:
-            kart: Kart to move.
-
-        Returns:
-            The list of traversed positions.
-        """
         traversed_positions: list[tuple[int, int]] = []
 
         if kart.speed == 0:
@@ -118,17 +112,18 @@ class Race:
                 kart.reset_speed()
                 return traversed_positions
 
+         
             if self.circuit.is_wall(next_position):
-                kart.eliminate()
-                return traversed_positions
+                if self.circuit.is_finish(kart.position) and col_step == 1: 
+                    kart.position = next_position
+                    traversed_positions.append(next_position)
+                    remaining_steps -= 1
+                    continue
+                else:
+                    kart.eliminate()
+                    return traversed_positions
 
             if self.is_position_occupied(next_position):
-                kart.reset_speed()
-                return traversed_positions
-
-            if col_step == -1 and (
-                self.circuit.is_finish(kart.position) or self.circuit.is_finish(next_position)
-            ):
                 kart.reset_speed()
                 return traversed_positions
 
@@ -141,28 +136,26 @@ class Race:
 
         return traversed_positions
 
-    def update_lap_if_needed(
-        self,
-        kart: Kart,
-        old_position: tuple[int, int],
-        traversed_positions: list[tuple[int, int]],
-    ) -> None:
-        """
-        Update the kart lap count if the finish line was crossed towards the east.
-        """
+   
+    def update_lap_if_needed(self, kart, old_position, traversed_positions):
         if not traversed_positions or not kart.is_alive:
             return
 
-        previous_position = old_position
+        finish_positions = self.circuit.get_start_positions()
+        if not finish_positions:
+            return
+        finish_col = finish_positions[0][1]
 
-        for position in traversed_positions:
-            if position[0] != previous_position[0] or position[1] != previous_position[1] + 1:
-                return
-            previous_position = position
-
-        if any(self.circuit.is_finish(position) for position in traversed_positions):
-            kart.complete_lap()
-
+        old_on_finish = self.circuit.is_finish(old_position)
+        for pos in traversed_positions:
+            if self.circuit.is_finish(pos) and not old_on_finish:
+                current_dir = kart.direction if kart.speed >= 0 else kart.OPPOSITE[kart.direction]
+                if old_position[1] < finish_col and pos[1] > old_position[1] and current_dir == "EAST":
+                    kart.complete_lap()
+                    old_on_finish = True
+            else:
+                old_on_finish = self.circuit.is_finish(pos)
+                
     def next_player(self) -> None:
         """
         Move to the next kart still in the race.
@@ -189,8 +182,12 @@ class Race:
         """
         End the race when all karts are either finished or eliminated.
         """
-        if all(not kart.is_alive or kart.has_finished for kart in self.karts):
+        """ if all(not kart.is_alive or kart.has_finished for kart in self.karts):
             self.finished = True
+        """
+        if all(kart.has_finished for kart in self.karts):
+            self.finished = True
+            
 
     def to_dto(self) -> RaceDTO:
         """

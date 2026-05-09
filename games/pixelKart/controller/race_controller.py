@@ -5,10 +5,8 @@ from collections.abc import Callable
 from games.PixelKart.model.race import Race
 from games.PixelKart.view.race_view import RaceView
 from games.PixelKart.dao.q_table_service import *
-from games.PixelKart.dao.q_table_dao import *
+from games.PixelKart.dao.Q_table_dao import *
 from games.PixelKart.model.kart import QLearningKart,RandomAIKart
-from games.PixelKart.dao.q_table_dao import SessionLocal
-
 
 
 class RaceController:
@@ -19,6 +17,8 @@ class RaceController:
         race: Race,
         view: RaceView,
         on_back_to_menu: Callable[[], None] | None = None,
+        agent_id: int | None = None,
+        exploit_only: bool = False
     ) -> None:
         """
         Initialize the race controller.
@@ -32,50 +32,29 @@ class RaceController:
         self.view = view
         self.on_back_to_menu = on_back_to_menu
         self.save_counter = 0
+        self.agent_id = agent_id 
         
-
         self.q_learning_karts = [
             kart for kart in self.race.karts if isinstance(kart, QLearningKart)
         ]
 
-        if self.q_learning_karts:
-            self._init_q_learning()
+        if exploit_only:
+            for kart in self.q_learning_karts:
+                kart.epsilon = 0.0
 
         self.view.bind_action(self.handle_turn)
         self.view.bind_back_to_menu(self.back_to_menu)
         self.view.set_circuit(self.race.circuit.to_dto()["grid"])
-
         self.refresh_view()
+
         if self.race.get_current_kart().is_ai:
             self.view.after(0, self.handle_turn)
 
-    def _init_q_learning(self):
-        session = SessionLocal()
-        try:
-            db_agent = create_agent(session)
-            self.agent_id = db_agent.id
-            shared_q = {}
-
-            temp_agent = QLearningKart("temp", None, (0, 0))
-            temp_agent.q_table = shared_q
-            load_q_table(temp_agent, self.agent_id, session)
-
-            for kart in self.q_learning_karts:
-                kart.q_table = shared_q
-
-        except Exception as e:
-            print(f"[ERREUR] Chargement Q-table: {e}")
-            raise
-        finally:
-            session.close()
-            
     def _save_q_learning(self):
 
         if not self.q_learning_karts: 
             return
         session = SessionLocal()
-        self.q_learning_karts[0].next_epsilon()
-
         try:   
             save_q_table(self.q_learning_karts[0], session, self.agent_id)
             session.commit()
@@ -118,9 +97,13 @@ class RaceController:
     def play_ai_turn(self):
             """"""
             
-            while not self.race.finished and isinstance(self.race.get_current_kart(),(QLearningKart,RandomAIKart)):
+            max_steps = 2000
+            steps = 0
+            while not self.race.finished and isinstance(self.race.get_current_kart(),(QLearningKart,RandomAIKart)) and steps < max_steps:
                 
                 kart = self.race.get_current_kart()
+
+                print(f"[DEBUG] Q-table size: {len(kart.q_table)}") 
 
                 if isinstance(kart, QLearningKart):
                     state = kart.get_state(self.race.circuit)
@@ -128,8 +111,10 @@ class RaceController:
                     old_position = kart.position
 
                     action = kart.choose_action(state,self.race.circuit)
+                    
                     self.race.step(action)
 
+                    """  
                     crash = not kart.is_alive
                     finished = kart.has_finished
                     current_position = kart.position
@@ -141,11 +126,23 @@ class RaceController:
                     
                     next_state = None if crash or finished else kart.get_state(self.race.circuit)
 
-                    kart.learn(state, action, reward, next_state)
+                    kart.learn(state, action, reward, next_state) 
+                    """
                 
                 else:
                     action = kart.choose_action()
                     self.race.step(action)
+                steps +=1
+
+                if steps >= max_steps:
+                    self.race.finished = True
+                    self.race.winner_name = None      
+
+                    alive_karts = [kart for kart in self.race.karts if kart.is_alive]
+                    if alive_karts:
+                        self.race.winner_name = max(alive_karts, key=lambda k: k.laps_done).name
+                    else:
+                        self.race.winner_name = None
             return
 
     def player_human_turn(self,action):

@@ -10,7 +10,7 @@ from games.PixelKart.view.circuit_editor import CircuitEditor
 from games.PixelKart.view.menu_view import MenuView
 from games.PixelKart.view.race_view import RaceView
 from games.PixelKart.controller.race_controller import RaceController
-from games.PixelKart.dao.q_table_dao import SessionLocal
+from games.PixelKart.dao.Q_table_dao import SessionLocal
 from games.PixelKart.dao.q_table_service import load_q_table,create_agent
 from games.PixelKart.model.kart import QLearningKart 
 
@@ -118,18 +118,22 @@ class AppController:
             if ql_ais > 0:
                 session = SessionLocal()
                 try:
-                    db_agent = create_agent(session)
+                    db_agent = create_agent(session)  
                     agent_id = db_agent.id
-                    session.commit() 
-                    temp_agent = QLearningKart("temp", None, (0, 0))
-                    temp_agent.epsilon = 0.1
-                    temp_agent.gamma = 0.5
+
+                    temp_agent = QLearningKart(
+                        "temp", None, (0, 0),
+                        epsilon=db_agent.epsilon,
+                        alpha=db_agent.alpha,
+                        gamma=db_agent.gamma
+                    )
                     load_q_table(temp_agent, agent_id=agent_id, session=session)
                     shared_q_table = temp_agent.q_table.copy()
-
-                    print(f"[INFO] Q-table chargée pour agent {agent_id}: {len(shared_q_table)} états")
+                    shared_epsilon = temp_agent.epsilon
+                    shared_alpha = temp_agent.alpha
+                    shared_gamma = temp_agent.gamma
                 finally:
-                    session.close()  
+                    session.close()
 
             if len(start_positions) != len(player_config):
                 raise ValueError("Mismatch between players and start positions")
@@ -146,17 +150,20 @@ class AppController:
 
                 if kart_type == "ql":
                     config["q_table"] = shared_q_table
+                    config["epsilon"] = shared_epsilon
+                    config["alpha"] = shared_alpha
+                    config["gamma"] = shared_gamma
 
                 kart = KartFactory.create(kart_type=kart_type, config=config)
                 karts.append(kart)
 
             race = Race(circuit=circuit, karts=karts, total_laps=total_laps)
-            self.show_race(race)
+            self.show_race(race, agent_id=agent_id if ql_ais > 0 else None)
 
         except ValueError as error:
             self.current_view.set_message(str(error))
 
-    def show_race(self, race: Race) -> None:
+    def show_race(self, race: Race,agent_id: int | None = None) -> None:
         """
         Display the race screen.
 
@@ -171,6 +178,8 @@ class AppController:
             race=race,
             view=view,
             on_back_to_menu=self.show_menu,
+            agent_id=agent_id,
+            exploit_only=True,
         )
 
     def start(self) -> None:

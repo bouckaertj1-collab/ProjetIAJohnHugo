@@ -6,13 +6,12 @@ Script pour entraîner un kart QLearning sur 10 courses.
 """
 
 from pathlib import Path
-from games.PixelKart.dao.q_table_dao import init_db, SessionLocal
+from games.PixelKart.dao.Q_table_dao import init_db, SessionLocal
 from games.PixelKart.dao.q_table_service import save_q_table, load_q_table,create_agent
 from games.PixelKart.model.circuit import Circuit
 from games.PixelKart.model.kart_factory import KartFactory
 from games.PixelKart.model.race import Race
-from games.PixelKart.model.kart import QLearningKart
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 
 def run_automated_races(num_races=10, total_laps=3):
@@ -27,7 +26,6 @@ def run_automated_races(num_races=10, total_laps=3):
                 line = line.strip()
                 if line and ':' in line:
                     name, grid_str = line.split(':', 1)
-                    #if name == "Petit":
                     circuit_dto = {"name": name, "grid": grid_str}
                     break
     
@@ -50,10 +48,9 @@ def run_automated_races(num_races=10, total_laps=3):
     load_q_table(kart, agent_id, session)
     session.close()
 
+    kart.alpha = 0.3
+    kart.gamma = 0.99
     kart.epsilon = 0.9
-    kart.alpha = 0.2
-    kart.gamma = 0.8
-    
     reward_list = []
 
     for race_num in range(1, num_races + 1):
@@ -66,14 +63,17 @@ def run_automated_races(num_races=10, total_laps=3):
         kart.is_alive = True
         kart.has_finished = False
         kart.direction = "EAST"
+        kart.previous_action = None
 
         race = Race(circuit=circuit, karts=[kart], total_laps=total_laps)
         total_reward = 0.0
-        crash_count = 0
-
-        while not race.finished and kart.is_alive:
-            current_kart = race.get_current_kart()
         
+        max_steps = 30_000
+        
+        steps = 0
+        while not race.finished and kart.is_alive and steps < max_steps:
+            current_kart = race.get_current_kart()
+
             state = current_kart.get_state(race.circuit)
             action = current_kart.choose_action(state,race.circuit)
             old_position = current_kart.position
@@ -87,18 +87,26 @@ def run_automated_races(num_races=10, total_laps=3):
 
             total_reward += reward
 
-        if crash:
-            crash_count += 1
-
             next_state = None if crash or finished else current_kart.get_state(race.circuit)
             current_kart.learn(state, action, reward, next_state)
 
+            steps += 1
+
         reward_list += [total_reward]
 
-        kart.next_epsilon()
-        print(f"Course {race_num}/{num_races} | ε={kart.epsilon:.2f} | Récompense: {total_reward:.1f} | États: {len(kart.q_table)}| Nb crash : {crash_count}")
-    
-    
+        kart.next_epsilon(coef=0.97, min_epsilon=0.1)
+
+        print("===========================")
+        print(f"| Course: {race_num}/{num_races}|")
+        print(f"| ε= {kart.epsilon:.2f}|")
+        print(f"| Récompense: {total_reward:.1f}|")
+        print(f"| États: {len(kart.q_table)}|")
+        print(f"| Finished: {kart.has_finished}|")
+        print(f"| Laps: {kart.laps_done}/{total_laps}|")
+        print(f"| Position: {kart.position}|")
+        print(f"| crash: {crash}|")
+        print(f"| Time: {race.time}|")
+        print("===========================")
 
     print("\n[SAUVEGARDE FINALE]...")
     session = SessionLocal()
@@ -107,14 +115,14 @@ def run_automated_races(num_races=10, total_laps=3):
     session.close()
     print("[SAUVEGARDE FINALE] Terminée !")
 
-    reward_evolution(reward_list,num_races)
-
     session = SessionLocal()
     try:
         save_q_table(kart, session, agent_id)
         session.commit()
     finally:
         session.close()
+
+    
 
 def reward_evolution(rewards,nb_courses):
     plt.plot(range(len(rewards)), rewards)
@@ -125,4 +133,4 @@ def reward_evolution(rewards,nb_courses):
 
 
 if __name__ == "__main__":
-    run_automated_races(num_races=30, total_laps=3)
+    run_automated_races(num_races=50, total_laps=3)
