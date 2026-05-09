@@ -8,7 +8,6 @@ Responsibilities:
 """
 
 import random
-import tkinter as tk
 
 from launcher.view import LauncherView
 from games.matchsticks.game_controller import GameController
@@ -16,7 +15,7 @@ from games.matchsticks.player import AI, HumanGUI
 from games.cubee.game_model import GameModel as CubeeModel
 from games.cubee.game_controller import GameController as CubeeController
 from games.cubee.game_view import GameView as CubeeView
-from games.cubee.player import Player, QLearningAgent, RandomAgent
+from games.cubee.player import Player, QLearningAgent
 from games.pixelKart.controller.app_controller import AppController as PixelKartController
 
 
