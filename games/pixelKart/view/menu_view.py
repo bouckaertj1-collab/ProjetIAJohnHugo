@@ -18,9 +18,9 @@ class MenuView(ttk.Frame):
         self.pack(fill="both", expand=True)
 
         self.human_players_var = tk.IntVar(value=1)
-        self.random_ais_var = tk.IntVar(value=1)
+        self.random_ais_var = tk.IntVar(value=0)
         self.ql_ais_var = tk.IntVar(value=1)
-        self.laps_var = tk.IntVar(value=3)
+        self.laps_var = tk.IntVar(value=2)
         self.selected_circuit_var = tk.StringVar(value="")
 
         title_label = ttk.Label(self, text="PixelKart", font=("Arial", 18, "bold"))
