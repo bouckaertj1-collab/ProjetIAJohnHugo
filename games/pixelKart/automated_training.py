@@ -198,7 +198,7 @@ if __name__ == "__main__":
     kart, circuit = run_automated_races(
         num_races=10_000,
         total_laps=1,
-        max_steps=1500,
+        max_steps=500,
         log_every=100,
     )
 

@@ -249,17 +249,6 @@ class QLearningKart(Kart):
             """
             self.ensure_state_exists(state)
 
-            current_direction = (
-                self.direction
-                if self.speed >= 0
-                else self.OPPOSITE[self.direction]
-            )
-
-            # Small safety rule: if the kart is moving directly into a wall,
-            # braking is usually better than continuing.
-            if self.speed != 0 and self.distance_to_obstacle(circuit, current_direction) == 0:
-                return "brake"
-
             if random.random() < self.epsilon:
                 return random.choice(self.ACTIONS)
 
