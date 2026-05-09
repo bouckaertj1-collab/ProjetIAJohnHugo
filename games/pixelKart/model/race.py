@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from games.pixelKart.model.circuit import Circuit
 from games.pixelKart.model.dto import RaceDTO
-from games.pixelKart.model.kart import Kart
+from games.pixelKart.model.kart import Kart, QLearningKart
 
 
 class Race:
@@ -94,10 +94,17 @@ class Race:
             ValueError: If the current kart is not an AI kart.
         """
         kart = self.get_current_kart()
+
         if not kart.is_ai:
             raise ValueError("The current kart is not AI-controlled.")
 
-        self.play_current_turn(kart.choose_action())
+        if isinstance(kart, QLearningKart):
+            state = kart.get_state(self.circuit)
+            action = kart.choose_action(state, self.circuit)
+        else:
+            action = kart.choose_action()
+
+        self.play_current_turn(action)
 
     def apply_movement(self, kart: Kart) -> list[tuple[int, int]]:
         """

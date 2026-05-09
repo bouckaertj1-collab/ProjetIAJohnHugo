@@ -4,7 +4,9 @@ import tkinter as tk
 
 from games.pixelKart.dao import circuit_dao
 from games.pixelKart.model.circuit import Circuit
-from games.pixelKart.model.kart import HumanKart, RandomAIKart
+from games.pixelKart.model.kart_factory import KartFactory
+from games.pixelKart.dao.Q_table_dao import init_db, SessionLocal
+from games.pixelKart.dao.q_table_service import create_agent, load_q_table
 from games.pixelKart.model.race import Race
 from games.pixelKart.view.circuit_editor import CircuitEditor
 from games.pixelKart.view.menu_view import MenuView
@@ -89,8 +91,13 @@ class AppController:
         self.current_view.set_message("")
 
         try:
-            human_players, ai_players, total_laps, circuit_name = self.current_view.get_config()
-            total_players = human_players + ai_players
+            human_players, random_ais, ql_ais, total_laps, circuit_name = (
+                self.current_view.get_config()
+            )
+            total_players = human_players + random_ais + ql_ais
+
+            if total_players <= 0:
+                raise ValueError("You must select at least one player.")
 
             if not circuit_name:
                 raise ValueError("You must select a circuit.")
@@ -101,28 +108,72 @@ class AppController:
 
             circuit = Circuit.from_dto(circuit_dto)
             start_positions = circuit.get_random_start_positions(total_players)
+
+            player_types = (
+                ["human"] * human_players
+                + ["random"] * random_ais
+                + ["ql"] * ql_ais
+            )
+
+            if len(start_positions) != len(player_types):
+                raise ValueError("Mismatch between players and start positions.")
+
+            shared_q_table = {}
+
+            if ql_ais > 0:
+                init_db()
+
+                session = SessionLocal()
+                try:
+                    db_agent = create_agent(session)
+
+                    temp_kart = KartFactory.create(
+                        kart_type="ql",
+                        config={
+                            "name": "Temporary QL Kart",
+                            "color": "red",
+                            "position": (0, 0),
+                        },
+                    )
+
+                    load_q_table(temp_kart, agent_id=db_agent.id, session=session)
+                    shared_q_table = temp_kart.q_table.copy()
+
+                finally:
+                    session.close()
+
             karts = []
+            counters = {
+                "human": 0,
+                "random": 0,
+                "ql": 0,
+            }
 
-            for index in range(human_players):
-                karts.append(
-                    HumanKart(
-                        name=f"Player {index + 1}",
-                        color=self.KART_COLORS[index % len(self.KART_COLORS)],
-                        position=start_positions[index],
-                        direction="EAST",
-                    )
-                )
+            for index, kart_type in enumerate(player_types):
+                counters[kart_type] += 1
 
-            for index in range(ai_players):
-                color_index = human_players + index
-                karts.append(
-                    RandomAIKart(
-                        name=f"AI {index + 1}",
-                        color=self.KART_COLORS[color_index % len(self.KART_COLORS)],
-                        position=start_positions[color_index],
-                        direction="EAST",
-                    )
-                )
+                if kart_type == "human":
+                    name = f"Player {counters[kart_type]}"
+                elif kart_type == "random":
+                    name = f"Random AI {counters[kart_type]}"
+                else:
+                    name = f"QLearning AI {counters[kart_type]}"
+
+                config = {
+                    "name": name,
+                    "color": self.KART_COLORS[index % len(self.KART_COLORS)],
+                    "position": start_positions[index],
+                    "direction": "EAST",
+                }
+
+                if kart_type == "ql":
+                    config["q_table"] = shared_q_table
+                    config["epsilon"] = 0.0
+                    config["alpha"] = 0.2
+                    config["gamma"] = 0.95
+
+                kart = KartFactory.create(kart_type=kart_type, config=config)
+                karts.append(kart)
 
             race = Race(circuit=circuit, karts=karts, total_laps=total_laps)
             self.show_race(race)

@@ -1,2 +1,4 @@
 # Python >= 3.10
 pytest>=8.0
+sqlalchemy>=2.0
+matplotlib>
