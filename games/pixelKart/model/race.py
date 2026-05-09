@@ -65,6 +65,7 @@ class Race:
             return
 
         kart = self.get_current_kart()
+
         if not kart.is_alive or kart.has_finished:
             self.next_player()
             self.check_end_game()
@@ -74,12 +75,15 @@ class Race:
         kart.apply_action(action)
 
         traversed_positions = self.apply_movement(kart)
-        self.update_lap_if_needed(kart, old_position, traversed_positions)
 
-        if kart.laps_done >= self.total_laps:
-            if self.winner_name is None:
-                self.winner_name = kart.name
+        if kart.is_alive:
+            self.update_lap_if_needed(kart, old_position, traversed_positions)
+
+        if kart.is_alive and kart.laps_done >= self.total_laps:
             kart.finish()
+            self.winner_name = kart.name
+            self.finished = True
+            return
 
         self.check_end_game()
 
@@ -212,9 +216,22 @@ class Race:
 
     def check_end_game(self) -> None:
         """
-        End the race when all karts are either finished or eliminated.
+        End the race only when there is a real winner or when all karts crashed.
+
+        A kart does not win just because all the others crashed.
         """
-        if all(not kart.is_alive or kart.has_finished for kart in self.karts):
+        if self.finished:
+            return
+
+        finished_karts = [kart for kart in self.karts if kart.has_finished]
+
+        if finished_karts:
+            self.winner_name = finished_karts[0].name
+            self.finished = True
+            return
+
+        if all(not kart.is_alive for kart in self.karts):
+            self.winner_name = None
             self.finished = True
 
     def to_dto(self) -> RaceDTO:

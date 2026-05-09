@@ -68,29 +68,35 @@ ProjetIAJohnHugo/
 │   │   ├── alice_training.json
 │   │   ├── bob_training.json
 │   │   └── randy_training.json
-│   └── pixelKart/
-│       ├── README.md
-│       ├── circuits.txt
-│       ├── controller/
-│       │   ├── app_controller.py
-│       │   └── race_controller.py
-│       ├── dao/
-│       │   └── circuit_dao.py
-│       ├── model/
-│       │   ├── circuit.py
-│       │   ├── dto.py
-│       │   ├── kart.py
-│       │   └── race.py
-│       ├── view/
-│       │   ├── circuit_editor.py
-│       │   ├── circuit_frames.py
-│       │   ├── menu_view.py
-│       │   └── race_view.py
+    └── pixelKart/
+        ├── README.md
+        ├── automated_training.py
+        ├── circuits.txt
+        ├── controller/
+        │   ├── app_controller.py
+        │   └── race_controller.py
+        ├── dao/
+        │   ├── circuit_dao.py
+        │   ├── Q_table_dao.py
+        │   └── q_table_service.py
+        │   └── q_tables.db
+        ├── model/
+        │   ├── circuit.py
+        │   ├── dto.py
+        │   ├── kart.py
+        │   ├── kart_factory.py
+        │   └── race.py
+        ├── view/
+        │   ├── circuit_editor.py
+        │   ├── circuit_frames.py
+        │   ├── menu_view.py
+        │   └── race_view.py
 
 5. PRÉREQUIS
 ---------
 - Python >= 3.10
 - Tkinter (inclus par défaut avec Python)
+- Dépendances Python listées dans requirements.txt
 
 6. ENVIRONNEMENT VIRTUEL (RECOMMANDÉ)
 ---------------------------------
@@ -113,9 +119,9 @@ Installer les dépendances avec :
     pip install -r requirements.txt
 
 Remarque :
-Tkinter fait partie de la bibliothèque standard Python et ne nécessite pas
-d’installation supplémentaire.
-Le fichier `requirements.txt` contient actuellement `pytest`, utilisé pour lancer les tests
+Le fichier requirements.txt contient :
+- pytest : utilisé pour les tests automatisés ;
+- sqlalchemy : utilisé par PixelKart pour sauvegarder les Q-tables dans une base SQLite.
 
 8. LANCEMENT DU PROGRAMME
 ----------------------
@@ -153,6 +159,7 @@ Ou seulement pour Cubee :
 - Le code est rédigé en anglais.
 - L’interface graphique est réalisée exclusivement avec Tkinter.
 - PixelKart utilise également un **DAO** pour la persistance des circuits.
+- PixelKart utilise un DAO SQLite pour sauvegarder les Q-tables de l’IA Q-learning.
 
 12. AUTEURS
 -------

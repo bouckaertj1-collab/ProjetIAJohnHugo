@@ -26,13 +26,15 @@ class RaceController:
         self.race = race
         self.view = view
         self.on_back_to_menu = on_back_to_menu
+        self.ai_turns_without_human = 0
+        self.max_ai_turns_without_human = 2000
 
         self.view.bind_action(self.on_action_selected)
         self.view.bind_back_to_menu(self.back_to_menu)
         self.view.set_circuit(self.race.circuit.to_dto()["grid"])
 
         self.refresh_view()
-        self.play_ai_turns_if_needed()
+        self.schedule_ai_turn_if_needed()
 
     def on_action_selected(self, action: str) -> None:
         """
@@ -42,36 +44,81 @@ class RaceController:
             action: Selected action.
         """
         if self.race.finished:
+            self.refresh_view()
             return
 
         current_kart = self.race.get_current_kart()
-        if current_kart.is_ai or not current_kart.is_alive:
+
+        if current_kart.is_ai or not current_kart.is_alive or current_kart.has_finished:
             return
 
+        self.ai_turns_without_human = 0
+
         self.race.play_current_turn(action)
-        self.play_ai_turns_if_needed()
+        self.refresh_view()
+
+        self.schedule_ai_turn_if_needed()
 
     def back_to_menu(self) -> None:
         """Ask the parent controller to go back to the menu."""
         if self.on_back_to_menu is not None:
             self.on_back_to_menu()
 
-    def play_ai_turns_if_needed(self) -> None:
-        """Play consecutive AI turns until a human turn or the end of the race."""
-        while not self.race.finished:
-            current_kart = self.race.get_current_kart()
+    def schedule_ai_turn_if_needed(self) -> None:
+        """
+        Schedule the next AI turn if the current kart is AI-controlled.
+        """
+        if self.race.finished:
+            self.refresh_view()
+            return
 
-            if not current_kart.is_alive:
-                self.race.next_player()
-                self.race.check_end_game()
-                continue
+        current_kart = self.race.get_current_kart()
 
-            if not current_kart.is_ai:
-                break
+        if not current_kart.is_alive or current_kart.has_finished:
+            self.race.next_player()
+            self.race.check_end_game()
+            self.refresh_view()
+            self.schedule_ai_turn_if_needed()
+            return
 
-            self.race.play_current_ai_turn()
+        if current_kart.is_ai:
+            self.view.after(300, self.play_one_ai_turn)
+        else:
+            self.refresh_view()
 
+    def play_one_ai_turn(self) -> None:
+        """
+        Play exactly one AI turn, refresh the view, then schedule the next one if needed.
+        """
+        if self.race.finished:
+            self.refresh_view()
+            return
+
+        current_kart = self.race.get_current_kart()
+
+        if not current_kart.is_alive or current_kart.has_finished:
+            self.race.next_player()
+            self.race.check_end_game()
+            self.refresh_view()
+            self.schedule_ai_turn_if_needed()
+            return
+
+        if not current_kart.is_ai:
+            self.refresh_view()
+            return
+
+        self.ai_turns_without_human += 1
+
+        if self.ai_turns_without_human >= self.max_ai_turns_without_human:
+            self.race.finished = True
+            self.race.winner_name = None
+            self.refresh_view()
+            return
+
+        self.race.play_current_ai_turn()
         self.refresh_view()
+
+        self.schedule_ai_turn_if_needed()
 
     def refresh_view(self) -> None:
         """Refresh the race view from the current model state."""

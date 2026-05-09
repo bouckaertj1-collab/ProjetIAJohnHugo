@@ -1,70 +1,81 @@
 """
-Entraînement headless du QLearningKart.
-- Pas d'affichage graphique
-- Peu de logs
-- Beaucoup de courses
-- Sauvegarde finale dans q_tables.db
+Automated training script for PixelKart QLearningKart.
+
+This script trains one Q-learning agent per circuit without opening
+the graphical interface. The trained Q-tables are saved in q_tables.db.
+
+Each circuit gets one agent and one Q-table.
+The same Q-table can then be reused for 1, 2, 3 laps or more.
 """
+
+from __future__ import annotations
 
 from pathlib import Path
 import random
 
-from games.pixelKart.dao.Q_table_dao import init_db, SessionLocal
-from games.pixelKart.dao.q_table_service import save_q_table, load_q_table, create_agent
+from games.pixelKart.dao.Q_table_dao import SessionLocal, init_db
+from games.pixelKart.dao.q_table_service import create_agent, load_q_table, save_q_table
 from games.pixelKart.model.circuit import Circuit
 from games.pixelKart.model.kart_factory import KartFactory
 from games.pixelKart.model.race import Race
 
 
-def load_first_circuit() -> Circuit:
+TRAINING_TOTAL_LAPS = 2
+TRAINING_RACES_PER_CONFIG = 10_000
+EVALUATION_RACES_PER_CONFIG = 1_000
+MAX_STEPS_PER_RACE = 1_500
+LOG_EVERY = 100
+SAVE_EVERY = 0
+
+
+def load_all_circuits() -> list[Circuit]:
+    """
+    Load all circuits from the PixelKart circuits file.
+
+    Returns:
+        A list of Circuit instances loaded from circuits.txt.
+
+    Raises:
+        FileNotFoundError: If circuits.txt cannot be found.
+        ValueError: If no valid circuit is found in circuits.txt.
+    """
     circuits_file = Path(__file__).parent / "circuits.txt"
 
     if not circuits_file.exists():
         raise FileNotFoundError(f"Fichier introuvable: {circuits_file}")
 
+    circuits: list[Circuit] = []
+
     with circuits_file.open("r", encoding="utf-8") as file:
         for line in file:
             line = line.strip()
-            if line and ":" in line:
-                name, grid_str = line.split(":", 1)
-                return Circuit.from_dto({"name": name, "grid": grid_str})
 
-    raise ValueError("Aucun circuit valide trouvé dans circuits.txt")
+            if not line or ":" not in line:
+                continue
 
+            name, grid_str = line.split(":", 1)
+            circuit = Circuit.from_dto(
+                {
+                    "name": name,
+                    "grid": grid_str,
+                }
+            )
+            circuits.append(circuit)
 
-def reset_kart(kart, circuit: Circuit) -> None:
-    start_positions = circuit.get_start_positions()
+    if not circuits:
+        raise ValueError("Aucun circuit valide trouvé dans circuits.txt.")
 
-    if not start_positions:
-        raise ValueError("Le circuit n'a pas de ligne d'arrivée F pour démarrer.")
-
-    kart.position = random.choice(start_positions)
-    kart.speed = 0
-    kart.laps_done = 0
-    kart.is_alive = True
-    kart.has_finished = False
-    kart.direction = "EAST"
-    kart.previous_action = None
+    return circuits
 
 
-def run_automated_races(
-    num_races: int = 10_000,
-    total_laps: int = 3,
-    max_steps: int = 3_000,
-    log_every: int = 100,
-) -> None:
-    init_db()
+def create_training_kart():
+    """
+    Create a Q-learning kart used during automated training.
 
-    circuit = load_first_circuit()
-    print(f"[INFO] Circuit utilisé: {circuit.name}")
-
-    session = SessionLocal()
-    db_agent = create_agent(session)
-    agent_id = db_agent.id
-    session.commit()
-    session.close()
-
-    kart = KartFactory.create(
+    Returns:
+        A QLearningKart instance created by the kart factory.
+    """
+    return KartFactory.create(
         kart_type="ql",
         config={
             "name": "QL Kart",
@@ -73,9 +84,205 @@ def run_automated_races(
         },
     )
 
+
+def reset_kart(kart, circuit: Circuit) -> None:
+    """
+    Reset a Q-learning kart before starting a new training race.
+
+    The kart starts on a finish/start cell because, in PixelKart,
+    the start line and the finish line are the same cells.
+
+    Args:
+        kart: QLearningKart instance to reset.
+        circuit: Circuit used for the race.
+
+    Raises:
+        ValueError: If the circuit has no start/finish cell.
+    """
+    start_positions = circuit.get_start_positions()
+
+    if not start_positions:
+        raise ValueError(f"Le circuit {circuit.name} n'a aucune case F.")
+
+    kart.position = random.choice(start_positions)
+    kart.speed = 0
+    kart.laps_done = 0
+    kart.is_alive = True
+    kart.has_finished = False
+    kart.direction = "EAST"
+    kart.visited_positions = {kart.position}
+
+
+def get_or_create_agent_id(circuit_name: str) -> int:
+    """
+    Retrieve or create the database agent linked to one circuit.
+
+    Args:
+        circuit_name: Name of the circuit.
+
+    Returns:
+        Database identifier of the matching agent.
+    """
     session = SessionLocal()
-    load_q_table(kart, agent_id, session)
-    session.close()
+
+    try:
+        db_agent = create_agent(
+            session=session,
+            circuit_name=circuit_name,
+            alpha=0.2,
+            gamma=0.95,
+            epsilon=1.0,
+        )
+        agent_id = db_agent.id
+        session.commit()
+        return agent_id
+
+    finally:
+        session.close()
+
+
+def load_agent_q_table(kart, agent_id: int) -> None:
+    """
+    Load a saved Q-table into a Q-learning kart.
+
+    Args:
+        kart: QLearningKart instance receiving the Q-table.
+        agent_id: Database identifier of the agent to load.
+    """
+    session = SessionLocal()
+
+    try:
+        load_q_table(kart, agent_id=agent_id, session=session)
+
+    finally:
+        session.close()
+
+
+def save_agent_q_table(kart, agent_id: int) -> None:
+    """
+    Save a Q-learning kart Q-table into the database.
+
+    Args:
+        kart: QLearningKart instance containing the Q-table.
+        agent_id: Database identifier of the agent to save.
+    """
+    session = SessionLocal()
+
+    try:
+        save_q_table(kart, session=session, agent_id=agent_id)
+
+    finally:
+        session.close()
+
+
+def evaluate_agent(
+    kart,
+    circuit: Circuit,
+    total_laps: int,
+    num_races: int = EVALUATION_RACES_PER_CONFIG,
+    max_steps: int = MAX_STEPS_PER_RACE,
+) -> dict[str, int]:
+    """
+    Evaluate a trained Q-learning kart without exploration.
+
+    During evaluation, epsilon is set to 0.0 so the kart only exploits
+    the learned Q-table.
+
+    Args:
+        kart: Trained QLearningKart instance.
+        circuit: Circuit used for evaluation.
+        total_laps: Number of laps required to finish.
+        num_races: Number of evaluation races.
+        max_steps: Maximum number of steps per race.
+
+    Returns:
+        A dictionary containing finished, crash and timeout counts.
+    """
+    old_epsilon = kart.epsilon
+    kart.epsilon = 0.0
+
+    finished_count = 0
+    crash_count = 0
+    timeout_count = 0
+
+    for _ in range(num_races):
+        reset_kart(kart, circuit)
+
+        race = Race(circuit=circuit, karts=[kart], total_laps=total_laps)
+        steps = 0
+
+        while (
+            not race.finished
+            and kart.is_alive
+            and not kart.has_finished
+            and steps < max_steps
+        ):
+            state = kart.get_state(race.circuit)
+            action = kart.choose_action(state, race.circuit)
+
+            race.play_current_turn(action)
+            steps += 1
+
+        if kart.has_finished:
+            finished_count += 1
+        elif not kart.is_alive:
+            crash_count += 1
+        else:
+            timeout_count += 1
+
+    kart.epsilon = old_epsilon
+
+    print("=== EVALUATION ===")
+    print(f"Circuit: {circuit.name}")
+    print(f"Tours: {total_laps}")
+    print(
+        f"Finish: {finished_count}/{num_races} "
+        f"({finished_count / num_races * 100:.1f}%)"
+    )
+    print(f"Crash: {crash_count}")
+    print(f"Timeout: {timeout_count}")
+
+    return {
+        "finished": finished_count,
+        "crash": crash_count,
+        "timeout": timeout_count,
+    }
+
+
+def train_agent_on_circuit(
+    circuit: Circuit,
+    total_laps: int,
+    num_races: int = TRAINING_RACES_PER_CONFIG,
+    max_steps: int = MAX_STEPS_PER_RACE,
+    log_every: int = LOG_EVERY,
+    save_every: int = SAVE_EVERY,
+):
+    """
+    Train one Q-learning agent for one circuit.
+
+    The number of laps is only used during the simulated training races.
+    It is not part of the Q-table identity.
+
+    Args:
+        circuit: Circuit used for training.
+        total_laps: Number of laps used during training.
+        num_races: Number of training races.
+        max_steps: Maximum number of steps per race.
+        log_every: Number of races between two log messages.
+        save_every: Number of races between two database saves.
+
+    Returns:
+        The trained QLearningKart instance.
+    """
+    print()
+    print("=" * 80)
+    print(f"[TRAINING] Circuit: {circuit.name} | Laps: {total_laps}")
+    print("=" * 80)
+
+    agent_id = get_or_create_agent_id(circuit_name=circuit.name)
+
+    kart = create_training_kart()
+    load_agent_q_table(kart, agent_id)
 
     kart.alpha = 0.2
     kart.gamma = 0.95
@@ -84,7 +291,7 @@ def run_automated_races(
     finished_count = 0
     crash_count = 0
     timeout_count = 0
-    recent_rewards = []
+    recent_rewards: list[float] = []
 
     for race_num in range(1, num_races + 1):
         reset_kart(kart, circuit)
@@ -93,7 +300,12 @@ def run_automated_races(
         total_reward = 0.0
         steps = 0
 
-        while not race.finished and kart.is_alive and not kart.has_finished and steps < max_steps:
+        while (
+            not race.finished
+            and kart.is_alive
+            and not kart.has_finished
+            and steps < max_steps
+        ):
             state = kart.get_state(race.circuit)
             action = kart.choose_action(state, race.circuit)
             old_position = kart.position
@@ -114,7 +326,10 @@ def run_automated_races(
 
             total_reward += reward
 
-            next_state = None if crash or finished else kart.get_state(race.circuit)
+            next_state = None
+            if not crash and not finished:
+                next_state = kart.get_state(race.circuit)
+
             kart.learn(state, action, reward, next_state)
 
             steps += 1
@@ -127,6 +342,7 @@ def run_automated_races(
             timeout_count += 1
 
         recent_rewards.append(total_reward)
+
         if len(recent_rewards) > log_every:
             recent_rewards.pop(0)
 
@@ -146,66 +362,69 @@ def run_automated_races(
                 f"timeout={timeout_count}"
             )
 
-    print("[INFO] Sauvegarde finale...")
-    session = SessionLocal()
-    save_q_table(kart, session, agent_id)
-    session.commit()
-    session.close()
+        if save_every > 0 and race_num % save_every == 0:
+            save_agent_q_table(kart, agent_id)
+            print(f"[SAVE] Q-table sauvegardée à la course {race_num}")
+
+    save_agent_q_table(kart, agent_id)
 
     print("[INFO] Entraînement terminé.")
+    print(f"Circuit: {circuit.name}")
+    print(f"Tours: {total_laps}")
     print(f"Courses terminées: {finished_count}/{num_races}")
     print(f"Crashs: {crash_count}")
     print(f"Timeouts: {timeout_count}")
     print(f"États appris: {len(kart.q_table)}")
 
-    return kart, circuit
+    return kart
 
-def evaluate_agent(kart, circuit, total_laps=1, num_races=1000, max_steps=1000):
-    old_epsilon = kart.epsilon
-    kart.epsilon = 0.0
 
-    finished_count = 0
-    crash_count = 0
-    timeout_count = 0
+def train_all_circuits(
+    training_total_laps: int = TRAINING_TOTAL_LAPS,
+    num_races: int = TRAINING_RACES_PER_CONFIG,
+    max_steps: int = MAX_STEPS_PER_RACE,
+) -> None:
+    """
+    Train one Q-learning agent for every circuit.
 
-    for _ in range(num_races):
-        reset_kart(kart, circuit)
+    Args:
+        training_total_laps: Number of laps used during training.
+        num_races: Number of training races per circuit.
+        max_steps: Maximum number of steps per race.
+    """
+    init_db()
 
-        race = Race(circuit=circuit, karts=[kart], total_laps=total_laps)
-        steps = 0
+    circuits = load_all_circuits()
 
-        while not race.finished and kart.is_alive and not kart.has_finished and steps < max_steps:
-            state = kart.get_state(race.circuit)
-            action = kart.choose_action(state, race.circuit)
-            race.play_current_turn(action)
-            steps += 1
+    print(f"[INFO] Circuits trouvés: {len(circuits)}")
+    print(f"[INFO] Tours utilisés pour l'entraînement: {training_total_laps}")
+    print(f"[INFO] Courses par circuit: {num_races}")
 
-        if kart.has_finished:
-            finished_count += 1
-        elif not kart.is_alive:
-            crash_count += 1
-        else:
-            timeout_count += 1
+    for circuit in circuits:
+        kart = train_agent_on_circuit(
+            circuit=circuit,
+            total_laps=training_total_laps,
+            num_races=num_races,
+            max_steps=max_steps,
+        )
 
-    kart.epsilon = old_epsilon
+        evaluate_agent(
+            kart=kart,
+            circuit=circuit,
+            total_laps=training_total_laps,
+            num_races=EVALUATION_RACES_PER_CONFIG,
+            max_steps=max_steps,
+        )
 
-    print("=== EVALUATION ===")
-    print(f"Finish: {finished_count}/{num_races} ({finished_count / num_races * 100:.1f}%)")
-    print(f"Crash: {crash_count}")
-    print(f"Timeout: {timeout_count}")
+    print()
+    print("=" * 80)
+    print("[DONE] Tous les circuits ont été entraînés.")
+    print("=" * 80)
+
 
 if __name__ == "__main__":
-    kart, circuit = run_automated_races(
-        num_races=10_000,
-        total_laps=1,
-        max_steps=500,
-        log_every=100,
-    )
-
-    evaluate_agent(
-        kart,
-        circuit,
-        total_laps=1,
-        num_races=1000,
-        max_steps=1500,
+    train_all_circuits(
+        training_total_laps=TRAINING_TOTAL_LAPS,
+        num_races=TRAINING_RACES_PER_CONFIG,
+        max_steps=MAX_STEPS_PER_RACE,
     )

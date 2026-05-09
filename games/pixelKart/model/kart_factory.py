@@ -1,16 +1,17 @@
-from games.pixelKart.model.kart import HumanKart,RandomAIKart,QLearningKart 
+from games.pixelKart.model.kart import HumanKart, QLearningKart, RandomAIKart
+
 
 class KartFactory:
     """Factory class to create instances of different kart types."""
 
     @staticmethod
-    def create(kart_type,config):
+    def create(kart_type: str, config: dict):
         """
         Create a kart instance based on the specified type and configuration.
 
         Args:
-            kart_type: Type of kart to create ("human", "random", or "ql").
-            config: Dictionary containing kart configuration (name, color, position, etc.).
+            kart_type: Type of kart to create: "human", "random", or "ql".
+            config: Dictionary containing kart configuration.
 
         Returns:
             An instance of the specified kart type.
@@ -18,25 +19,27 @@ class KartFactory:
         Raises:
             ValueError: If the kart type is unknown.
         """
-        
         name = config["name"]
         color = config["color"]
         position = config["position"]
+        direction = config.get("direction", "EAST")
 
         if kart_type == "human":
-            return HumanKart(name, color, position, direction="EAST")
+            return HumanKart(name, color, position, direction=direction)
 
-        elif kart_type == "random":
-            return RandomAIKart(name, color, position, direction="EAST")
+        if kart_type == "random":
+            return RandomAIKart(name, color, position, direction=direction)
 
-        elif kart_type == "ql":
+        if kart_type == "ql":
             return QLearningKart(
-                name, color, position, direction="EAST",
+                name,
+                color,
+                position,
+                direction=direction,
                 q_table=config.get("q_table", {}),
                 epsilon=config.get("epsilon", 0.9),
                 alpha=config.get("alpha", 0.2),
-                gamma=config.get("gamma", 0.95)
-    )
+                gamma=config.get("gamma", 0.95),
+            )
 
-        else:
-            raise ValueError(f"Unknown kart type: {kart_type}")
+        raise ValueError(f"Unknown kart type: {kart_type}")

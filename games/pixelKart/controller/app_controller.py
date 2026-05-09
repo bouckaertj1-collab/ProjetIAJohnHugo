@@ -125,7 +125,10 @@ class AppController:
 
                 session = SessionLocal()
                 try:
-                    db_agent = create_agent(session)
+                    db_agent = create_agent(
+                        session=session,
+                        circuit_name=circuit.name,
+                    )
 
                     temp_kart = KartFactory.create(
                         kart_type="ql",
