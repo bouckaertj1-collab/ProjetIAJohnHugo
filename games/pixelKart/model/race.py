@@ -114,35 +114,29 @@ class Race:
         """
         Apply the kart movement according to its speed and direction.
 
-        The finish line can only be crossed towards the east.
-        If the kart tries to cross it towards the west, its speed is reset
-        and the movement stops.
-
         Args:
             kart: Kart to move.
 
         Returns:
             The list of traversed positions.
+
+        Notes : Conditions of return for the traversed positions :
+
+            1. if the kart is out of boundaries : Reset the speed of the kart and the function return the traversed positions before the out position.
+
+            2. if the kart hit a wall : The kart is eliminated and the function return the traversed positions before collision with the wall.
+
+            3. if the kart goes on occupied position : reset the speed of the kart and the function return the traversed positions before it reaches the occupied position.
+
+            4. if the kart tries to cross the finish line by west : Reset the speed of the kart and the function return the traversed positions before the forbidden move.
         """
-        traversed_positions: list[tuple[int, int]] = []
+        
+        pathway = kart.get_traversed_positions(kart.speed,kart.direction,self.circuit,kart.position)
+        
+        traversed_positions = []
 
-        if kart.speed == 0:
-            return traversed_positions
-
-        if kart.speed > 0:
-            row_step, col_step = kart.direction_to_vector()
-        else:
-            row_step, col_step = kart.direction_to_vector(kart.opposite_direction())
-
-        remaining_steps = abs(kart.speed)
-
-        if self.circuit.is_grass(kart.position):
-            remaining_steps //= 2
-
-        while remaining_steps > 0:
-            row, col = kart.position
-            next_position = (row + row_step, col + col_step)
-
+        for next_position in pathway:
+            
             if not self.circuit.is_inside(next_position):
                 kart.reset_speed()
                 return traversed_positions
@@ -155,19 +149,15 @@ class Race:
                 kart.reset_speed()
                 return traversed_positions
 
-            if col_step == -1 and (
+            if kart.direction == "WEST" and (
                 self.circuit.is_finish(kart.position) or self.circuit.is_finish(next_position)
             ):
                 kart.reset_speed()
                 return traversed_positions
-
+            
             kart.position = next_position
             traversed_positions.append(next_position)
-            remaining_steps -= 1
-
-            if self.circuit.is_grass(kart.position):
-                remaining_steps //= 2
-
+            
         return traversed_positions
 
     def update_lap_if_needed(
