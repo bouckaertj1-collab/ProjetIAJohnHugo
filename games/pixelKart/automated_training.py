@@ -1,11 +1,22 @@
 """
 Automated training script for PixelKart QLearningKart.
 
-This script trains one Q-learning agent per circuit without opening
-the graphical interface. The trained Q-tables are saved in q_tables.db.
+This script trains one Q-learning agent per circuit without opening the
+Tkinter interface. Each circuit has its own Agent entry in the database and
+therefore its own Q-table.
 
-Each circuit gets one agent and one Q-table.
-The same Q-table can then be reused for 1, 2, 3 laps or more.
+Training flow:
+    1. load every circuit from circuits.txt;
+    2. create or retrieve the database agent linked to the circuit;
+    3. load the existing Q-table if one already exists;
+    4. simulate many races with epsilon-greedy exploration;
+    5. update the Q-table after each action;
+    6. save the Q-table periodically and once again at the end;
+    7. evaluate the final Q-table with epsilon set to 0.0.
+
+The Q-table is saved in q_tables.db through the DAO/service layer.
+The number of laps is used only for simulated races, not as part of the
+database identity: one circuit corresponds to one saved Q-table.
 """
 
 from __future__ import annotations
@@ -21,11 +32,11 @@ from games.pixelKart.model.race import Race
 
 
 TRAINING_TOTAL_LAPS = 2
-TRAINING_RACES_PER_CONFIG = 10_000
+TRAINING_RACES_PER_CONFIG = 20_000
 EVALUATION_RACES_PER_CONFIG = 1_000
 MAX_STEPS_PER_RACE = 1_500
 LOG_EVERY = 100
-SAVE_EVERY = 0
+SAVE_EVERY = 10000
 
 
 def load_all_circuits() -> list[Circuit]:
@@ -110,7 +121,6 @@ def reset_kart(kart, circuit: Circuit) -> None:
     kart.is_alive = True
     kart.has_finished = False
     kart.direction = "EAST"
-    kart.visited_positions = {kart.position}
 
 
 def get_or_create_agent_id(circuit_name: str) -> int:
@@ -185,18 +195,11 @@ def evaluate_agent(
     """
     Evaluate a trained Q-learning kart without exploration.
 
-    During evaluation, epsilon is set to 0.0 so the kart only exploits
-    the learned Q-table.
+    Evaluation temporarily sets epsilon to 0.0. This means the kart no longer tries
+    random actions and only exploits the best action stored in its Q-table.
 
-    Args:
-        kart: Trained QLearningKart instance.
-        circuit: Circuit used for evaluation.
-        total_laps: Number of laps required to finish.
-        num_races: Number of evaluation races.
-        max_steps: Maximum number of steps per race.
-
-    Returns:
-        A dictionary containing finished, crash and timeout counts.
+    The evaluation result is therefore more representative of the final trained AI
+    than the cumulative finish rate printed during training.
     """
     old_epsilon = kart.epsilon
     kart.epsilon = 0.0
@@ -218,7 +221,8 @@ def evaluate_agent(
             and steps < max_steps
         ):
             state = kart.get_state(race.circuit)
-            action = kart.choose_action(state, race.circuit)
+            allowed_actions = race.get_allowed_actions(kart)
+            action = kart.choose_action(state, allowed_actions)
 
             race.play_current_turn(action)
             steps += 1
@@ -260,19 +264,21 @@ def train_agent_on_circuit(
     """
     Train one Q-learning agent for one circuit.
 
-    The number of laps is only used during the simulated training races.
-    It is not part of the Q-table identity.
+    At each training step:
+        1. the kart observes its current state with get_state();
+        2. Race computes the allowed actions for that situation;
+        3. QLearningKart chooses an action using epsilon-greedy selection;
+        4. Race applies the action and moves the kart;
+        5. the kart receives a reward;
+        6. the Q-table is updated with the Q-learning formula.
 
-    Args:
-        circuit: Circuit used for training.
-        total_laps: Number of laps used during training.
-        num_races: Number of training races.
-        max_steps: Maximum number of steps per race.
-        log_every: Number of races between two log messages.
-        save_every: Number of races between two database saves.
+    The Q-table is saved every save_every races and once at the end. In this
+    project, save_every is set to 10 000 to avoid losing long training sessions
+    while keeping database writes reasonable.
 
-    Returns:
-        The trained QLearningKart instance.
+    The training finish rate printed during training is cumulative from the first
+    race. It can be lower than the final evaluation result because the agent
+    explores random actions during training.
     """
     print()
     print("=" * 80)
@@ -307,13 +313,16 @@ def train_agent_on_circuit(
             and steps < max_steps
         ):
             state = kart.get_state(race.circuit)
-            action = kart.choose_action(state, race.circuit)
+            allowed_actions = race.get_allowed_actions(kart)
+            action = kart.choose_action(state, allowed_actions)
             old_position = kart.position
+            old_laps = kart.laps_done
 
             race.play_current_turn(action)
 
             crash = not kart.is_alive
             finished = kart.has_finished
+            completed_lap = kart.laps_done > old_laps
 
             reward = kart.compute_reward(
                 crash=crash,
@@ -322,6 +331,7 @@ def train_agent_on_circuit(
                 new_position=kart.position,
                 circuit=circuit,
                 action=action,
+                completed_lap=completed_lap,
             )
 
             total_reward += reward
@@ -346,7 +356,7 @@ def train_agent_on_circuit(
         if len(recent_rewards) > log_every:
             recent_rewards.pop(0)
 
-        kart.next_epsilon(coef=0.9995, min_epsilon=0.02)
+        kart.next_epsilon(coef=0.99985, min_epsilon=0.02)
 
         if race_num % log_every == 0:
             avg_reward = sum(recent_rewards) / len(recent_rewards)
