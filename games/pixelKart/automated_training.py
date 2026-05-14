@@ -325,8 +325,8 @@ def train_agent_on_circuit(
             completed_lap = kart.laps_done > old_laps
 
             reward = kart.compute_reward(
-                crash=crash,
-                finished=finished,
+                has_crashed=crash,
+                has_finished=finished,
                 old_position=old_position,
                 new_position=kart.position,
                 circuit=circuit,
