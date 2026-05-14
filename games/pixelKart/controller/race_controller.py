@@ -7,7 +7,7 @@ from games.pixelKart.view.race_view import RaceView
 
 
 class RaceController:
-    """Coordinate the race model and the race view."""
+    """Coordinate the race model and race view."""
 
     def __init__(
         self,
@@ -19,9 +19,9 @@ class RaceController:
         Initialize the race controller.
 
         Args:
-            race: Race model instance.
-            view: Race view instance.
-            on_back_to_menu: Callback used to go back to the menu.
+            race: Race model to control.
+            view: Race view to update.
+            on_back_to_menu: Callback used to return to the menu.
         """
         self.race = race
         self.view = view
@@ -38,10 +38,10 @@ class RaceController:
 
     def on_action_selected(self, action: str) -> None:
         """
-        Handle a human action selected from the view.
+        Play a human action selected in the view.
 
         Args:
-            action: Selected action.
+            action: Action selected by the human player.
         """
         if self.race.finished:
             self.refresh_view()
@@ -60,14 +60,12 @@ class RaceController:
         self.schedule_ai_turn_if_needed()
 
     def back_to_menu(self) -> None:
-        """Ask the parent controller to go back to the menu."""
+        """Return to the PixelKart menu."""
         if self.on_back_to_menu is not None:
             self.on_back_to_menu()
 
     def schedule_ai_turn_if_needed(self) -> None:
-        """
-        Schedule the next AI turn if the current kart is AI-controlled.
-        """
+        """Schedule an AI turn when the current kart is AI-controlled."""
         if self.race.finished:
             self.refresh_view()
             return
@@ -87,9 +85,7 @@ class RaceController:
             self.refresh_view()
 
     def play_one_ai_turn(self) -> None:
-        """
-        Play exactly one AI turn, refresh the view, then schedule the next one if needed.
-        """
+        """Play one AI turn and schedule the next turn if needed."""
         if self.race.finished:
             self.refresh_view()
             return
@@ -121,7 +117,7 @@ class RaceController:
         self.schedule_ai_turn_if_needed()
 
     def refresh_view(self) -> None:
-        """Refresh the race view from the current model state."""
+        """Update the view from the current race state."""
         self.view.update_view(
             race_dto=self.race.to_dto(),
             kart_dtos=[kart.to_dto() for kart in self.race.karts],

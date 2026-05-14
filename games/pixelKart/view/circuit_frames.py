@@ -13,16 +13,7 @@ PIXEL_TYPES = {
 
 
 class CircuitFrame(ttk.Frame):
-    """
-    CircuitFrame is a custom ttk.Frame widget that represents a grid-based circuit.
-    The class provides functionality to initialize the grid, clear it,
-    and serialize/deserialize the grid state for saving and loading purposes.
-
-    Attributes:
-        rows (int): Number of rows in the grid.
-        cols (int): Number of columns in the grid.
-        cells (list[list[tk.Label]]): A 2D list of tkinter Label widgets representing the grid cells.
-    """
+    """Base widget displaying a circuit grid."""
 
     def __init__(
         self,
@@ -32,13 +23,13 @@ class CircuitFrame(ttk.Frame):
         cols: int = 20,
     ) -> None:
         """
-        Initialize the CircuitFrame with a specified number of rows and columns.
+        Initialize a circuit grid frame.
 
         Args:
-            container: The parent widget/container.
-            circuit: Optional serialized circuit string.
-            rows: Number of rows in the grid.
-            cols: Number of columns in the grid.
+            container: Parent Tkinter widget.
+            circuit: Serialized circuit to load, if provided.
+            rows: Number of grid rows.
+            cols: Number of grid columns.
         """
         super().__init__(container)
         self.rows = rows
@@ -51,10 +42,7 @@ class CircuitFrame(ttk.Frame):
             self.dto_to_grid(circuit)
 
     def init_cells(self) -> None:
-        """
-        Initialize the grid with road and grass on the borders.
-        Update the display and the cells list.
-        """
+        """Create the grid cells with grass borders and road inside."""
         for line in range(self.rows):
             row: list[tk.Label] = []
 
@@ -86,9 +74,7 @@ class CircuitFrame(ttk.Frame):
             self.grid_columnconfigure(j, weight=1, minsize=20)
 
     def clear(self) -> None:
-        """
-        Clear the grid.
-        """
+        """Remove all grid cells."""
         for widget in self.winfo_children():
             widget.destroy()
 
@@ -96,7 +82,10 @@ class CircuitFrame(ttk.Frame):
 
     def grid_to_dto(self) -> str:
         """
-        Return the grid as a string looking like "RGF,RGF,RGF".
+        Serialize the grid.
+
+        Returns:
+            Circuit string using R, G, W and F letters.
         """
         export_result = []
         color_map = {value["color"]: value["letter"] for value in PIXEL_TYPES.values()}
@@ -108,10 +97,10 @@ class CircuitFrame(ttk.Frame):
 
     def dto_to_grid(self, dto: str) -> None:
         """
-        Load a serialized grid into the frame.
+        Load a serialized circuit into the grid.
 
         Args:
-            dto: Serialized grid string like "RGF,RGF,RGF".
+            dto: Circuit string using R, G, W and F letters.
         """
         import_data = dto.split(",")
         if not import_data:
@@ -132,21 +121,10 @@ class CircuitFrame(ttk.Frame):
 
 
 class CircuitEditorFrame(CircuitFrame):
-    """
-    CircuitEditorFrame is a custom ttk.Frame widget that represents a circuit editor.
-    It allows users to create and manipulate a grid-based circuit.
-
-    Methods:
-        init_cells():
-            Initialize the grid and add a click listener on each cell.
-        change_color(x, y):
-            Change the color of the cell at position (x, y).
-    """
+    """Editable circuit grid used by the circuit editor."""
 
     def init_cells(self) -> None:
-        """
-        Add a listener on labels.
-        """
+        """Create the grid cells and bind clicks to color changes."""
         super().init_cells()
 
         for line in range(self.rows):
@@ -156,8 +134,11 @@ class CircuitEditorFrame(CircuitFrame):
 
     def change_color(self, x: int, y: int) -> None:
         """
-        Change the color of the cell at position x, y.
-        Color changes in the order of PIXEL_TYPES.
+        Change a cell to the next terrain color.
+
+        Args:
+            x: Cell row.
+            y: Cell column.
         """
         current_color = self.cells[x][y].cget("bg")
         colors = [pixel["color"] for pixel in PIXEL_TYPES.values()]
@@ -166,13 +147,7 @@ class CircuitEditorFrame(CircuitFrame):
 
 
 class CircuitRaceFrame(CircuitFrame):
-    """
-    CircuitRaceFrame is a subclass of CircuitFrame that represents a race circuit frame
-    with the ability to display karts on the circuit grid.
-
-    Attributes:
-        karts_cells (list): A list storing the tkinter Label widgets representing the karts.
-    """
+    """Circuit grid used to display a race and its karts."""
 
     def __init__(
         self,
@@ -182,17 +157,23 @@ class CircuitRaceFrame(CircuitFrame):
         cols: int = 20,
     ) -> None:
         """
-        Initialize the CircuitRaceFrame.
+        Initialize the race circuit frame.
+
+        Args:
+            container: Parent Tkinter widget.
+            circuit: Serialized circuit to load, if provided.
+            rows: Number of grid rows.
+            cols: Number of grid columns.
         """
         super().__init__(container, circuit, rows, cols)
         self.karts_cells: list[tk.Label] = []
 
     def update_view(self, karts: dict) -> None:
         """
-        Update the view of the circuit.
+        Display the karts on the circuit.
 
         Args:
-            karts: Dict like {(row, col): color} or {(row, col): (color, direction)}.
+            karts: Mapping from positions to kart display data.
         """
         for cell in self.karts_cells:
             cell.destroy()
