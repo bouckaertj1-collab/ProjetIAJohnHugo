@@ -253,10 +253,10 @@ class QLearningKart(Kart):
         for action in self.ACTIONS:
             self.q_table[state].setdefault(action, 0.0)
 
-    def exploit(self, state: tuple, legal_actions: list[str] | None = None) -> str:
+    def exploit(self, state: tuple, allowed_actions: list[str] | None = None) -> str:
         """Choose the best known action for the given state."""
         self.ensure_state_exists(state)
-        actions = legal_actions if legal_actions is not None else self.ACTIONS
+        actions = allowed_actions if allowed_actions is not None else self.ACTIONS
 
         best_value = max(self.q_table[state][action] for action in actions)
         best_actions = [
@@ -270,7 +270,7 @@ class QLearningKart(Kart):
     def choose_action(
         self,
         state: tuple,
-        legal_actions: list[str] | None = None,
+        allowed_actions: list[str] | None = None,
     ) -> str:
         """
         Choose an action using an epsilon-greedy policy.
@@ -287,7 +287,7 @@ class QLearningKart(Kart):
         always exploits the learned Q-table.
         """
         self.ensure_state_exists(state)
-        actions = legal_actions if legal_actions is not None else self.ACTIONS
+        actions = allowed_actions if allowed_actions is not None else self.ACTIONS
 
         if not actions:
             actions = ["brake"]
