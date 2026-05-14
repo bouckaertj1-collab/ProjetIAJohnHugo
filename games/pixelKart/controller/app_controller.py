@@ -15,13 +15,13 @@ from games.pixelKart.controller.race_controller import RaceController
 
 
 class AppController:
-    """Main controller of PixelKart."""
+    """Control the main PixelKart window and screen changes."""
 
     KART_COLORS = ["red", "blue", "orange", "purple", "pink", "cyan", "brown", "white"]
 
     def __init__(self, parent: tk.Misc) -> None:
         """
-        Initialize the PixelKart controller.
+        Initialize the PixelKart application window.
 
         Args:
             parent: Parent Tkinter widget.
@@ -39,7 +39,7 @@ class AppController:
         self.show_menu()
 
     def show_menu(self) -> None:
-        """Display the game configuration menu."""
+        """Display the PixelKart menu."""
         self._clear_current_view()
 
         view = MenuView(self.window)
@@ -55,7 +55,7 @@ class AppController:
         self.refresh_circuits()
 
     def refresh_circuits(self) -> None:
-        """Reload circuits from the DAO and refresh the menu view."""
+        """Reload available circuits and update the menu."""
         if not isinstance(self.current_view, MenuView):
             return
 
@@ -68,12 +68,12 @@ class AppController:
             self.current_view.set_message("No circuit available. Create one in the editor.")
 
     def open_circuit_editor(self) -> None:
-        """Open the circuit editor as a secondary window."""
+        """Open the circuit editor window."""
         CircuitEditor(self.window, callback=self.on_circuit_chosen)
 
     def on_circuit_chosen(self, circuit_name: str) -> None:
         """
-        Handle the circuit selected from the editor.
+        Select a circuit after using the editor.
 
         Args:
             circuit_name: Name of the selected circuit.
@@ -84,7 +84,7 @@ class AppController:
             self.current_view.set_selected_circuit(circuit_name)
 
     def start_game(self) -> None:
-        """Validate the menu configuration and create a race."""
+        """Create a race from the menu configuration and display it."""
         if not isinstance(self.current_view, MenuView):
             return
 
@@ -186,7 +186,7 @@ class AppController:
         Display the race screen.
 
         Args:
-            race: Race model to display.
+            race: Race model to control and display.
         """
         self._clear_current_view()
 
@@ -199,18 +199,24 @@ class AppController:
         )
 
     def start(self) -> None:
-        """Show the PixelKart window."""
+        """Focus the PixelKart window."""
         self.window.grab_set()
         self.window.focus_set()
 
     def _clear_current_view(self) -> None:
-        """Destroy the currently displayed view, if any."""
+        """Destroy the current screen if one is displayed."""
         if self.current_view is not None:
             self.current_view.destroy()
             self.current_view = None
 
     def _center_window(self, width: int = 1100, height: int = 700) -> None:
-        """Center the PixelKart window on screen."""
+        """
+        Center the PixelKart window on the screen.
+
+        Args:
+            width: Window width.
+            height: Window height.
+        """
         self.window.update_idletasks()
 
         screen_width = self.window.winfo_screenwidth()

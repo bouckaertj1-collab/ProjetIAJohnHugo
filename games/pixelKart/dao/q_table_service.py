@@ -13,15 +13,15 @@ from games.pixelKart.dao.Q_table_dao import (
 
 def load_q_table(agent, agent_id: int, session: Session) -> dict:
     """
-    Load a Q-table from the database into a Q-learning kart.
+    Load a Q-table into a Q-learning agent.
 
     Args:
-        agent: QLearningKart instance receiving the Q-table.
+        agent: QLearningKart receiving the Q-table.
         agent_id: Database identifier of the trained agent.
         session: Active SQLAlchemy session.
 
     Returns:
-        The loaded Q-table dictionary.
+        Loaded Q-table.
     """
     results = session.query(QValue).filter_by(agent_id=agent_id).all()
 
@@ -38,12 +38,10 @@ def load_q_table(agent, agent_id: int, session: Session) -> dict:
 
 def save_q_table(agent, session: Session, agent_id: int) -> None:
     """
-    Save a Q-learning kart Q-table into the database.
-
-    Existing state/action pairs are updated. New state/action pairs are inserted.
+    Save a Q-learning agent Q-table.
 
     Args:
-        agent: QLearningKart instance containing the Q-table to save.
+        agent: QLearningKart containing the Q-table.
         session: Active SQLAlchemy session.
         agent_id: Database identifier of the trained agent.
     """
@@ -64,14 +62,14 @@ def save_q_table(agent, session: Session, agent_id: int) -> None:
 
 def get_agent(session: Session, circuit_name: str) -> Agent | None:
     """
-    Retrieve the trained agent linked to one circuit.
+    Retrieve the trained agent linked to a circuit.
 
     Args:
         session: Active SQLAlchemy session.
-        circuit_name: Name of the circuit linked to the Q-table.
+        circuit_name: Circuit name.
 
     Returns:
-        The matching Agent if it exists, otherwise None.
+        Matching agent if found, otherwise None.
     """
     return session.query(Agent).filter_by(circuit_name=circuit_name).first()
 
@@ -84,23 +82,20 @@ def create_agent(
     epsilon: float = 1.0,
 ) -> Agent:
     """
-    Retrieve or create a Q-learning agent for one circuit.
-
-    Each circuit gets one Agent entry and therefore one Q-table through
-    the q_values table.
+    Retrieve or create the trained agent linked to a circuit.
 
     Args:
         session: Active SQLAlchemy session.
-        circuit_name: Name of the circuit to train or load.
-        alpha: Learning rate stored as metadata.
-        gamma: Discount factor stored as metadata.
-        epsilon: Exploration rate stored as metadata.
+        circuit_name: Circuit name.
+        alpha: Learning rate stored with the agent.
+        gamma: Future reward factor stored with the agent.
+        epsilon: Exploration rate stored with the agent.
 
     Returns:
-        The existing or newly created Agent.
+        Existing or newly created agent.
 
     Raises:
-        ValueError: If circuit_name is empty.
+        ValueError: If the circuit name is empty.
     """
     if not circuit_name.strip():
         raise ValueError("Circuit name cannot be empty.")

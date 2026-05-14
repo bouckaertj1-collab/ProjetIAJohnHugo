@@ -8,13 +8,11 @@ from games.pixelKart.view.circuit_frames import CircuitEditorFrame
 
 
 class CircuitEditor(tk.Toplevel):
-    """
-    Display a secondary window used to create, import and save circuits.
-    """
+    """Window used to create, import and save circuits."""
 
     def __init__(self, parent: tk.Misc, callback) -> None:
         """
-        Initialize the circuit editor window.
+        Initialize the circuit editor.
 
         Args:
             parent: Parent Tkinter window.
@@ -74,7 +72,7 @@ class CircuitEditor(tk.Toplevel):
         self.refresh_circuits()
 
     def refresh_circuits(self) -> None:
-        """Reload available circuits from the DAO and refresh the dropdown."""
+        """Reload saved circuits and update the dropdown."""
         self.all_circuits = dao.get_all()
         circuit_names = list(self.all_circuits.keys())
 
@@ -87,12 +85,12 @@ class CircuitEditor(tk.Toplevel):
         self.circuit_var.set(circuit_names[0] if circuit_names else "")
 
     def select_for_race(self) -> None:
-        """Send the selected circuit to the main window and close the editor."""
+        """Select the current circuit for the race and close the editor."""
         self.callback(self.circuit_var.get())
         self.destroy()
 
     def import_circuit(self) -> None:
-        """Import the selected circuit into the grid."""
+        """Load the selected circuit into the editor grid."""
         circuit_name = self.circuit_var.get()
         dto = self.all_circuits.get(circuit_name)
 
@@ -104,7 +102,7 @@ class CircuitEditor(tk.Toplevel):
         self.width_var.set(str(self.grid_frame.rows))
 
     def save_circuit(self) -> None:
-        """Open a popup asking for a circuit name and save it."""
+        """Open a popup and save the current grid as a circuit."""
         popup = tk.Toplevel(self)
         popup.title("Save Circuit")
 
@@ -128,7 +126,7 @@ class CircuitEditor(tk.Toplevel):
         ttk.Button(popup, text="Save", command=save_action).pack(pady=5)
 
     def change_size(self) -> None:
-        """Change the grid size according to the entry values."""
+        """Resize the editor grid from the width and length entries."""
         try:
             rows = int(self.width_var.get())
         except ValueError:

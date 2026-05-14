@@ -63,7 +63,11 @@ class RaceView(ttk.Frame):
         self.players_canvas = tk.Canvas(players_frame, highlightthickness=0)
         self.players_canvas.grid(row=0, column=0, sticky="nsew")
 
-        scrollbar = ttk.Scrollbar(players_frame, orient="vertical", command=self.players_canvas.yview)
+        scrollbar = ttk.Scrollbar(
+            players_frame,
+            orient="vertical",
+            command=self.players_canvas.yview,
+        )
         scrollbar.grid(row=0, column=1, sticky="ns")
         self.players_canvas.configure(yscrollcommand=scrollbar.set)
 
@@ -96,23 +100,53 @@ class RaceView(ttk.Frame):
         self.back_to_menu_button.grid(row=0, column=0, pady=5)
 
     def bind_action(self, callback: Callable[[str], None]) -> None:
-        """Bind all action buttons to one callback."""
+        """
+        Store the callback used when an action button is clicked.
+
+        Args:
+            callback: Function receiving the selected action.
+        """
         self.action_callback = callback
 
     def bind_back_to_menu(self, callback) -> None:
-        """Bind the back-to-menu button."""
+        """
+        Bind the back-to-menu button.
+
+        Args:
+            callback: Function called when the button is clicked.
+        """
         self.back_to_menu_button.config(command=callback)
 
     def set_circuit(self, serialized_grid: str) -> None:
-        """Create or refresh the circuit widget."""
+        """
+        Display a circuit grid.
+
+        Args:
+            serialized_grid: Serialized circuit layout.
+        """
         if self.circuit_frame is not None:
             self.circuit_frame.destroy()
 
-        self.circuit_frame = CircuitRaceFrame(self.circuit_container, circuit=serialized_grid)
+        self.circuit_frame = CircuitRaceFrame(
+            self.circuit_container,
+            circuit=serialized_grid,
+        )
         self.circuit_frame.grid(row=0, column=0, sticky="nsew")
 
-    def update_view(self, race_dto: RaceDTO, kart_dtos: list[KartDTO], current_kart_name: str) -> None:
-        """Update the full race screen."""
+    def update_view(
+        self,
+        race_dto: RaceDTO,
+        kart_dtos: list[KartDTO],
+        current_kart_name: str,
+    ) -> None:
+        """
+        Refresh the race screen from DTO data.
+
+        Args:
+            race_dto: Current race state.
+            kart_dtos: Current state of all karts.
+            current_kart_name: Name of the kart whose turn is active.
+        """
         self.time_label.config(text=f'Time: {race_dto["time"]}')
 
         current_kart_dto = next(k for k in kart_dtos if k["name"] == current_kart_name)
@@ -286,6 +320,11 @@ class RaceView(ttk.Frame):
             self.circuit_frame.update_view(circuit_karts)
 
     def _on_action(self, action: str) -> None:
-        """Call the bound action callback."""
+        """
+        Send a selected action to the bound callback.
+
+        Args:
+            action: Selected action.
+        """
         if self.action_callback is not None:
             self.action_callback(action)
