@@ -328,26 +328,38 @@ class QLearningKart(Kart):
         completed_lap: bool = False,
     ) -> float:
         """
-        Compute the reward received after one action.
+        Compute the reward received by the Q-learning agent after one action.
 
-        Reward design:
-            - crash: very large negative reward because the kart is eliminated;
-            - finished race: very large positive reward because the objective is reached;
-            - time cost: small negative reward at each step to avoid endless races;
-            - movement: neutralizes the time cost when the kart actually moves;
-            - useless action: extra penalty when the kart does not move, except for pass;
-            - grass: strong penalty because grass slows the kart and is usually bad;
-            - completed lap: intermediate positive reward before the full race is won.
+        Args:
+            has_crashed: True if the kart was eliminated during this turn.
+            has_finished: True if the kart finished the race during this turn.
+            old_position: Kart position before the action was played.
+            new_position: Kart position after the action and movement were applied.
+            circuit: Circuit used to check the terrain at the new position.
+            action: Action chosen by the agent during this turn.
+            completed_lap: True if the kart completed a lap during this turn.
 
-        Important:
-            The action "pass" does not mean that the kart does not move. It only means
-            that speed and direction are unchanged. If the kart already has speed, it
-            still moves afterwards. This is why pass is not punished as a bad action.
+        Returns:
+            Reward value used to update the Q-table.
+
+        Reward policy:
+            - A crash gives a large negative reward because the kart is eliminated.
+            - Finishing the race gives a large positive reward because the goal is reached.
+            - Each action has a small time cost to discourage endless races.
+            - Moving neutralizes the time cost so normal movement is not punished.
+            - A useless non-pass action receives an extra penalty when the kart does not move.
+            - Ending on grass gives a penalty because grass slows the kart.
+            - Completing a lap gives an intermediate positive reward before the race is fully won.
+
+        Note:
+            The action "pass" does not mean that the kart stays still. It only keeps the
+            current speed and direction. If the kart already has speed, it still moves after
+            the action. Therefore, "pass" is not treated as a useless action by itself.
         """
-        if crash:
+        if has_crashed:
             return -1000.0
 
-        if finished:
+        if has_finished:
             return 5000.0
 
         reward = -0.5
