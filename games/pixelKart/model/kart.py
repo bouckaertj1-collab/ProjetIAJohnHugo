@@ -135,8 +135,7 @@ class Kart:
 
             If the position or the next position of the kart is on the grass : the number of remaining_cells_to_traverse are divided by 2.
         """
-        move_direction = direction if speed > 0 else self.OPPOSITE[direction]
-        row_step, col_step = self.VECTORS[move_direction]
+        row_step, col_step = self.get_effective_movement_vector()
         row, col = position
         remaining_cells_to_traverse = abs(speed)
 
@@ -161,6 +160,13 @@ class Kart:
                 remaining_cells_to_traverse  //= 2
 
         return traversed_positions
+
+
+    def get_effective_movement_vector(self) -> tuple[int, int]:
+        """Retourne (row_step, col_step) en tenant compte de la vitesse (négative = recul)."""
+        direction = self.direction if self.speed >= 0 else self.opposite_direction()
+        return self.direction_to_vector(direction)
+
 
     def simulate_action(self, action: str) -> tuple[int, str]:
         """

@@ -135,6 +135,8 @@ class Race:
         
         traversed_positions = []
 
+        _ , column_step = kart.get_effective_movement_vector()
+
         for next_position in pathway:
             
             if not self.circuit.is_inside(next_position):
@@ -149,7 +151,7 @@ class Race:
                 kart.reset_speed()
                 return traversed_positions
 
-            if kart.direction == "WEST" and (
+            if column_step == -1 and (
                 self.circuit.is_finish(kart.position) or self.circuit.is_finish(next_position)
             ):
                 kart.reset_speed()
