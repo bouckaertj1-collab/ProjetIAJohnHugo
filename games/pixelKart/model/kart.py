@@ -289,9 +289,6 @@ class QLearningKart(Kart):
         self.ensure_state_exists(state)
         actions = allowed_actions if allowed_actions is not None else self.ACTIONS
 
-        if not actions:
-            actions = ["brake"]
-
         if random.random() < self.epsilon:
             return random.choice(actions)
 
