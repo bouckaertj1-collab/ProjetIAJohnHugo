@@ -88,12 +88,31 @@ class Kart:
         return self.OPPOSITE[self.direction]
 
     def direction_to_vector(self, direction: str | None = None) -> tuple[int, int]:
-        """Convert a direction to a movement vector."""
+        """
+        Convert a direction into a row and column movement.
+
+        Args:
+            direction: Direction to convert. Uses the current direction if omitted.
+
+        Returns:
+            Movement vector as (row_step, col_step).
+        """
         target_direction = self.direction if direction is None else direction
         return self.VECTORS[target_direction]
 
     def simulate_action(self, action: str) -> tuple[int, str]:
-        """Return the speed and direction that would result from an action."""
+        """
+        Compute the speed and direction resulting from an action.
+
+        Args:
+            action: Action to simulate.
+
+        Returns:
+            New speed and direction without modifying the kart.
+
+        Raises:
+            ValueError: If the action is unknown.
+        """
         speed = self.speed
         direction = self.direction
 
@@ -113,7 +132,12 @@ class Kart:
         return speed, direction
 
     def apply_action(self, action: str) -> None:
-        """Apply an action to the kart state."""
+        """
+        Apply an action to the kart.
+
+        Args:
+            action: Action to apply.
+        """
         self.speed, self.direction = self.simulate_action(action)
 
     def reset_speed(self) -> None:
@@ -129,7 +153,12 @@ class Kart:
         self.is_alive = False
 
     def to_dto(self) -> KartDTO:
-        """Convert the kart to a data transfer object."""
+        """
+        Convert the kart to a DTO used by the view.
+
+        Returns:
+            Dictionary containing the kart display and race state.
+        """
         return {
             "name": self.name,
             "color": self.color,
@@ -183,25 +212,8 @@ class QLearningKart(Kart):
     """
     Kart controlled by a Q-learning agent.
 
-    The agent learns a Q-table where:
-        - each key is a discrete state describing the kart situation;
-        - each value is a dictionary mapping actions to Q-values.
-
-    Example:
-        {
-            state_1: {
-                "accelerate": 2.4,
-                "brake": -0.5,
-                "turn_left": 1.1,
-                "turn_right": 0.0,
-                "pass": 3.2,
-            }
-        }
-
-    A Q-value represents the expected long-term reward of choosing one action
-    in one state. During training, the agent sometimes explores random allowed
-    actions using epsilon. During evaluation or real play, epsilon is set to
-    0.0 so the agent only uses the best known action.
+    The Q-table maps each state to one Q-value per action:
+        q_table[state][action] = value
     """
 
     def __init__(
@@ -246,7 +258,16 @@ class QLearningKart(Kart):
             self.q_table[state].setdefault(action, 0.0)
 
     def exploit(self, state: tuple, allowed_actions: list[str]) -> str:
-        """Choose the best known allowed action for the given state."""
+        """
+        Choose the best known action for a state.
+
+        Args:
+            state: Current Q-learning state.
+            allowed_actions: Actions allowed by the race rules.
+
+        Returns:
+            One of the allowed actions with the highest Q-value.
+        """
         best_value = max(self.q_table[state][action] for action in allowed_actions)
 
         best_actions = [
@@ -260,17 +281,17 @@ class QLearningKart(Kart):
     def choose_action(
         self,
         state: tuple,
-        allowed_actions: list[str] | None = None,
+        allowed_actions: list[str],
     ) -> str:
         """
-        Choose an action using an epsilon-greedy policy.
+        Choose an action with an epsilon-greedy policy.
 
-        The agent receives a list of allowed actions from Race. This keeps the kart
-        independent from race rules such as walls, borders or training restrictions.
+        Args:
+            state: Current Q-learning state.
+            allowed_actions: Actions allowed by the race rules.
 
-        Decision process:
-            - with probability epsilon, choose a random allowed action;
-            - otherwise, choose the allowed action with the highest Q-value.
+        Returns:
+            Random allowed action when exploring, otherwise the best known action.
         """
         self.ensure_state_exists(state)
 
@@ -344,11 +365,6 @@ class QLearningKart(Kart):
             - A useless non-pass action receives an extra penalty when the kart does not move.
             - Ending on grass gives a penalty because grass slows the kart.
             - Completing a lap gives an intermediate positive reward before the race is fully won.
-
-        Note:
-            The action "pass" does not mean that the kart stays still. It only keeps the
-            current speed and direction. If the kart already has speed, it still moves after
-            the action. Therefore, "pass" is not treated as a useless action by itself.
         """
         if has_crashed:
             return -1000.0
@@ -373,36 +389,13 @@ class QLearningKart(Kart):
         
     def get_state(self, circuit) -> tuple:
         """
-        Build the discrete state used by the Q-learning agent.
+        Build the state used by the Q-learning agent.
 
-        State format:
-            (
-                row,
-                col,
-                front_distance,
-                front_terrain,
-                left_distance,
-                left_terrain,
-                right_distance,
-                right_terrain,
-                direction_index,
-                speed,
-                current_terrain,
-            )
+        Args:
+            circuit: Circuit used to inspect the kart surroundings.
 
-        Meaning:
-            - row and col keep the kart position on the current circuit;
-            - front/left/right distances describe how close the next relevant terrain is;
-            - front/left/right terrain codes tell whether the agent sees road, grass,
-            finish, wall or out of bounds;
-            - direction_index encodes NORTH/EAST/SOUTH/WEST as an integer;
-            - speed keeps the current kart speed;
-            - current_terrain describes the terrain under the kart.
-
-        The position is intentionally kept because the Q-table is trained per circuit.
-        This helps the agent learn circuit-specific behaviours. The state also includes
-        local terrain information so the agent does not only know obstacle distances,
-        but also the type of terrain around it.
+        Returns:
+            Tuple describing position, nearby terrain, direction, speed and current terrain.
         """
         current_direction = (
             self.direction
@@ -436,27 +429,15 @@ class QLearningKart(Kart):
 
     def scan_direction(self, circuit, direction: str) -> tuple[int, int]:
         """
-        Scan one direction from the kart position.
+        Scan the terrain in one direction from the kart position.
 
-        The method looks up to five cells away and returns:
-            - a discretized distance;
-            - the terrain code of the first non-road cell found.
+        Args:
+            circuit: Circuit to inspect.
+            direction: Direction to scan.
 
-        Distance codes:
-            0 = immediate cell;
-            1 = close cell;
-            2 = medium distance;
-            3 = far away or only road found nearby.
-
-        Terrain codes:
-            ROAD_CODE = road;
-            GRASS_CODE = grass;
-            FINISH_CODE = finish/start line;
-            WALL_CODE = wall;
-            OUT_OF_BOUNDS_CODE = outside the circuit.
-
-        This gives the Q-learning state more information than a simple wall distance:
-        the agent can distinguish a wall, grass, finish line and out-of-bounds.
+        Returns:
+            Discretized distance and terrain code of the first non-road cell found.
+            Returns road at maximum distance if only road is found nearby.
         """
         delta_row, delta_col = self.direction_to_vector(direction)
         row, col = self.position
@@ -479,7 +460,15 @@ class QLearningKart(Kart):
 
     @staticmethod
     def discretize_distance(distance: int) -> int:
-        """Return a compact distance code used in the Q-learning state."""
+        """
+        Convert a raw distance into a compact distance code.
+
+        Args:
+            distance: Raw distance from the kart.
+
+        Returns:
+            Discretized distance code.
+        """
         if distance == 1:
             return 0
         if distance == 2:
@@ -494,26 +483,29 @@ class QLearningKart(Kart):
         position: tuple[int, int] | None = None,
     ) -> int:
         """
-        Return the terrain code at a given circuit position.
+        Return the terrain code at a circuit position.
 
-        If no position is provided, the current kart position is used.
+        Args:
+            circuit: Circuit to inspect.
+            position: Position to inspect. Uses the kart position if omitted.
 
-        Terrain codes are represented by named constants:
-            - ROAD_CODE;
-            - GRASS_CODE;
-            - FINISH_CODE;
-            - WALL_CODE;
-            - OUT_OF_BOUNDS_CODE.
-
-        These constants make the Q-learning state easier to understand than vague
-        magic values such as 1 for grass and 0 for every other terrain.
+        Returns:
+            Terrain code used in the Q-learning state.
         """
         target_position = self.position if position is None else position
         cell = circuit.get_cell_type(target_position)
         return self.TERRAIN_CODES[cell]
 
     def get_current_terrain_code(self, circuit) -> int:
-        """Return the terrain code of the current kart position."""
+        """
+        Return the terrain code under the kart.
+
+        Args:
+            circuit: Circuit to inspect.
+
+        Returns:
+            Terrain code at the current kart position.
+        """
         return self.get_terrain_code(circuit, self.position)
 
     def next_epsilon(
@@ -521,5 +513,11 @@ class QLearningKart(Kart):
         coef: float = 0.9995,
         min_epsilon: float = 0.02,
     ) -> None:
-        """Reduce exploration progressively after each race."""
+        """
+        Reduce the exploration rate after a training race.
+
+        Args:
+            coef: Multiplicative decay factor.
+            min_epsilon: Minimum exploration rate.
+        """
         self.epsilon = max(min_epsilon, self.epsilon * coef)
