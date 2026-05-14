@@ -115,9 +115,6 @@ class AppController:
                 + ["ql"] * ql_ais
             )
 
-            if len(start_positions) != len(player_types):
-                raise ValueError("Mismatch between players and start positions.")
-
             shared_q_table = {}
 
             if ql_ais > 0:
