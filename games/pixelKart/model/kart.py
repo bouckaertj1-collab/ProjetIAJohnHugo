@@ -424,7 +424,7 @@ class QLearningKart(Kart):
             right_terrain,
             self.DIRECTIONS.index(self.direction),
             self.speed,
-            self.get_current_terrain_code(circuit),
+            self.get_terrain_code(circuit),
         )
 
     def scan_direction(self, circuit, direction: str) -> tuple[int, int]:
@@ -495,18 +495,6 @@ class QLearningKart(Kart):
         target_position = self.position if position is None else position
         cell = circuit.get_cell_type(target_position)
         return self.TERRAIN_CODES[cell]
-
-    def get_current_terrain_code(self, circuit) -> int:
-        """
-        Return the terrain code under the kart.
-
-        Args:
-            circuit: Circuit to inspect.
-
-        Returns:
-            Terrain code at the current kart position.
-        """
-        return self.get_terrain_code(circuit, self.position)
 
     def next_epsilon(
         self,
