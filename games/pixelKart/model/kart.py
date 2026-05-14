@@ -287,22 +287,16 @@ class QLearningKart(Kart):
         next_state: tuple | None,
     ) -> None:
         """
-        Update the Q-table using the Q-learning formula.
+        Update one Q-value after a training action.
 
-        Formula:
-            Q(state, action) = Q(state, action)
-                + alpha * (target - Q(state, action))
+        Args:
+            state: State before the action.
+            action: Action chosen in that state.
+            reward: Reward received after the action.
+            next_state: State after the action, or None if the race ended.
 
-        Where:
-            target = reward + gamma * max(Q(next_state, next_action))
-
-        Meaning:
-            - alpha controls how strongly new information updates old values;
-            - gamma controls how much future rewards matter;
-            - reward is the immediate result of the action;
-            - next_state is None when the race ended after the action.
-
-        This method is called after every action during automated training.
+        The update uses the Q-learning formula:
+            new_q = current_q + alpha * (reward + gamma * max_next_q - current_q)
         """
         self.ensure_state_exists(state)
 
