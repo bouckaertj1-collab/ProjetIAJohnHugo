@@ -515,12 +515,19 @@ class QLearningKart(Kart):
         position: tuple[int, int] | None = None,
     ) -> int:
         """
-        Return the terrain code of the current kart position.
+        Return the terrain code at a given circuit position.
 
-        The previous implementation used a vague terrain_type value such as 1 for
-        grass and 0 for the rest. The current implementation uses named constants
-        such as ROAD_CODE, GRASS_CODE, FINISH_CODE, WALL_CODE and OUT_OF_BOUNDS_CODE
-        to make the Q-learning state easier to understand.
+        If no position is provided, the current kart position is used.
+
+        Terrain codes are represented by named constants:
+            - ROAD_CODE;
+            - GRASS_CODE;
+            - FINISH_CODE;
+            - WALL_CODE;
+            - OUT_OF_BOUNDS_CODE.
+
+        These constants make the Q-learning state easier to understand than vague
+        magic values such as 1 for grass and 0 for every other terrain.
         """
         target_position = self.position if position is None else position
         cell = circuit.get_cell_type(target_position)
@@ -529,10 +536,6 @@ class QLearningKart(Kart):
     def get_current_terrain_code(self, circuit) -> int:
         """Return the terrain code of the current kart position."""
         return self.get_terrain_code(circuit, self.position)
-
-    def terrain_type(self, circuit) -> int:
-        """Backward-compatible alias for the current terrain code."""
-        return self.get_current_terrain_code(circuit)
 
     def next_epsilon(
         self,
