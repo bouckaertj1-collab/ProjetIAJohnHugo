@@ -81,49 +81,6 @@ def save_circuit(name: str, grid: str) -> None:
     }
     _write_all(circuits)
 
-
-def update_circuit(name: str, grid: str) -> None:
-    """
-    Update an existing circuit.
-
-    Args:
-        name: Circuit name.
-        grid: New serialized circuit.
-
-    Raises:
-        ValueError: If the circuit does not exist.
-    """
-    circuits = get_all()
-
-    if name not in circuits:
-        raise ValueError(f"The circuit '{name}' does not exist.")
-
-    circuits[name] = {
-        "name": name,
-        "grid": grid,
-    }
-    _write_all(circuits)
-
-
-def delete_circuit(name: str) -> None:
-    """
-    Delete a circuit.
-
-    Args:
-        name: Circuit name.
-
-    Raises:
-        ValueError: If the circuit does not exist.
-    """
-    circuits = get_all()
-
-    if name not in circuits:
-        raise ValueError(f"The circuit '{name}' does not exist.")
-
-    del circuits[name]
-    _write_all(circuits)
-
-
 def _write_all(circuits: dict[str, CircuitDTO]) -> None:
     """
     Rewrite the full circuits file.

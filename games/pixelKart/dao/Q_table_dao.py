@@ -103,10 +103,5 @@ def set_q_value(session, agent_id, state, action, value):
     )
     session.merge(q)
         
-def get_q_values(session, agent_id, state):
-    state_str = serialize_state(state)
-    results = session.query(QValue).filter_by(agent_id=agent_id, state=state_str).all()
-    return {q.action: q.value for q in results}
-
 def init_db():
     Base.metadata.create_all(engine)

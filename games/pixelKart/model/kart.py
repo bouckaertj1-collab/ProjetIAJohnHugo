@@ -83,14 +83,6 @@ class Kart:
         self.has_finished = True
         self.speed = 0
 
-    def turn_left(self) -> None:
-        """Turn the kart 90 degrees to the left."""
-        self.direction = self.LEFT_TURN[self.direction]
-
-    def turn_right(self) -> None:
-        """Turn the kart 90 degrees to the right."""
-        self.direction = self.RIGHT_TURN[self.direction]
-
     def opposite_direction(self) -> str:
         """Return the opposite of the current direction."""
         return self.OPPOSITE[self.direction]
@@ -253,15 +245,13 @@ class QLearningKart(Kart):
         for action in self.ACTIONS:
             self.q_table[state].setdefault(action, 0.0)
 
-    def exploit(self, state: tuple, allowed_actions: list[str] | None = None) -> str:
-        """Choose the best known action for the given state."""
-        self.ensure_state_exists(state)
-        actions = allowed_actions if allowed_actions is not None else self.ACTIONS
+    def exploit(self, state: tuple, allowed_actions: list[str]) -> str:
+        """Choose the best known allowed action for the given state."""
+        best_value = max(self.q_table[state][action] for action in allowed_actions)
 
-        best_value = max(self.q_table[state][action] for action in actions)
         best_actions = [
             action
-            for action in actions
+            for action in allowed_actions
             if self.q_table[state][action] == best_value
         ]
 
@@ -281,18 +271,13 @@ class QLearningKart(Kart):
         Decision process:
             - with probability epsilon, choose a random allowed action;
             - otherwise, choose the allowed action with the highest Q-value.
-
-        During training, epsilon is high at the beginning to encourage exploration.
-        During evaluation or in the graphical game, epsilon is set to 0.0 so the agent
-        always exploits the learned Q-table.
         """
         self.ensure_state_exists(state)
-        actions = allowed_actions if allowed_actions is not None else self.ACTIONS
 
         if random.random() < self.epsilon:
-            return random.choice(actions)
+            return random.choice(allowed_actions)
 
-        return self.exploit(state, actions)
+        return self.exploit(state, allowed_actions)
 
     def learn(
         self,
@@ -334,8 +319,8 @@ class QLearningKart(Kart):
 
     def compute_reward(
         self,
-        crash: bool,
-        finished: bool,
+        has_crashed: bool,
+        has_finished: bool,
         old_position: tuple[int, int],
         new_position: tuple[int, int],
         circuit,
@@ -495,15 +480,6 @@ class QLearningKart(Kart):
             return 1
         if distance <= 4:
             return 2
-        return 3
-
-    def distance_to_obstacle(self, circuit, direction: str) -> int:
-        """Return the discretized distance to a wall or circuit border."""
-        distance, terrain_code = self.scan_direction(circuit, direction)
-
-        if terrain_code in {self.WALL_CODE, self.OUT_OF_BOUNDS_CODE}:
-            return distance
-
         return 3
 
     def get_terrain_code(
