@@ -96,6 +96,7 @@ games/pixelKart/
 
 5. IA
 -----
+
 PixelKart contient deux types d’IA :
 
 - RandomAIKart
@@ -103,6 +104,7 @@ PixelKart contient deux types d’IA :
 
 5.1 IA aléatoire
 ----------------
+
 L’IA aléatoire choisit une action au hasard parmi les actions disponibles :
 
 - accelerate
@@ -115,22 +117,27 @@ Elle sert principalement à tester le moteur de course et à fournir un adversai
 
 5.2 IA Q-learning
 -----------------
-La deuxième IA utilise un apprentissage par renforcement basé sur une Q-function.
 
-Contrairement à d’autres jeux du projet, l’IA de PixelKart n’a pas besoin
-de s’entraîner contre un adversaire. Son objectif est simplement de terminer
-le circuit le plus efficacement possible sans se crasher.
+QLearningKart utilise un apprentissage par renforcement basé sur une Q-table.
 
-L’entraînement se fait donc en solo :
-- un seul kart Q-learning est placé sur le circuit ;
-- il joue des milliers de courses sans interface graphique ;
-- il reçoit une récompense après chaque action ;
+L’objectif de l’IA est d’apprendre à terminer un circuit sans se crasher.
+L’entraînement se fait en solo, sans interface graphique :
+
+- un kart Q-learning est placé sur le circuit ;
+- il joue un grand nombre de courses automatiquement ;
+- il observe un état simplifié du circuit ;
+- il choisit une action avec une stratégie epsilon-greedy ;
+- il reçoit une récompense après l’action ;
 - il met à jour sa Q-table ;
-- la Q-table est ensuite sauvegardée dans une base SQLite.
+- la Q-table est sauvegardée dans une base SQLite.
+
+Une Q-table est sauvegardée par circuit. Cela permet à l’IA d’apprendre une
+stratégie adaptée à chaque tracé.
 
 5.3 Q-table
 -----------
-La Q-table est représentée en mémoire par un dictionnaire de ce type :
+
+La Q-table est représentée en mémoire par un dictionnaire Python :
 
     {
         state: {
@@ -142,77 +149,124 @@ La Q-table est représentée en mémoire par un dictionnaire de ce type :
         }
     }
 
-Chaque état est associé à une valeur pour chaque action possible.
+Un état représente une situation observée par le kart.  
+Pour chaque état, l’IA stocke une valeur par action possible.
+
+Une Q-value représente l’intérêt estimé de choisir une action dans un état donné.
+Plus la valeur est élevée, plus l’action est considérée intéressante à long terme.
+
 Pendant l’entraînement, l’IA utilise une stratégie epsilon-greedy :
-elle explore parfois une action aléatoire, puis exploite progressivement
-les meilleures actions apprises.
+
+- avec une probabilité epsilon, elle explore une action autorisée au hasard ;
+- sinon, elle choisit l’action autorisée avec la meilleure Q-value.
+
+Pendant l’évaluation ou dans le jeu final, epsilon est mis à 0.0 afin que l’IA
+n’explore plus et utilise uniquement ce qu’elle a appris.
 
 5.4 État utilisé
 ----------------
-Un état correspond à une situation simplifiée du kart sur le circuit.
 
-L’état utilisé est :
+L’état utilisé par QLearningKart est un tuple discret :
 
     (
         row,
         col,
         front_distance,
+        front_terrain,
         left_distance,
+        left_terrain,
         right_distance,
+        right_terrain,
         direction_index,
         speed,
-        terrain_type,
+        current_terrain,
     )
 
 Détail des informations :
-- row, col : position du kart sur la grille ;
-- front_distance : distance à l’obstacle devant le kart ;
-- left_distance : distance à l’obstacle à gauche ;
-- right_distance : distance à l’obstacle à droite ;
-- direction_index : direction actuelle du kart ;
-- speed : vitesse actuelle ;
-- terrain_type : type de terrain actuel, route ou herbe.
 
-Le nombre de tours déjà effectués n’est pas inclus dans l’état.
-Cela permet d’avoir une Q-table générale par circuit. La stratégie de conduite
-reste la même, que la course fasse 1, 2 ou 3 tours.
+- row, col : position actuelle du kart sur le circuit ;
+- front_distance : distance discrétisée vers le premier terrain important devant ;
+- front_terrain : type du terrain détecté devant ;
+- left_distance : distance discrétisée vers le premier terrain important à gauche ;
+- left_terrain : type du terrain détecté à gauche ;
+- right_distance : distance discrétisée vers le premier terrain important à droite ;
+- right_terrain : type du terrain détecté à droite ;
+- direction_index : direction actuelle encodée sous forme d’entier ;
+- speed : vitesse actuelle du kart ;
+- current_terrain : type du terrain sous le kart.
+
+Les types de terrain sont représentés par des constantes nommées dans le code :
+
+- ROAD_CODE
+- GRASS_CODE
+- FINISH_CODE
+- WALL_CODE
+- OUT_OF_BOUNDS_CODE
+
+La position est conservée volontairement dans l’état, car l’IA est entraînée
+séparément pour chaque circuit. Cela permet d’apprendre une stratégie spécifique
+au tracé. L’état contient aussi les types de terrain autour du kart afin que
+l’IA ne connaisse pas seulement une distance, mais aussi la nature de ce qu’elle
+voit : route, herbe, mur, ligne d’arrivée ou sortie du circuit.
 
 5.5 Actions
 -----------
+
 Les actions possibles sont :
 
 - accelerate : augmente la vitesse ;
 - brake : diminue la vitesse, jusqu’à permettre la marche arrière ;
-- turn_left : tourne à gauche et ralentit jusqu’à 0 au minimum ;
-- turn_right : tourne à droite et ralentit jusqu’à 0 au minimum ;
-- pass : ne change pas l’état du kart.
+- turn_left : change uniquement la direction vers la gauche ;
+- turn_right : change uniquement la direction vers la droite ;
+- pass : ne change ni la vitesse ni la direction.
 
-Les virages ralentissent le kart, mais ne peuvent pas le faire passer
-en marche arrière. Cela évite un comportement incohérent où plusieurs
-virages successifs faisaient reculer le kart.
+Important : pass ne signifie pas forcément que le kart ne bouge pas.
+L’action pass conserve simplement la vitesse et la direction actuelles.
+Si le kart a déjà une vitesse de 1 ou 2, il continue donc à avancer après
+l’action.
 
-5.6 Récompense
+Les actions turn_left et turn_right ne ralentissent plus le kart. Le
+ralentissement est uniquement lié à l’action brake.
+
+5.6 Actions autorisées pour l’IA
+--------------------------------
+
+La liste des actions autorisées est calculée dans Race, car elle dépend des
+règles de course et du circuit.
+
+Race filtre notamment :
+
+- les actions qui provoqueraient immédiatement un crash ;
+- les actions qui feraient sortir le kart du circuit ;
+- les virages à vitesse maximale pour l’IA Q-learning.
+
+Le filtrage des virages à vitesse maximale ne change pas la physique du jeu.
+Il sert uniquement à stabiliser l’apprentissage. Après suppression de l’ancien
+ralentissement implicite dans turn_left et turn_right, l’IA avait tendance à
+apprendre des comportements circulaires sur certains grands circuits. Ce filtre
+force donc l’IA à freiner avant certains virages rapides.
+
+5.7 Récompense
 --------------
+
 La récompense guide l’apprentissage de l’IA.
 
-Les principales récompenses sont :
+Le calcul de récompense utilise principalement :
 
-- +5000 si le kart termine la course ;
-- -1000 si le kart percute un mur ;
-- +20 lorsqu’il découvre une nouvelle position ;
-- +2 lorsqu’il avance ;
-- -2 s’il reste sur place ;
-- -5 s’il roule sur l’herbe ;
-- -1 s’il choisit pass.
+- une forte pénalité si le kart se crashe ;
+- une forte récompense si le kart termine la course ;
+- une petite pénalité de temps à chaque action ;
+- une récompense intermédiaire lorsqu’un tour est complété ;
+- une pénalité lorsque le kart roule sur l’herbe ;
+- une pénalité supplémentaire si une action autre que pass ne provoque aucun déplacement.
 
-Le kart démarre sur la ligne F, qui sert à la fois de départ et d’arrivée.
-Pour cette raison, la récompense ne se base pas simplement sur la proximité
-avec la ligne d’arrivée. Sinon, l’IA serait encouragée à rester près du départ.
-Elle est plutôt récompensée pour explorer le circuit et terminer réellement
-un tour complet.
+L’action pass n’est pas punie automatiquement comme une mauvaise action.
+Elle peut être optimale si le kart a déjà une bonne vitesse et une bonne
+direction.
 
-5.7 Paramètres d’apprentissage
+5.8 Paramètres d’apprentissage
 ------------------------------
+
 Les paramètres principaux sont :
 
     alpha = 0.2
@@ -226,8 +280,9 @@ Les paramètres principaux sont :
 Pendant l’entraînement, epsilon diminue progressivement afin que l’IA explore
 beaucoup au début, puis exploite davantage sa Q-table.
 
-5.8 Sauvegarde de la Q-table
+5.9 Sauvegarde de la Q-table
 ----------------------------
+
 Les Q-tables sont sauvegardées dans une base SQLite :
 
     games/pixelKart/dao/q_tables.db
@@ -237,14 +292,15 @@ Le projet utilise deux tables principales :
     agents
     q_values
 
-La table agents contient un agent par circuit.
+La table agents contient un agent par circuit.  
 La table q_values contient les valeurs apprises pour chaque état et chaque action.
 
 La structure logique est donc :
 
     un circuit = un agent = une Q-table
 
-Cela permet d’éviter de mélanger les apprentissages de plusieurs circuits.
+La Q-table est sauvegardée périodiquement pendant l’entraînement, puis une
+dernière fois à la fin.
 
 6. ENTRAÎNEMENT DE L’IA
 -----------------------
@@ -261,11 +317,13 @@ Le script entraîne automatiquement une IA pour chaque circuit présent dans :
     games/pixelKart/circuits.txt
 
 Pour chaque circuit :
+
 - un kart Q-learning est créé ;
 - la Q-table du circuit est chargée si elle existe ;
 - l’IA joue un grand nombre de courses sans interface graphique ;
-- la Q-table est mise à jour ;
-- la Q-table finale est sauvegardée dans q_tables.db ;
+- la Q-table est mise à jour après chaque action ;
+- la Q-table est sauvegardée périodiquement ;
+- la Q-table finale est sauvegardée à la fin ;
 - une évaluation est lancée avec epsilon = 0.0.
 
 La version finale utilise une Q-table par circuit, et non une Q-table par

@@ -11,6 +11,22 @@ class Kart:
     MIN_SPEED = -1
     MAX_SPEED = 2
 
+    ACTIONS = ["accelerate", "brake", "turn_left", "turn_right", "pass"]
+    DIRECTIONS = ["NORTH", "EAST", "SOUTH", "WEST"]
+
+    ROAD_CODE = 0
+    GRASS_CODE = 1
+    FINISH_CODE = 2
+    WALL_CODE = 3
+    OUT_OF_BOUNDS_CODE = 4
+
+    TERRAIN_CODES = {
+        "R": ROAD_CODE,
+        "G": GRASS_CODE,
+        "F": FINISH_CODE,
+        "W": WALL_CODE,
+    }
+
     LEFT_TURN = {
         "NORTH": "WEST",
         "WEST": "SOUTH",
@@ -49,20 +65,9 @@ class Kart:
         laps_done: int = 0,
         is_alive: bool = True,
         has_finished: bool = False,
+        is_ai: bool = False,
     ) -> None:
-        """
-        Initialize a kart.
-
-        Args:
-            name: Kart name.
-            color: Display color used by the view.
-            position: Current kart position as (row, col).
-            direction: Current facing direction.
-            speed: Current speed.
-            laps_done: Number of completed laps.
-            is_alive: Whether the kart is still in the race.
-            has_finished: Whether the kart has finished the race.
-        """
+        """Initialize a kart."""
         self.name = name
         self.color = color
         self.position = position
@@ -71,11 +76,7 @@ class Kart:
         self.laps_done = laps_done
         self.is_alive = is_alive
         self.has_finished = has_finished
-
-    @property
-    def is_ai(self) -> bool:
-        """Return whether the kart is controlled by an AI."""
-        return False
+        self.is_ai = is_ai
 
     def finish(self) -> None:
         """Mark the kart as finished."""
@@ -95,41 +96,33 @@ class Kart:
         return self.OPPOSITE[self.direction]
 
     def direction_to_vector(self, direction: str | None = None) -> tuple[int, int]:
-        """
-        Convert a direction to a movement vector.
-
-        Args:
-            direction: Direction to convert. If None, use the current kart direction.
-
-        Returns:
-            A movement vector as (row_step, col_step).
-        """
+        """Convert a direction to a movement vector."""
         target_direction = self.direction if direction is None else direction
         return self.VECTORS[target_direction]
 
-    def apply_action(self, action: str) -> None:
-        """
-        Apply an action to the kart state.
+    def simulate_action(self, action: str) -> tuple[int, str]:
+        """Return the speed and direction that would result from an action."""
+        speed = self.speed
+        direction = self.direction
 
-        Args:
-            action: Action chosen for this turn.
-        """
         if action == "accelerate":
-            self.speed = min(self.speed + 1, self.MAX_SPEED)
-
+            speed = min(speed + 1, self.MAX_SPEED)
         elif action == "brake":
-            self.speed = max(self.speed - 1, self.MIN_SPEED)
-
+            speed = max(speed - 1, self.MIN_SPEED)
         elif action == "turn_left":
-            self.turn_left()
-            self.speed = max(self.speed - 1, 0)
-
+            direction = self.LEFT_TURN[direction]
         elif action == "turn_right":
-            self.turn_right()
-            self.speed = max(self.speed - 1, 0)
-
+            direction = self.RIGHT_TURN[direction]
         elif action == "pass":
             pass
+        else:
+            raise ValueError(f"Unknown action: {action}")
+
+        return speed, direction
+
+    def apply_action(self, action: str) -> None:
+        """Apply an action to the kart state."""
+        self.speed, self.direction = self.simulate_action(action)
 
     def reset_speed(self) -> None:
         """Reset the kart speed to zero."""
@@ -144,12 +137,7 @@ class Kart:
         self.is_alive = False
 
     def to_dto(self) -> KartDTO:
-        """
-        Convert the kart to a data transfer object.
-
-        Returns:
-            A KartDTO representing the current kart state.
-        """
+        """Convert the kart to a data transfer object."""
         return {
             "name": self.name,
             "color": self.color,
@@ -170,26 +158,59 @@ class HumanKart(Kart):
 class RandomAIKart(Kart):
     """Represents a kart controlled by a random AI."""
 
-    @property
-    def is_ai(self) -> bool:
-        """Return True because this kart is AI-controlled."""
-        return True
+    def __init__(
+        self,
+        name: str,
+        color: str,
+        position: tuple[int, int],
+        direction: str = "EAST",
+        speed: int = 0,
+        laps_done: int = 0,
+        is_alive: bool = True,
+        has_finished: bool = False,
+    ) -> None:
+        """Initialize a random AI kart."""
+        super().__init__(
+            name=name,
+            color=color,
+            position=position,
+            direction=direction,
+            speed=speed,
+            laps_done=laps_done,
+            is_alive=is_alive,
+            has_finished=has_finished,
+            is_ai=True,
+        )
 
     def choose_action(self) -> str:
-        """
-        Choose a random action among all available actions.
+        """Choose a random action among all available actions."""
+        return random.choice(self.ACTIONS)
 
-        Returns:
-            A randomly selected action.
-        """
-        return random.choice(
-            ["accelerate", "brake", "turn_left", "turn_right", "pass"]
-        )
-    
+
 class QLearningKart(Kart):
-    """Represents a kart controlled by a Q-learning agent."""
+    """
+    Kart controlled by a Q-learning agent.
 
-    ACTIONS = ["accelerate", "brake", "turn_left", "turn_right", "pass"]
+    The agent learns a Q-table where:
+        - each key is a discrete state describing the kart situation;
+        - each value is a dictionary mapping actions to Q-values.
+
+    Example:
+        {
+            state_1: {
+                "accelerate": 2.4,
+                "brake": -0.5,
+                "turn_left": 1.1,
+                "turn_right": 0.0,
+                "pass": 3.2,
+            }
+        }
+
+    A Q-value represents the expected long-term reward of choosing one action
+    in one state. During training, the agent sometimes explores random allowed
+    actions using epsilon. During evaluation or real play, epsilon is set to
+    0.0 so the agent only uses the best known action.
+    """
 
     def __init__(
         self,
@@ -205,8 +226,8 @@ class QLearningKart(Kart):
         epsilon: float = 0.9,
         alpha: float = 0.2,
         gamma: float = 0.95,
-        
     ) -> None:
+        """Initialize a Q-learning kart."""
         super().__init__(
             name=name,
             color=color,
@@ -216,18 +237,13 @@ class QLearningKart(Kart):
             laps_done=laps_done,
             is_alive=is_alive,
             has_finished=has_finished,
+            is_ai=True,
         )
 
         self.q_table = q_table if q_table is not None else {}
         self.epsilon = epsilon
         self.alpha = alpha
         self.gamma = gamma
-        self.visited_positions = set()
-
-    @property
-    def is_ai(self) -> bool:
-        """Return True because this kart is AI-controlled."""
-        return True
 
     def ensure_state_exists(self, state: tuple) -> None:
         """Create the state in the Q-table if it does not exist yet."""
@@ -240,7 +256,6 @@ class QLearningKart(Kart):
     def exploit(self, state: tuple, legal_actions: list[str] | None = None) -> str:
         """Choose the best known action for the given state."""
         self.ensure_state_exists(state)
-
         actions = legal_actions if legal_actions is not None else self.ACTIONS
 
         best_value = max(self.q_table[state][action] for action in actions)
@@ -252,83 +267,35 @@ class QLearningKart(Kart):
 
         return random.choice(best_actions)
 
-    def choose_action(self, state: tuple, circuit) -> str:
+    def choose_action(
+        self,
+        state: tuple,
+        legal_actions: list[str] | None = None,
+    ) -> str:
         """
         Choose an action using an epsilon-greedy policy.
+
+        The agent receives a list of allowed actions from Race. This keeps the kart
+        independent from race rules such as walls, borders or training restrictions.
+
+        Decision process:
+            - with probability epsilon, choose a random allowed action;
+            - otherwise, choose the allowed action with the highest Q-value.
+
+        During training, epsilon is high at the beginning to encourage exploration.
+        During evaluation or in the graphical game, epsilon is set to 0.0 so the agent
+        always exploits the learned Q-table.
         """
         self.ensure_state_exists(state)
+        actions = legal_actions if legal_actions is not None else self.ACTIONS
 
-        safe_actions = self.get_safe_actions(circuit)
+        if not actions:
+            actions = ["brake"]
 
         if random.random() < self.epsilon:
-            return random.choice(safe_actions)
+            return random.choice(actions)
 
-        return self.exploit(state, safe_actions)
-    
-    def get_safe_actions(self, circuit) -> list[str]:
-        """
-        Return actions that do not immediately crash into a wall.
-        """
-        safe_actions = [
-            action
-            for action in self.ACTIONS
-            if not self.would_crash(action, circuit)
-        ]
-
-        return safe_actions if safe_actions else ["brake"]
-    
-    def would_crash(self, action: str, circuit) -> bool:
-        """
-        Predict whether an action would immediately crash into a wall.
-
-        This must mirror the real movement rules.
-        """
-        speed = self.speed
-        direction = self.direction
-        position = self.position
-
-        if action == "accelerate":
-            speed = min(speed + 1, self.MAX_SPEED)
-        elif action == "brake":
-            speed = max(speed - 1, self.MIN_SPEED)
-        elif action == "turn_left":
-            direction = self.LEFT_TURN[direction]
-            speed = max(speed - 1, 0)
-
-        elif action == "turn_right":
-            direction = self.RIGHT_TURN[direction]
-            speed = max(speed - 1, 0)
-        elif action == "pass":
-            pass
-
-        if speed == 0:
-            return False
-
-        move_direction = direction if speed > 0 else self.OPPOSITE[direction]
-        row_step, col_step = self.VECTORS[move_direction]
-
-        row, col = position
-        remaining_steps = abs(speed)
-
-        if circuit.is_grass(position):
-            remaining_steps //= 2
-
-        while remaining_steps > 0:
-            next_position = (row + row_step, col + col_step)
-
-            if not circuit.is_inside(next_position):
-                return False
-
-            if circuit.is_wall(next_position):
-                return True
-
-            row, col = next_position
-            remaining_steps -= 1
-
-            if circuit.is_grass((row, col)):
-                remaining_steps //= 2
-
-        return False
+        return self.exploit(state, actions)
 
     def learn(
         self,
@@ -337,7 +304,24 @@ class QLearningKart(Kart):
         reward: float,
         next_state: tuple | None,
     ) -> None:
-        """Update the Q-table using the Q-learning formula."""
+        """
+        Update the Q-table using the Q-learning formula.
+
+        Formula:
+            Q(state, action) = Q(state, action)
+                + alpha * (target - Q(state, action))
+
+        Where:
+            target = reward + gamma * max(Q(next_state, next_action))
+
+        Meaning:
+            - alpha controls how strongly new information updates old values;
+            - gamma controls how much future rewards matter;
+            - reward is the immediate result of the action;
+            - next_state is None when the race ended after the action.
+
+        This method is called after every action during automated training.
+        """
         self.ensure_state_exists(state)
 
         current_q = self.q_table[state][action]
@@ -358,14 +342,25 @@ class QLearningKart(Kart):
         old_position: tuple[int, int],
         new_position: tuple[int, int],
         circuit,
-        action: str,
+        action: str | None = None,
+        completed_lap: bool = False,
     ) -> float:
         """
-        Compute the reward after one action.
+        Compute the reward received after one action.
 
-        The kart starts on the finish line, so we must not reward proximity
-        to the finish line. Instead, the agent is rewarded for safely exploring
-        the circuit and finishing the lap.
+        Reward design:
+            - crash: very large negative reward because the kart is eliminated;
+            - finished race: very large positive reward because the objective is reached;
+            - time cost: small negative reward at each step to avoid endless races;
+            - movement: neutralizes the time cost when the kart actually moves;
+            - useless action: extra penalty when the kart does not move, except for pass;
+            - grass: strong penalty because grass slows the kart and is usually bad;
+            - completed lap: intermediate positive reward before the full race is won.
+
+        Important:
+            The action "pass" does not mean that the kart does not move. It only means
+            that speed and direction are unchanged. If the kart already has speed, it
+            still moves afterwards. This is why pass is not punished as a bad action.
         """
         if crash:
             return -1000.0
@@ -373,36 +368,53 @@ class QLearningKart(Kart):
         if finished:
             return 5000.0
 
-        reward = -1.0
+        reward = -0.5
 
-        if new_position == old_position:
-            reward -= 2.0
-        else:
-            reward += 2.0
-
-            if not hasattr(self, "visited_positions"):
-                self.visited_positions = set()
-
-            if new_position not in self.visited_positions:
-                reward += 20.0
-                self.visited_positions.add(new_position)
-            else:
-                reward -= 1.0
+        if new_position != old_position:
+            reward += 0.5
+        elif action != "pass":
+            reward -= 1.0
 
         if circuit.is_grass(new_position):
             reward -= 5.0
 
-        if action == "pass":
-            reward -= 1.0
+        if completed_lap:
+            reward += 1000.0
 
         return reward
-
+        
     def get_state(self, circuit) -> tuple:
         """
         Build the discrete state used by the Q-learning agent.
 
-        The position is included because the same obstacle distances can appear
-        in different places of the circuit.
+        State format:
+            (
+                row,
+                col,
+                front_distance,
+                front_terrain,
+                left_distance,
+                left_terrain,
+                right_distance,
+                right_terrain,
+                direction_index,
+                speed,
+                current_terrain,
+            )
+
+        Meaning:
+            - row and col keep the kart position on the current circuit;
+            - front/left/right distances describe how close the next relevant terrain is;
+            - front/left/right terrain codes tell whether the agent sees road, grass,
+            finish, wall or out of bounds;
+            - direction_index encodes NORTH/EAST/SOUTH/WEST as an integer;
+            - speed keeps the current kart speed;
+            - current_terrain describes the terrain under the kart.
+
+        The position is intentionally kept because the Q-table is trained per circuit.
+        This helps the agent learn circuit-specific behaviours. The state also includes
+        local terrain information so the agent does not only know obstacle distances,
+        but also the type of terrain around it.
         """
         current_direction = (
             self.direction
@@ -410,12 +422,12 @@ class QLearningKart(Kart):
             else self.OPPOSITE[self.direction]
         )
 
-        front_distance = self.distance_to_obstacle(circuit, current_direction)
-        left_distance = self.distance_to_obstacle(
+        front_distance, front_terrain = self.scan_direction(circuit, current_direction)
+        left_distance, left_terrain = self.scan_direction(
             circuit,
             self.LEFT_TURN[current_direction],
         )
-        right_distance = self.distance_to_obstacle(
+        right_distance, right_terrain = self.scan_direction(
             circuit,
             self.RIGHT_TURN[current_direction],
         )
@@ -424,19 +436,39 @@ class QLearningKart(Kart):
             self.position[0],
             self.position[1],
             front_distance,
+            front_terrain,
             left_distance,
+            left_terrain,
             right_distance,
-            ["NORTH", "EAST", "SOUTH", "WEST"].index(self.direction),
+            right_terrain,
+            self.DIRECTIONS.index(self.direction),
             self.speed,
-            self.terrain_type(circuit),
+            self.get_current_terrain_code(circuit),
         )
 
-    def distance_to_obstacle(self, circuit, direction: str) -> int:
+    def scan_direction(self, circuit, direction: str) -> tuple[int, int]:
         """
-        Return a discretized distance to the nearest wall or border.
+        Scan one direction from the kart position.
 
-        0 means immediate obstacle.
-        3 means no obstacle nearby.
+        The method looks up to five cells away and returns:
+            - a discretized distance;
+            - the terrain code of the first non-road cell found.
+
+        Distance codes:
+            0 = immediate cell;
+            1 = close cell;
+            2 = medium distance;
+            3 = far away or only road found nearby.
+
+        Terrain codes:
+            ROAD_CODE = road;
+            GRASS_CODE = grass;
+            FINISH_CODE = finish/start line;
+            WALL_CODE = wall;
+            OUT_OF_BOUNDS_CODE = outside the circuit.
+
+        This gives the Q-learning state more information than a simple wall distance:
+        the agent can distinguish a wall, grass, finish line and out-of-bounds.
         """
         delta_row, delta_col = self.direction_to_vector(direction)
         row, col = self.position
@@ -447,20 +479,60 @@ class QLearningKart(Kart):
                 col + delta_col * distance,
             )
 
-            if not circuit.is_inside(next_position) or circuit.is_wall(next_position):
-                if distance == 1:
-                    return 0
-                if distance == 2:
-                    return 1
-                if distance <= 4:
-                    return 2
-                return 3
+            if not circuit.is_inside(next_position):
+                return self.discretize_distance(distance), self.OUT_OF_BOUNDS_CODE
+
+            terrain_code = self.get_terrain_code(circuit, next_position)
+
+            if terrain_code != self.ROAD_CODE:
+                return self.discretize_distance(distance), terrain_code
+
+        return 3, self.ROAD_CODE
+
+    @staticmethod
+    def discretize_distance(distance: int) -> int:
+        """Return a compact distance code used in the Q-learning state."""
+        if distance == 1:
+            return 0
+        if distance == 2:
+            return 1
+        if distance <= 4:
+            return 2
+        return 3
+
+    def distance_to_obstacle(self, circuit, direction: str) -> int:
+        """Return the discretized distance to a wall or circuit border."""
+        distance, terrain_code = self.scan_direction(circuit, direction)
+
+        if terrain_code in {self.WALL_CODE, self.OUT_OF_BOUNDS_CODE}:
+            return distance
 
         return 3
 
+    def get_terrain_code(
+        self,
+        circuit,
+        position: tuple[int, int] | None = None,
+    ) -> int:
+        """
+        Return the terrain code of the current kart position.
+
+        The previous implementation used a vague terrain_type value such as 1 for
+        grass and 0 for the rest. The current implementation uses named constants
+        such as ROAD_CODE, GRASS_CODE, FINISH_CODE, WALL_CODE and OUT_OF_BOUNDS_CODE
+        to make the Q-learning state easier to understand.
+        """
+        target_position = self.position if position is None else position
+        cell = circuit.get_cell_type(target_position)
+        return self.TERRAIN_CODES[cell]
+
+    def get_current_terrain_code(self, circuit) -> int:
+        """Return the terrain code of the current kart position."""
+        return self.get_terrain_code(circuit, self.position)
+
     def terrain_type(self, circuit) -> int:
-        """Return 1 on grass, 0 otherwise."""
-        return 1 if circuit.is_grass(self.position) else 0
+        """Backward-compatible alias for the current terrain code."""
+        return self.get_current_terrain_code(circuit)
 
     def next_epsilon(
         self,
