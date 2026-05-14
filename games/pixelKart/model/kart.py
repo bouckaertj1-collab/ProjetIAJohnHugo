@@ -376,7 +376,7 @@ class QLearningKart(Kart):
 
         if new_position != old_position:
             reward += 0.5
-        elif action != "pass":
+        else:
             reward -= 1.0
 
         if circuit.is_grass(new_position):
