@@ -6,7 +6,7 @@ from games.pixelKart.model.dto import CircuitDTO
 
 
 class Circuit:
-    """Represents a PixelKart circuit."""
+    """Represent a PixelKart circuit grid."""
 
     def __init__(self, name: str, grid: list[list[str]]) -> None:
         """
@@ -14,10 +14,10 @@ class Circuit:
 
         Args:
             name: Circuit name.
-            grid: Two-dimensional grid of cell letters.
+            grid: Circuit cells as a two-dimensional list.
 
         Raises:
-            ValueError: If the grid is empty or malformed.
+            ValueError: If the grid is empty, irregular or contains an unknown cell.
         """
         if not grid or not grid[0]:
             raise ValueError("A circuit grid cannot be empty.")
@@ -39,13 +39,13 @@ class Circuit:
     @classmethod
     def from_dto(cls, dto: CircuitDTO) -> "Circuit":
         """
-        Build a Circuit instance from a CircuitDTO.
+        Build a circuit from a DTO.
 
         Args:
             dto: Serialized circuit data.
 
         Returns:
-            A Circuit instance.
+            Circuit instance.
         """
         rows_data = dto["grid"].strip().split(",")
         grid = [list(row_data) for row_data in rows_data]
@@ -53,10 +53,10 @@ class Circuit:
 
     def to_dto(self) -> CircuitDTO:
         """
-        Convert the circuit to a CircuitDTO.
+        Convert the circuit to a DTO.
 
         Returns:
-            A serialized representation of the circuit.
+            Serialized circuit data.
         """
         grid = ",".join("".join(cell for cell in row) for row in self.grid)
         return {
@@ -65,19 +65,27 @@ class Circuit:
         }
 
     def is_inside(self, position: tuple[int, int]) -> bool:
-        """Check whether a position is inside the circuit boundaries."""
+        """
+        Check whether a position is inside the circuit.
+
+        Args:
+            position: Position to check.
+
+        Returns:
+            True if the position is inside the grid.
+        """
         row, col = position
         return 0 <= row < self.rows and 0 <= col < self.cols
 
     def get_cell_type(self, position: tuple[int, int]) -> str:
         """
-        Return the cell type at a given position.
+        Return the cell type at a position.
 
         Args:
-            position: Grid position as (row, col).
+            position: Position to inspect.
 
         Returns:
-            The cell letter at the given position.
+            Cell type letter.
 
         Raises:
             ValueError: If the position is outside the circuit.
@@ -89,23 +97,47 @@ class Circuit:
         return self.grid[row][col]
 
     def is_wall(self, position: tuple[int, int]) -> bool:
-        """Return True if the given position is a wall."""
+        """
+        Check whether a position contains a wall.
+
+        Args:
+            position: Position to check.
+
+        Returns:
+            True if the position is inside the grid and contains a wall.
+        """
         return self.is_inside(position) and self.get_cell_type(position) == "W"
 
     def is_grass(self, position: tuple[int, int]) -> bool:
-        """Return True if the given position is grass."""
+        """
+        Check whether a position contains grass.
+
+        Args:
+            position: Position to check.
+
+        Returns:
+            True if the position is inside the grid and contains grass.
+        """
         return self.is_inside(position) and self.get_cell_type(position) == "G"
 
     def is_finish(self, position: tuple[int, int]) -> bool:
-        """Return True if the given position is a finish cell."""
+        """
+        Check whether a position contains a finish cell.
+
+        Args:
+            position: Position to check.
+
+        Returns:
+            True if the position is inside the grid and contains a finish cell.
+        """
         return self.is_inside(position) and self.get_cell_type(position) == "F"
 
     def get_start_positions(self) -> list[tuple[int, int]]:
         """
-        Return all finish-line positions that can be used as starting cells.
+        Return all possible start positions.
 
         Returns:
-            A list of (row, col) positions.
+            Positions of all finish cells.
         """
         return [
             (row_index, col_index)
@@ -116,13 +148,13 @@ class Circuit:
 
     def get_random_start_positions(self, number_of_karts: int) -> list[tuple[int, int]]:
         """
-        Return distinct random start positions for the given number of karts.
+        Return random distinct start positions.
 
         Args:
-            number_of_karts: Number of karts to place on the finish line.
+            number_of_karts: Number of start positions needed.
 
         Returns:
-            A list of distinct start positions.
+            Random finish-cell positions.
 
         Raises:
             ValueError: If there are not enough finish cells.

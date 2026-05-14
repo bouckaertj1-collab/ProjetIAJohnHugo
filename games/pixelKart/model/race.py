@@ -6,7 +6,7 @@ from games.pixelKart.model.kart import Kart, QLearningKart
 
 
 class Race:
-    """Represents a PixelKart race and its game rules."""
+    """Manage a PixelKart race and its rules."""
 
     def __init__(self, circuit: Circuit, karts: list[Kart], total_laps: int) -> None:
         """
@@ -14,11 +14,11 @@ class Race:
 
         Args:
             circuit: Circuit used for the race.
-            karts: List of karts participating in the race.
+            karts: Karts participating in the race.
             total_laps: Number of laps required to win.
 
         Raises:
-            ValueError: If the race configuration is invalid.
+            ValueError: If there are no karts or if total_laps is invalid.
         """
         if not karts:
             raise ValueError("A race must contain at least one kart.")
@@ -34,11 +34,24 @@ class Race:
         self.winner_name: str | None = None
 
     def get_current_kart(self) -> Kart:
-        """Return the kart whose turn is currently being played."""
+        """
+        Return the kart whose turn is currently active.
+
+        Returns:
+            Current kart.
+        """
         return self.karts[self.current_player_index]
 
     def is_position_occupied(self, position: tuple[int, int]) -> bool:
-        """Check whether a position is occupied by a kart still in the race."""
+        """
+        Check whether an active kart occupies a position.
+
+        Args:
+            position: Position to check.
+
+        Returns:
+            True if a living and unfinished kart is on the position.
+        """
         for kart in self.karts:
             if not kart.is_alive or kart.has_finished:
                 continue
@@ -47,7 +60,12 @@ class Race:
         return False
 
     def play_current_turn(self, action: str) -> None:
-        """Play the current kart turn with the given action."""
+        """
+        Play one turn for the current kart.
+
+        Args:
+            action: Action chosen by the current kart.
+        """
         if self.finished:
             return
 
@@ -79,10 +97,10 @@ class Race:
 
     def play_current_ai_turn(self) -> None:
         """
-        Play the turn of the current AI kart.
+        Play one turn for the current AI kart.
 
         Raises:
-            ValueError: If the current kart is not an AI kart.
+            ValueError: If the current kart is not controlled by an AI.
         """
         kart = self.get_current_kart()
 
@@ -100,21 +118,14 @@ class Race:
 
     def get_allowed_actions(self, kart: Kart) -> list[str]:
         """
-        Return the actions that the Q-learning agent is allowed to choose.
+        Return the actions allowed for a kart.
 
-        This method belongs to Race, not QLearningKart, because deciding whether an
-        action is allowed depends on race rules: circuit borders, walls, occupied cells
-        and training-specific restrictions.
+        Args:
+            kart: Kart for which actions are checked.
 
-        The method filters:
-            - actions that would immediately crash into a wall or leave the circuit;
-            - maximum-speed turns, because after removing the old implicit slowdown
-            from turn_left and turn_right, the agent tended to learn circular
-            behaviours during training.
-
-        This does not change the physical meaning of actions:
-            - turn_left and turn_right only change direction;
-            - brake is still the only action that reduces speed.
+        Returns:
+            Actions that do not immediately crash and do not violate
+            the training turn restriction.
         """
         allowed_actions = []
 
@@ -131,16 +142,14 @@ class Race:
 
     def is_high_speed_turn(self, kart: Kart, action: str) -> bool:
         """
-        Return whether the action is a turn attempted at maximum speed.
+        Check whether an action is a turn at maximum speed.
 
-        A maximum-speed turn is technically possible in the race model. It is filtered
-        only for the Q-learning agent because removing the old implicit slowdown from
-        turn_left and turn_right made training unstable on larger circuits.
+        Args:
+            kart: Kart trying to play the action.
+            action: Action to check.
 
-        Without this filter, the agent often learns circular behaviours: it keeps speed
-        2 and repeatedly turns without building a useful trajectory. Filtering this
-        case forces the agent to use brake before turning at maximum speed, while still
-        keeping the action model clean.
+        Returns:
+            True if the action is a left or right turn at maximum speed.
         """
         return (
             action in {"turn_left", "turn_right"}
@@ -149,17 +158,14 @@ class Race:
 
     def would_crash(self, kart: Kart, action: str) -> bool:
         """
-        Predict whether an action would immediately make the kart crash.
+        Predict whether an action would hit a wall or leave the circuit.
 
-        The action is simulated without modifying the real kart. The method checks the
-        path that would be followed after applying the action speed and direction.
+        Args:
+            kart: Kart for which the action is simulated.
+            action: Action to simulate.
 
-        It returns True when the simulated movement would:
-            - leave the circuit;
-            - hit a wall.
-
-        It does not handle training restrictions such as maximum-speed turns. Those are
-        handled separately by get_allowed_actions.
+        Returns:
+            True if the simulated movement would crash immediately.
         """
         speed, direction = kart.simulate_action(action)
 
@@ -194,17 +200,13 @@ class Race:
 
     def apply_movement(self, kart: Kart) -> list[tuple[int, int]]:
         """
-        Apply the kart movement according to its speed and direction.
-
-        The finish line can only be crossed towards the east.
-        If the kart tries to cross it towards the west, its speed is reset
-        and the movement stops.
+        Move a kart according to its current speed and direction.
 
         Args:
             kart: Kart to move.
 
         Returns:
-            The list of traversed positions.
+            Positions crossed during the movement.
         """
         traversed_positions: list[tuple[int, int]] = []
 
@@ -259,7 +261,14 @@ class Race:
         old_position: tuple[int, int],
         traversed_positions: list[tuple[int, int]],
     ) -> None:
-        """Update the kart lap count if the finish line was crossed eastward."""
+        """
+        Complete a lap if the kart crossed the finish line eastward.
+
+        Args:
+            kart: Kart to update.
+            old_position: Position before the movement.
+            traversed_positions: Positions crossed during the movement.
+        """
         if not traversed_positions or not kart.is_alive:
             return
 
@@ -278,9 +287,9 @@ class Race:
 
     def next_player(self) -> None:
         """
-        Move to the next kart still in the race.
+        Select the next active kart.
 
-        The race time is increased when a full round has been completed.
+        The race time increases when the turn order loops back to an earlier index.
         """
         if self.finished:
             return
@@ -290,7 +299,10 @@ class Race:
         for step in range(1, len(self.karts) + 1):
             next_index = (previous_index + step) % len(self.karts)
 
-            if not self.karts[next_index].is_alive or self.karts[next_index].has_finished:
+            if (
+                not self.karts[next_index].is_alive
+                or self.karts[next_index].has_finished
+            ):
                 continue
 
             self.current_player_index = next_index
@@ -300,9 +312,9 @@ class Race:
 
     def check_end_game(self) -> None:
         """
-        End the race only when there is a real winner or when all karts crashed.
+        Update the race end state if the race is over.
 
-        A kart does not win just because all the others crashed.
+        The race ends when a kart has finished or when all karts are eliminated.
         """
         if self.finished:
             return
@@ -319,7 +331,12 @@ class Race:
             self.finished = True
 
     def to_dto(self) -> RaceDTO:
-        """Convert the race to a RaceDTO."""
+        """
+        Convert the race to a DTO.
+
+        Returns:
+            Dictionary containing the race state for the view.
+        """
         return {
             "time": self.time,
             "total_laps": self.total_laps,
