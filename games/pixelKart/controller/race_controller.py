@@ -4,6 +4,10 @@ from collections.abc import Callable
 
 from games.pixelKart.model.race import Race
 from games.pixelKart.view.race_view import RaceView
+from games.pixelKart.dao.q_table_service import save_q_table
+from games.pixelKart.dao.Q_table_dao import SessionLocal
+from sqlalchemy.orm import Session
+from games.pixelKart.model.kart import QLearningKart
 
 
 class RaceController:
@@ -14,6 +18,8 @@ class RaceController:
         race: Race,
         view: RaceView,
         on_back_to_menu: Callable[[], None] | None = None,
+        session: Session | None = None, 
+        agents: list | None = None, 
     ) -> None:
         """
         Initialize the race controller.
@@ -28,6 +34,8 @@ class RaceController:
         self.on_back_to_menu = on_back_to_menu
         self.ai_turns_without_human = 0
         self.max_ai_turns_without_human = 2000
+        self.session = session
+        self.agents = agents  
 
         self.view.bind_action(self.on_action_selected)
         self.view.bind_back_to_menu(self.back_to_menu)
@@ -61,6 +69,11 @@ class RaceController:
 
     def back_to_menu(self) -> None:
         """Return to the PixelKart menu."""
+        if self.session is not None and self.agents is not None:
+            for agent, kart in zip(self.agents, self.race.karts):
+                if isinstance(kart, QLearningKart):
+                    save_q_table(kart, self.session, agent.id)
+            self.session.close()
         if self.on_back_to_menu is not None:
             self.on_back_to_menu()
 
@@ -110,10 +123,33 @@ class RaceController:
             self.race.winner_name = None
             self.refresh_view()
             return
+        
+        if isinstance(current_kart, QLearningKart):
+            old_state = current_kart.get_state(self.race.circuit)
+            old_position = current_kart.position
+            old_laps = current_kart.laps_done
 
-        self.race.play_current_ai_turn()
+        action =current_kart.choose_action(old_state,self.race.get_allowed_actions(current_kart))
+
+        self.race.play_current_turn(action) 
+
+        if isinstance(current_kart, QLearningKart):
+
+            new_state = current_kart.get_state(self.race.circuit) if current_kart.is_alive else None
+            completed_lap = current_kart.laps_done > old_laps
+            reward = current_kart.compute_reward(
+                has_crashed=not current_kart.is_alive,
+                has_finished=current_kart.has_finished,
+                old_position=old_position,
+                new_position=current_kart.position,
+                circuit=self.race.circuit,
+                completed_lap=completed_lap,
+            )
+
+            
+            current_kart.learn(old_state, action, reward, new_state)
+
         self.refresh_view()
-
         self.schedule_ai_turn_if_needed()
 
     def refresh_view(self) -> None:

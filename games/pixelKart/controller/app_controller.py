@@ -36,6 +36,7 @@ class AppController:
         self.current_view: tk.Widget | None = None
         self.current_controller = None
 
+
         self.show_menu()
 
     def show_menu(self) -> None:
@@ -115,39 +116,16 @@ class AppController:
                 + ["ql"] * ql_ais
             )
 
-            shared_q_table = {}
-
-            if ql_ais > 0:
-                init_db()
-
-                session = SessionLocal()
-                try:
-                    db_agent = create_agent(
-                        session=session,
-                        circuit_name=circuit.name,
-                    )
-
-                    temp_kart = KartFactory.create(
-                        kart_type="ql",
-                        config={
-                            "name": "Temporary QL Kart",
-                            "color": "red",
-                            "position": (0, 0),
-                        },
-                    )
-
-                    load_q_table(temp_kart, agent_id=db_agent.id, session=session)
-                    shared_q_table = temp_kart.q_table.copy()
-
-                finally:
-                    session.close()
-
             karts = []
             counters = {
                 "human": 0,
                 "random": 0,
                 "ql": 0,
             }
+
+            init_db()
+            self.session = SessionLocal()
+            self.agents = []
 
             for index, kart_type in enumerate(player_types):
                 counters[kart_type] += 1
@@ -166,14 +144,18 @@ class AppController:
                     "direction": "EAST",
                 }
 
+                kart = KartFactory.create(kart_type=kart_type, config=config)
+                karts.append(kart)
+
                 if kart_type == "ql":
-                    config["q_table"] = shared_q_table
+                    unique_agent_name = f"{name} - {circuit.name}"
+                    db_agent = create_agent(self.session,unique_agent_name)
+                    self.agents.append(db_agent)
+                    config["q_table"] = {} 
                     config["epsilon"] = 0.0
                     config["alpha"] = 0.2
                     config["gamma"] = 0.95
-
-                kart = KartFactory.create(kart_type=kart_type, config=config)
-                karts.append(kart)
+                    load_q_table(kart, agent_id=db_agent.id, session=self.session)
 
             race = Race(circuit=circuit, karts=karts, total_laps=total_laps)
             self.show_race(race)
@@ -196,6 +178,8 @@ class AppController:
             race=race,
             view=view,
             on_back_to_menu=self.show_menu,
+            session = self.session,
+            agents = self.agents,
         )
 
     def start(self) -> None:

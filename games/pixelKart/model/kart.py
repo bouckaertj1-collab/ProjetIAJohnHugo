@@ -372,13 +372,16 @@ class QLearningKart(Kart):
         if has_finished:
             return 5000.0
 
-        reward = -0.5
+        
+    
+        reward = self.speed * 1.0
 
-        if new_position != old_position:
+        """ if new_position != old_position:
             reward += 0.5
         else:
             reward -= 1.0
-
+        """
+        
         if circuit.is_grass(new_position):
             reward -= 5.0
 
@@ -397,23 +400,20 @@ class QLearningKart(Kart):
         Returns:
             Tuple describing position, nearby terrain, direction, speed and current terrain.
         """
-        current_direction = (
-            self.direction
-            if self.speed >= 0
-            else self.OPPOSITE[self.direction]
-        )
+        current_direction = (self.direction if self.speed >= 0 else self.OPPOSITE[self.direction])
 
-        front_distance, front_terrain = self.scan_direction(circuit, current_direction)
-        left_distance, left_terrain = self.scan_direction(
-            circuit,
-            self.LEFT_TURN[current_direction],
-        )
-        right_distance, right_terrain = self.scan_direction(
-            circuit,
-            self.RIGHT_TURN[current_direction],
-        )
+        max_dist_front = max(5,circuit.cols // 3)
+        max_dist_back = max(3,circuit.cols // 6)
+        max_dist_side = max(4,circuit.cols // 4)
+        
 
+        front_distance, front_terrain = self.scan_direction(circuit, current_direction, max_dist_front)
+        back_distance, back_terrain = self.scan_direction(circuit, self.OPPOSITE[current_direction], max_dist_back)
+        left_distance, left_terrain = self.scan_direction(circuit, self.LEFT_TURN[current_direction], max_dist_side)
+        right_distance, right_terrain = self.scan_direction(circuit, self.RIGHT_TURN[current_direction], max_dist_side)
+        
         return (
+            circuit.name,
             self.position[0],
             self.position[1],
             front_distance,
@@ -422,12 +422,14 @@ class QLearningKart(Kart):
             left_terrain,
             right_distance,
             right_terrain,
+            back_distance,
+            back_terrain,
             self.DIRECTIONS.index(self.direction),
             self.speed,
             self.get_current_terrain_code(circuit),
         )
 
-    def scan_direction(self, circuit, direction: str) -> tuple[int, int]:
+    def scan_direction(self, circuit, direction: str,max_distance:int = 5) -> tuple[int, int]:
         """
         Scan the terrain in one direction from the kart position.
 
@@ -442,7 +444,7 @@ class QLearningKart(Kart):
         delta_row, delta_col = self.direction_to_vector(direction)
         row, col = self.position
 
-        for distance in range(1, 6):
+        for distance in range(1,max_distance+1):
             next_position = (
                 row + delta_row * distance,
                 col + delta_col * distance,
