@@ -365,6 +365,9 @@ class QLearningKart(Kart):
             - A useless non-pass action receives an extra penalty when the kart does not move.
             - Ending on grass gives a penalty because grass slows the kart.
             - Completing a lap gives an intermediate positive reward before the race is fully won.
+
+            Remarques Mme Smal:
+            récompenser vitesse 2?
         """
         if has_crashed:
             return -1000.0
@@ -377,7 +380,7 @@ class QLearningKart(Kart):
         if new_position != old_position:
             reward += 0.5
         else:
-            reward -= 1.0
+            reward -= 20.0
 
         if circuit.is_grass(new_position):
             reward -= 5.0

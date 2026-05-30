@@ -44,7 +44,7 @@ class LauncherController:
             A configured GameController.
         """
         ai: AI = AI("AI Bob")
-        ai.download("games/matchsticks/bob_training.json")
+        ai.load("games/matchsticks/bob_training.json")
         ai.eps = 0.0
 
         human: HumanGUI = HumanGUI("Me")
