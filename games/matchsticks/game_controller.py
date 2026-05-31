@@ -7,7 +7,7 @@ Responsibilities:
     - Trigger AI moves when it's not the human's turn
 """
 
-from games.matchsticks.player import Player, HumanGUI
+from games.matchsticks.player import Player, HumanGUI, AI
 from games.matchsticks.game_model import GameModel
 from games.matchsticks.game_view import GameView
 import tkinter.messagebox as mb
@@ -164,20 +164,31 @@ class GameController:
         self.model.switch_player()
         self.view.update_view()
 
+    def train_ai_players(self) -> None:
+        """
+        Train AI players after a completed GUI game.
+
+        This allows the AI to learn from games played against a human.
+        The updated value function is also saved so the learning persists
+        after closing the application.
+        """
+        for player in self.model.players:
+            if isinstance(player, AI):
+                player.train()
+                player.save("games/matchsticks/bob_training.json")
+                
     def handle_end_game(self) -> None:
         """
-        Finalize the game: update stats and switch the UI to end-game mode.
-
-        Postconditions:
-            - Winner gains 1 win
-            - Loser gains 1 loss
-            - View is updated and shows a restart button
+        Finalize the game: update stats, train AI players, and switch the UI
+        to end-game mode.
         """
         winner = self.model.get_winner()
         loser = self.model.get_loser()
 
         winner.win()
         loser.lose()
+
+        self.train_ai_players()
 
         self.view.update_view()
         self.view.end_game()
