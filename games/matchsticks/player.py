@@ -3,13 +3,13 @@ Define player classes for the matches game.
 
 This module contains:
 - Player
-    Base abstract class representing a player.
+    Base player class with a default random move.
 
 - HumanGUI
     Human player interacting through the graphical interface.
 
 - AI
-    AI player using a decision algorithm (e.g., MinMax or other strategy).
+    AI player using reinforcement learning with a state-value function.
 """
 
 import json
@@ -174,13 +174,7 @@ class AI(Player):
 
         Returns:
             The chosen action (number of matches to take).
-
-        Raises:
-            RuntimeError: If no game is attached to this player.
         """
-        if self.game is None:
-            raise RuntimeError("AI has no game attached (self.game is None).")
-
         state = self.game.nb
 
         if self.previous_state is not None:

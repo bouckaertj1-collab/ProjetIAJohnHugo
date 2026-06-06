@@ -1,8 +1,9 @@
 """
-Tkinter view for the matchstick game.
+Tkinter view for the Matchsticks game.
 
-Design choice:
-    The view does NOT read the model directly. It queries the controller.
+The view is responsible for displaying the game state and user controls.
+It does not access the model directly; it gets the required information from
+the controller.
 """
 
 import tkinter as tk
@@ -14,155 +15,149 @@ if TYPE_CHECKING:
 
 class GameView(tk.Toplevel):
     """
-    Tkinter GUI window.
-
-    Responsibilities:
-        - Display the remaining matches
-        - Display status messages (turn / winner)
-        - Provide buttons for human actions
-        - Delegate all game logic to the controller
+    Graphical window for the Matchsticks game.
     """
 
-    def __init__(self,parent, controller: "GameController") -> None:
+    def __init__(self, parent: tk.Tk, controller: "GameController") -> None:
         """
-        Create the main window and widgets.
+        Create the game window and its widgets.
 
         Args:
-            controller: The controller that coordinates model/view.
+            parent: Parent Tkinter window.
+            controller: Controller used to interact with the game logic.
         """
         super().__init__(parent)
         self.controller = controller
 
         self.title("Jeu des allumettes")
-        self.resizable(False, False)  
+        self.resizable(False, False)
         self.configure(padx=24, pady=24)
 
         self.message_label = tk.Label(self, text="", font=("Arial", 12, "bold"))
         self.message_label.pack(pady=(0, 10))
 
-        self.canvas = tk.Canvas(self, width=520, height=240, bg="#f5f5f5", highlightthickness=0)
+        self.canvas = tk.Canvas(
+            self,
+            width=520,
+            height=240,
+            bg="#f5f5f5",
+            highlightthickness=0,
+        )
         self.canvas.pack(pady=(0, 12))
 
         self.buttons_frame = tk.Frame(self)
         self.buttons_frame.pack()
 
-        btn_size = {"width": 12, "height": 2}
-        self.btn1 = tk.Button(self.buttons_frame, text="Prendre 1", command=lambda: None, **btn_size)
-        self.btn2 = tk.Button(self.buttons_frame, text="Prendre 2", command=lambda: None, **btn_size)
-        self.btn3 = tk.Button(self.buttons_frame, text="Prendre 3", command=lambda: None, **btn_size)
-
-        self.btn1.pack(side=tk.LEFT, padx=8)
-        self.btn2.pack(side=tk.LEFT, padx=8)
-        self.btn3.pack(side=tk.LEFT, padx=8)
-
+        self._create_action_buttons()
         self.update_view()
 
     def update_view(self) -> None:
         """
-        Refresh the canvas, buttons state, and message label.
-
-        The view asks the controller for:
-            - number of matches remaining
-            - status message
+        Refresh the displayed matches, button states, and status message.
         """
-        nb = self.controller.get_nb_matches()
+        nb_matches = self.controller.get_nb_matches()
 
         self.canvas.delete("all")
-        self.draw_matches(nb)
+        self._draw_matches(nb_matches)
 
-        self.btn1.config(state=("normal" if nb >= 1 else "disabled"))
-        self.btn2.config(state=("normal" if nb >= 2 else "disabled"))
-        self.btn3.config(state=("normal" if nb >= 3 else "disabled"))
-
+        self._update_action_buttons_state(nb_matches)
         self.message_label.config(text=self.controller.get_status_message())
 
-
-    def draw_matches(self, nb: int) -> None:
+    def _create_action_buttons(self) -> None:
         """
-        Draw `nb` matches on the canvas.
+        Create the buttons used by the human player to take matches.
 
-        Args:
-            nb: Number of matches to draw (>= 0).
+        The controller binds the actual commands after the buttons are created.
         """
-        per_row = 21
-        x0, y0 = 20, 24
+        button_options = {"width": 12, "height": 2}
 
-        stick_w = 6
-        stick_h = 46
-        head_r = 7
+        self.btn1 = tk.Button(self.buttons_frame, text="Prendre 1", **button_options)
+        self.btn2 = tk.Button(self.buttons_frame, text="Prendre 2", **button_options)
+        self.btn3 = tk.Button(self.buttons_frame, text="Prendre 3", **button_options)
+
+        for button in (self.btn1, self.btn2, self.btn3):
+            button.pack(side=tk.LEFT, padx=8)
+
+    def _update_action_buttons_state(self, nb_matches: int) -> None:
+        """
+        Enable or disable action buttons depending on the number of matches left.
+        """
+        self.btn1.config(state=("normal" if nb_matches >= 1 else "disabled"))
+        self.btn2.config(state=("normal" if nb_matches >= 2 else "disabled"))
+        self.btn3.config(state=("normal" if nb_matches >= 3 else "disabled"))
+
+    def _draw_matches(self, nb_matches: int) -> None:
+        """
+        Draw the remaining matches on the canvas.
+        """
+        matches_per_row = 21
+        x_start, y_start = 20, 24
+
+        stick_width = 6
+        stick_height = 66
+        head_radius = 7
         gap = 23
 
-        for i in range(nb):
-            row = i // per_row  
-            col = i % per_row
+        for index in range(nb_matches):
+            row = index // matches_per_row
+            col = index % matches_per_row
 
-            x = x0 + col * gap
-            y = y0 + row * (stick_h + 20)
+            x = x_start + col * gap
+            y = y_start + row * (stick_height + 20)
 
             self.canvas.create_oval(
-                x - head_r, y - head_r,
-                x + head_r, y + head_r,
-                fill="#d9534f", outline="#b13f3b"
+                x - head_radius,
+                y - head_radius,
+                x + head_radius,
+                y + head_radius,
+                fill="#d9534f",
+                outline="#b13f3b",
             )
 
             self.canvas.create_rectangle(
-                x - stick_w // 2, y,
-                x + stick_w // 2, y + stick_h,
-                fill="#deb887", outline="#2f2f2f"
+                x - stick_width // 2,
+                y,
+                x + stick_width // 2,
+                y + stick_height,
+                fill="#deb887",
+                outline="#2f2f2f",
             )
 
     def end_game(self) -> None:
         """
-        Switch the UI to "end of game" mode.
-
-        This method updates the interface once the game is finished.
-        It removes the action buttons (take 1/2/3 matches) and replaces
-        them with:
-            - a "Restart" button to start a new game
-            - a "Terminate" button to display final statistics and exit
-
-        Postconditions:
-            - Action buttons are removed
-            - End-of-game control buttons are displayed
+        Replace action buttons with end-of-game controls.
         """
-        for widget in self.buttons_frame.winfo_children():
-            widget.destroy()
+        self._clear_buttons()
 
-        reset_btn = tk.Button(
+        restart_button = tk.Button(
             self.buttons_frame,
             text="Restart",
             command=self.controller.reset_game,
             width=18,
-            height=2
+            height=2,
         )
-        reset_btn.pack(side=tk.LEFT, padx=6)
+        restart_button.pack(side=tk.LEFT, padx=6)
 
-        terminate_btn = tk.Button(
+        end_button = tk.Button(
             self.buttons_frame,
             text="End",
             command=self.controller.show_stats,
             width=18,
-            height=2
+            height=2,
         )
-        terminate_btn.pack(side=tk.LEFT, padx=6)
-    
+        end_button.pack(side=tk.LEFT, padx=6)
+
     def reset(self) -> None:
         """
-        Restore the default UI (buttons 1/2/3).
+        Restore the default action buttons and refresh the display.
+        """
+        self._clear_buttons()
+        self._create_action_buttons()
+        self.update_view()
 
-        Note:
-            The controller should re-bind button commands because buttons are recreated.
+    def _clear_buttons(self) -> None:
+        """
+        Remove all buttons from the button area.
         """
         for widget in self.buttons_frame.winfo_children():
             widget.destroy()
-
-        btn_kwargs = {"width": 12, "height": 2}
-        self.btn1 = tk.Button(self.buttons_frame, text="Prendre 1", command=lambda: None, **btn_kwargs)
-        self.btn2 = tk.Button(self.buttons_frame, text="Prendre 2", command=lambda: None, **btn_kwargs)
-        self.btn3 = tk.Button(self.buttons_frame, text="Prendre 3", command=lambda: None, **btn_kwargs)
-
-        self.btn1.pack(side=tk.LEFT, padx=8)
-        self.btn2.pack(side=tk.LEFT, padx=8)
-        self.btn3.pack(side=tk.LEFT, padx=8)
-
-        self.update_view()
