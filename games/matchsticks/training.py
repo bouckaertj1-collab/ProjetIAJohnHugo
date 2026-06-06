@@ -6,7 +6,7 @@ After training, the learned value functions are saved into JSON files so
 they can be reused by the graphical version of the game.
 
 The AI learns from complete games:
-- play_game() runs one full match,
+- play_automatic_game() runs one full match,
 - win()/lose() add the final transition to the AI history,
 - train() updates the value function from that history,
 - save() saves the trained parameters to JSON.
@@ -92,10 +92,10 @@ def training(
         nb_games: Number of games to run.
         epsilon_decay_period: Number of games between epsilon reductions.
     """
-    game = GameModel(TRAINING_TOTAL_MATCHES, player1, player2, displayable=False)
+    game = GameModel(TRAINING_TOTAL_MATCHES, player1, player2)
 
     for game_index in range(nb_games):
-        game.play_game()
+        game.play_automatic_game()
 
         train_if_ai(player1)
         train_if_ai(player2)
@@ -125,10 +125,10 @@ def evaluate_ai(ai: AI, opponent: Player, nb_games: int) -> None:
     previous_epsilon = ai.eps
     ai.eps = 0.0
 
-    game = GameModel(EVALUATION_TOTAL_MATCHES, ai, opponent, displayable=False)
+    game = GameModel(EVALUATION_TOTAL_MATCHES, ai, opponent)
 
     for _ in range(nb_games):
-        game.play_game()
+        game.play_automatic_game()
         game.reset()
 
     ai.eps = previous_epsilon

@@ -1,49 +1,42 @@
 """
-Controller for the matches game (MVC).
+Controller for the Matchsticks game.
 
-Responsibilities:
-    - Link GUI actions to game logic
-    - Update the game state and refresh the GUI
-    - Trigger AI moves when it's not the human's turn
+The controller connects the model and the Tkinter view. It receives user
+actions from the GUI, applies them to the model, updates the display, and
+triggers AI turns when needed.
 """
 
-from games.matchsticks.player import Player, HumanGUI, AI
+import tkinter.messagebox as mb
+
 from games.matchsticks.game_model import GameModel
 from games.matchsticks.game_view import GameView
-import tkinter.messagebox as mb
+from games.matchsticks.player import AI, HumanGUI, Player
 
 
 class GameController:
     """
-    Connects the GameModel and GameView.
-
-    This controller also manages turn switching and end-of-game handling.
+    Coordinate the Matchsticks model, view, and players.
     """
 
-    def __init__(self, p1: Player, p2: Player, total_matches: int,parent) -> None:
+    AI_TRAINING_FILE = "games/matchsticks/bob_training.json"
+    AI_MOVE_DELAY_MS = 600
+
+    def __init__(self, p1: Player, p2: Player, total_matches: int, parent) -> None:
         """
-        Initialize controller, model, and view.
+        Create the model and view for a graphical Matchsticks game.
 
         Args:
             p1: First player.
             p2: Second player.
             total_matches: Initial number of matches.
-
-        Raises:
-            ValueError: If there is no HumanGUI player (GUI requires at least one).
+            parent: Parent Tkinter window.
         """
-        if not isinstance(p1, HumanGUI) and not isinstance(p2, HumanGUI):
-            raise ValueError("GUI requires at least one human player (HumanGUI).")
-
         self.model = GameModel(total_matches, p1, p2)
-        self.view = GameView(parent,self)
+        self.view = GameView(parent, self)
 
     def _bind_buttons(self) -> None:
         """
-        Bind GUI buttons to controller actions.
-
-        Postconditions:
-            - Buttons (1/2/3) trigger handle_human_move with the correct value.
+        Connect action buttons to human moves.
         """
         self.view.btn1.config(command=lambda: self.handle_human_move(1))
         self.view.btn2.config(command=lambda: self.handle_human_move(2))
@@ -51,110 +44,78 @@ class GameController:
 
     def start(self) -> None:
         """
-        Initialize and start a new game session.
-
-        This method prepares the graphical interface by:
-            - resetting the view
-            - binding the buttons to controller actions
-            - updating the display
-
-        If the AI player starts the game, its move is
-        automatically triggered.
-        
-        Postconditions:
-            - The window of the gamme runs until the end button is pressed.
+        Prepare the game window and start the first turn.
         """
         self.view.reset()
         self._bind_buttons()
         self.view.update_view()
-
-        if not isinstance(self.model.get_current_player(),HumanGUI):
-            self.handle_ai_move()
+        self._play_ai_turn_if_needed()
 
     def get_nb_matches(self) -> int:
         """
-        Provide remaining matches for the view.
-
-        Returns:
-            Current number of matches in the model.
+        Return the number of matches remaining.
         """
         return self.model.nb
 
     def get_status_message(self) -> str:
         """
-        Provide a status message for the view.
-
-        Returns:
-            A string describing whose turn it is, or the winner if game is over.
+        Return the message displayed by the view.
         """
         if not self.model.is_game_over():
-            return f"Current turn: {self.model.get_current_player().name} | Matches remaining: {self.model.nb} "
+            current_player = self.model.get_current_player()
+            return (
+                f"Current turn: {current_player.name} | "
+                f"Matches remaining: {self.model.nb}"
+            )
+
         winner = self.model.get_winner()
         return f"Game over — winner: {winner.name}"
 
     def reset_game(self) -> None:
         """
-        Reset the game and restore the default UI.
-
-        Postconditions:
-            - model is reset
-            - view is reset (buttons recreated)
-            - buttons are re-bound
-            - if AI starts, it plays
+        Start a new game with the same players and initial number of matches.
         """
         self.model.reset()
         self.view.reset()
         self._bind_buttons()
-
-        if not isinstance(self.model.get_current_player(), HumanGUI):
-            self.handle_ai_move()
-
         self.view.update_view()
+        self._play_ai_turn_if_needed()
 
     def handle_human_move(self, nb_taken: int) -> None:
         """
-        Handle a human move (button click).
+        Apply a move selected by the human player.
 
         Args:
-            nb_taken: Number of matches requested to take (1..3).
-
-        Preconditions:
-            - It must be the human player's turn.
-
-        Postconditions:
-            - Applies the move, checks end of game, switches player, updates view.
-            - If next player is AI, schedules an AI move.
+            nb_taken: Number of matches selected from the GUI button.
         """
-        current = self.model.get_current_player()
+        current_player = self.model.get_current_player()
 
-        if not isinstance(current, HumanGUI):
+        if not isinstance(current_player, HumanGUI):
             return
 
-        self.model.step(nb_taken)
+        self._apply_move(nb_taken)
 
-        if self.model.is_game_over():
-            self.handle_end_game()
-            return
-
-        self.model.switch_player()
-        self.view.update_view()
-
-        if not isinstance(self.model.get_current_player(), HumanGUI):
-            self.view.after(600, self.handle_ai_move)
+        if not self.model.is_game_over():
+            self._play_ai_turn_if_needed(delay=True)
 
     def handle_ai_move(self) -> None:
         """
-        Handle an AI move.
-
-        Preconditions:
-            - It must be the AI player's turn.
-
-        Postconditions:
-            - Applies the AI move, checks end of game, switches player, updates view.
+        Let the non-human player choose and apply a move.
         """
-        current = self.model.get_current_player()
+        current_player = self.model.get_current_player()
+
+        if isinstance(current_player, HumanGUI):
+            return
+
         max_take = min(3, self.model.nb)
-        action = current.play(max_take)
+        action = current_player.play(max_take)
+
+        self._apply_move(action)
+
+    def _apply_move(self, action: int) -> None:
+        """
+        Apply a move, then either end the game or switch player.
+        """
         self.model.step(action)
 
         if self.model.is_game_over():
@@ -164,23 +125,33 @@ class GameController:
         self.model.switch_player()
         self.view.update_view()
 
+    def _play_ai_turn_if_needed(self, delay: bool = False) -> None:
+        """
+        Trigger an AI move if the current player is not a GUI human.
+        """
+        if isinstance(self.model.get_current_player(), HumanGUI):
+            return
+
+        if delay:
+            self.view.after(self.AI_MOVE_DELAY_MS, self.handle_ai_move)
+        else:
+            self.handle_ai_move()
+
     def train_ai_players(self) -> None:
         """
-        Train AI players after a completed GUI game.
+        Train and save AI players after a completed GUI game.
 
-        This allows the AI to learn from games played against a human.
-        The updated value function is also saved so the learning persists
-        after closing the application.
+        This lets the AI learn from games played against a human. The updated
+        value function is saved so the progress persists after closing the app.
         """
         for player in self.model.players:
             if isinstance(player, AI):
                 player.train()
-                player.save("games/matchsticks/bob_training.json")
-                
+                player.save(self.AI_TRAINING_FILE)
+
     def handle_end_game(self) -> None:
         """
-        Finalize the game: update stats, train AI players, and switch the UI
-        to end-game mode.
+        Finish the game, update statistics, train AI players, and update the UI.
         """
         winner = self.model.get_winner()
         loser = self.model.get_loser()
@@ -195,15 +166,9 @@ class GameController:
 
     def show_stats(self) -> None:
         """
-        Display final game statistics and terminate the application.
-
-        This method is called when the user clicks the "Terminate" button
-        at the end of a game. It shows a dialog window containing the
-        cumulative statistics (wins, losses, games played) for each player,
-        then closes the main application window.
+        Display cumulative player statistics and close the game window.
         """
         p1, p2 = self.model.players
         stats = f"Game statistics\n\n{p1}\n\n{p2}"
         mb.showinfo("Statistics", stats)
         self.view.destroy()
-

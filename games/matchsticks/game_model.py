@@ -1,5 +1,5 @@
 """
-Game model for the matches game.
+Game model for the Matchsticks game.
 
 Rule:
     The player who takes the last match loses.
@@ -14,158 +14,142 @@ if TYPE_CHECKING:
 
 class GameModel:
     """
-    Store the game state and apply the game rules.
+    Store the game state and apply the Matchsticks rules.
 
-    Attributes:
-        original_nb: Initial number of matches at the start of each game.
-        nb: Current number of matches remaining.
-        players: List of two players.
-        current_player: Index (0 or 1) of the current player in `players`.
+    The model keeps track of:
+    - the number of matches remaining,
+    - the two players,
+    - the current player's turn.
+
+    It does not handle the graphical interface. The GUI is managed by the view
+    and controller.
     """
 
-    def __init__(self, total_matches: int, player1: "Player", player2: "Player", displayable: bool = True) -> None:
+    MAX_TAKE = 3
+
+    def __init__(self, total_matches: int, player1: "Player", player2: "Player") -> None:
         """
-        Initialize the model.
+        Initialize a new Matchsticks game.
 
         Args:
-            total_matches: Initial number of matches (> 0).
+            total_matches: Initial number of matches. Must be at least 1.
             player1: First player.
             player2: Second player.
 
-        Postconditions:
-            - nb is set to total_matches.
-            - players are shuffled to randomize who starts.
-            - each player's `game` reference points to this model.
+        Raises:
+            ValueError: If total_matches is lower than 1.
         """
-        self.displayable = displayable
+        if total_matches < 1:
+            raise ValueError("total_matches must be >= 1.")
+
         self.original_nb = total_matches
         self.nb = total_matches
         self.players: list["Player"] = [player1, player2]
-        
-        for p in self.players:
-            p.game = self
+        self.current_player_index = 0
 
-        self.current_player = 0
-        self.shuffle()
+        for player in self.players:
+            player.game = self
 
-    def shuffle(self) -> None:
+        self.shuffle_players()
+
+    def shuffle_players(self) -> None:
         """
-        Randomize player order and reset current player index.
-
-        Postconditions:
-            - players order may change.
-            - current_player is set to 0.
+        Randomize the player order and reset the current player index.
         """
         random.shuffle(self.players)
-        self.current_player = 0
+        self.current_player_index = 0
 
     def reset(self) -> None:
         """
         Reset the game to its initial state.
 
-        Postconditions:
-            - nb is restored to original_nb.
-            - players are shuffled again.
+        The number of matches is restored and the starting player is randomized
+        again.
         """
         self.nb = self.original_nb
-        self.shuffle()
+        self.shuffle_players()
 
     def step(self, action: int) -> None:
         """
-        Apply one move: remove matches from the pile.
+        Apply one move by removing matches from the pile.
 
         Args:
-            action: Number of matches to remove (must be 1..3 and <= nb).
+            action: Number of matches to remove.
 
         Raises:
-            ValueError: If action is not in [1, 3] or action > nb.
-
-        Postconditions:
-            - nb is decreased by `action`.
+            ValueError: If the action is not between 1 and MAX_TAKE.
+            ValueError: If the action is greater than the remaining matches.
         """
-        if action < 1 or action > 3:
-            raise ValueError("Invalid action: must be 1, 2 or 3.")
+        if action < 1 or action > self.MAX_TAKE:
+            raise ValueError(f"Invalid action: must be between 1 and {self.MAX_TAKE}.")
         if action > self.nb:
             raise ValueError("Invalid action: not enough matches remaining.")
+
         self.nb -= action
 
     def switch_player(self) -> None:
         """
         Switch to the other player.
-
-        Postconditions:
-            - current_player becomes 1 - current_player.
         """
-        self.current_player = 1 - self.current_player
+        self.current_player_index = 1 - self.current_player_index
 
     def is_game_over(self) -> bool:
         """
-        Check if the game is finished.
-
-        Returns:
-            True if no matches remain, else False.
+        Return True if no matches remain.
         """
         return self.nb == 0
 
     def get_current_player(self) -> "Player":
         """
-        Get the player whose turn it is.
-
-        Returns:
-            The current Player instance.
+        Return the player whose turn it is.
         """
-        return self.players[self.current_player]
+        return self.players[self.current_player_index]
 
     def get_winner(self) -> "Player | None":
         """
-        Get the winner if the game is over.
+        Return the winner if the game is over.
 
-        Since taking the last match loses, the winner is the player who is NOT
-        the current player once nb reaches 0.
-
-        Returns:
-            The winner Player if game over, otherwise None.
+        Since the player who takes the last match loses, the winner is the
+        other player.
         """
         if not self.is_game_over():
             return None
-        return self.players[1 - self.current_player]
+        return self.players[1 - self.current_player_index]
 
     def get_loser(self) -> "Player | None":
         """
-        Get the loser if the game is over.
+        Return the loser if the game is over.
 
-        Returns:
-            The loser Player if game over, otherwise None.
+        The loser is the current player, because they took the last match.
         """
         if not self.is_game_over():
             return None
-        return self.players[self.current_player]
-    
-    def play_game(self) -> None:
+        return self.players[self.current_player_index]
+
+    def play_automatic_game(self) -> None:
         """
-        Play a full game until the ends.
+        Play a complete automatic game without using the GUI.
 
-        The model repeatedly asks the current player for an action,
-        applies it, and switches the turn until the pile is empty.
-        When the game ends, win/lose counters are updated.
+        This method is used by the training and evaluation scripts. It repeatedly
+        asks the current player for an action, applies the action, switches turns,
+        and stops when no matches remain.
 
-        Side effects:
-            - Updates nb during the game.
-            - Calls winner.win() and loser.lose() at the end of the game.
-            - Leaves current_player as the player who took the last match (loser).
+        At the end of the game, the winner and loser statistics are updated. For AI
+        players, calling win() or lose() also records the final learning transition.
         """
         while not self.is_game_over():
-            current = self.get_current_player()
-            max_take = min(3, self.nb)
-            action = current.play(max_take)
+            current_player = self.get_current_player()
+            max_take = min(self.MAX_TAKE, self.nb)
+            action = current_player.play(max_take)
 
             self.step(action)
 
             if self.is_game_over():
                 winner = self.get_winner()
                 loser = self.get_loser()
-                winner.win()  
-                loser.lose()  
+
+                winner.win()
+                loser.lose()
                 return
 
             self.switch_player()
