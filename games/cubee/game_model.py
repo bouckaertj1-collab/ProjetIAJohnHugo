@@ -14,7 +14,7 @@ class GameModel:
         "right": (0, 1),
     }
 
-    def __init__(self, player1: Player, player2: Player, size: int = 5) -> None:
+    def __init__(self, player1: Player | str, player2: Player | str, size: int = 5) -> None:
         """
         Initialize the game model.
 
@@ -58,7 +58,7 @@ class GameModel:
 
     def reset(self) -> None:
         """Reset the game to its initial state."""
-        self.board = [[0 for _ in range(self.size)] for _ in range(self.size)]
+        self.board = [[0 for col in range(self.size)] for row in range(self.size)]
 
         p1_pos, p2_pos = self.get_start_positions()
         self.player1.position = p1_pos
@@ -85,10 +85,6 @@ class GameModel:
         d_row, d_col = self.MOVES[move]
         return row + d_row, col + d_col
 
-    def get_target_position(self, move: str) -> tuple[int, int]:
-        """Return the target position for the current player."""
-        return self.get_target_position_for(self.current_player, move)
-
     def is_legal_move_for(self, player: Player, move: str) -> bool:
         """
         Check whether a move is legal for a specific player.
@@ -108,10 +104,6 @@ class GameModel:
         target_cell = self.board[row][col]
         opponent_value = 2 if player == self.player1 else 1
         return target_cell != opponent_value
-
-    def is_legal_move(self, move: str) -> bool:
-        """Check whether a move is legal for the current player."""
-        return self.is_legal_move_for(self.current_player, move)
 
     def available_moves_for(self, player: Player) -> list[str]:
         """Return the list of legal moves for a specific player."""
@@ -151,10 +143,12 @@ class GameModel:
 
     def check_enclosure(self) -> None:
         """
-        Fill enclosed empty cells with the current player's value.
+        Capture empty cells enclosed by the current player.
 
-        This method uses a breadth-first search from the opponent position
-        to find all cells the opponent can still reach.
+        The method starts from the opponent's position and searches all empty
+        or opponent-owned cells that the opponent can still reach. Empty cells
+        that cannot be reached by the opponent are considered enclosed and are
+        converted to the current player's value.
         """
         opponent = self.player2 if self.player_turn == 1 else self.player1
         current_value = self.player_turn
@@ -195,10 +189,10 @@ class GameModel:
         Returns:
             True if the move was applied, False otherwise.
         """
-        if self.is_game_over or not self.is_legal_move(move):
+        if self.is_game_over or not self.is_legal_move_for(self.current_player, move):
             return False
 
-        new_row, new_col = self.get_target_position(move)
+        new_row, new_col = self.get_target_position_for(self.current_player, move)
 
         self.current_player.position = (new_row, new_col)
         self.board[new_row][new_col] = self.player_turn

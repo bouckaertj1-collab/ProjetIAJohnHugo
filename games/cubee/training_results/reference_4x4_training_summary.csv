@@ -1,0 +1,2 @@
+alpha,gamma,board_size,train_games,save_every,wins_agent1,wins_agent2,draws,win_rate_agent1,win_rate_agent2,draw_rate,qtable_states,qtable_actions,qtable_file_size_kb,final_epsilon_agent1,final_epsilon_agent2,shared_qtable
+0.4,0.8,5,1000000,50000,500786,499214,0,0.500786,0.499214,0.0,10606071,30365228,1466524.69,0.05,0.05,C:\Users\bouck\OneDrive - Haute Ecole de Namur-Liege-Luxembourg\Documents\CoursHenallux\ProjetConceptionIA\GitHub\ProjetIAJohnHugo\games\cubee\cubee_reference_4x4_qtable.json

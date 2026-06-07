@@ -6,32 +6,29 @@ if TYPE_CHECKING:
     from games.cubee.player import Player
 
 
-def build_state_key(game_model: "GameModel", player: "Player") -> str:
+def build_state_key(game_model: "GameModel", agent: "Player") -> str:
     """
-    Build a compact representation of a state for the Q-table.
+    Build a state key from the agent's point of view.
 
-    The state is described from the player point of view using:
-    - whose turn it is
-    - the player position
-    - the opponent position
+    The state contains:
+    - the current turn
+    - the agent's position
+    - the opponent's position
     - the serialized board
     """
-    if game_model.player1 == player:
-        my_pos = game_model.player1.position
-        opponent_pos = game_model.player2.position
-    else:
-        my_pos = game_model.player2.position
-        opponent_pos = game_model.player1.position
+    agent_position = agent.position
 
-    my_row, my_col = my_pos
-    opp_row, opp_col = opponent_pos
+    opponent = game_model.player2 if agent is game_model.player1 else game_model.player1
+    opponent_position = opponent.position
+
+    agent_row, agent_col = agent_position
+    opponent_row, opponent_col = opponent_position
     turn = game_model.player_turn
     board = game_model.board_to_string()
 
-    return f"{turn}|{my_row},{my_col}|{opp_row},{opp_col}|{board}"
+    return f"{turn}|{agent_row},{agent_col}|{opponent_row},{opponent_col}|{board}"
 
-
-def save_qtable(filename: str, q_table: dict[str, dict[str, float]], epsilon: float, alpha: float, gamma: float) -> None:
+def save_qtable(filename: str, q_table: dict, epsilon: float, alpha: float, gamma: float) -> None:
     """Save the Q-learning parameters and Q-table to a JSON file."""
     with open(filename, "w", encoding="utf-8") as file:
         json.dump(
@@ -46,11 +43,12 @@ def save_qtable(filename: str, q_table: dict[str, dict[str, float]], epsilon: fl
         )
 
 
-def load_qtable(filename: str) -> dict[str, float | dict[str, dict[str, float]]]:
+def load_qtable(filename: str)-> dict:
     """
-    Load the Q-learning parameters and Q-table from a JSON file.
+    Load Q-learning parameters and Q-table from a JSON file.
 
-    If the file does not exist or is invalid, default values are returned.
+    If the file does not exist, a new empty Q-table with default parameters
+    is returned. If the file is invalid, the same default values are used.
     """
     try:
         with open(filename, "r", encoding="utf-8") as file:

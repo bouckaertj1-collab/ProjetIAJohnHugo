@@ -13,7 +13,7 @@ def test_is_legal_move_to_opponent_cell():
         [0, 0, 2],
     ]
 
-    assert game.is_legal_move("right") is False
+    assert game.is_legal_move_for(game.current_player, "right") is False
 
 def test_step_updates_position_board_score_and_turn():
     game = GameModel("P1", "P2", size=3)

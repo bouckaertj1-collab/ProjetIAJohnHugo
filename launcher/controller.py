@@ -72,16 +72,19 @@ class LauncherController:
             A configured CubeeController.
         """
         size: int = 5
+        qtable_path = "games/cubee/cubee_trained_qtable.json"
 
         player1: Player = Player("Human", (0, 0))
         player2: QLearningAgent = QLearningAgent("Q-Bot", (size - 1, size - 1))
 
-        player2.download("games/cubee/cubee_trained_qtable.json")
+        player2.load(qtable_path)
         player2.epsilon = 0.0
-        player2.configure_runtime(
-            learning_enabled=False,
-            auto_save=False,
+
+        player2.configure_learning(
+            learning_enabled=True,
+            auto_save=True,
             auto_decay=False,
+            qtable_filename=qtable_path,
         )
 
         model: CubeeModel = CubeeModel(player1, player2, size=size)

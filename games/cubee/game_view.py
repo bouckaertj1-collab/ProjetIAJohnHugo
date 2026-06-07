@@ -15,13 +15,16 @@ class GameView(tk.Toplevel):
     P1_CURRENT_COLOR = "deepskyblue"
     P2_CURRENT_COLOR = "tomato"
 
+    CELL_SIZE = 80
+    BOARD_PADDING = 20
+
     CELL_STYLES: dict[str, dict[str, str]] = {
         "0": {"text": "", "bg": EMPTY_COLOR},
         "1": {"text": "1", "bg": P1_COLOR},
         "2": {"text": "2", "bg": P2_COLOR},
     }
 
-    def __init__(self, parent: tk.Tk, controller: "GameController", size: int, cell_size: int = 4) -> None:
+    def __init__(self, parent: tk.Tk, controller: "GameController", size: int) -> None:
         """
         Initialize the game view.
 
@@ -29,67 +32,64 @@ class GameView(tk.Toplevel):
             parent: The parent window.
             controller: The game controller.
             size: The board size.
-            cell_size: The button width for each cell.
         """
         super().__init__(parent)
 
         self.controller = controller
         self.size = size
-        self.cell_size = cell_size
+
+        board_pixel_size = self.size * self.CELL_SIZE
+        window_width = board_pixel_size + 2 * self.BOARD_PADDING + 80
+        window_height = board_pixel_size + 230
 
         self.title("Cubee")
+        self.geometry(f"{window_width}x{window_height}")
+        self.resizable(False, False)
 
         self.status_label = tk.Label(
             self,
             text="",
-            font=("Arial", 12)
+            font=("Arial", 18, "bold"),
         )
-        self.status_label.pack(pady=10)
+        self.status_label.pack(pady=(20, 8))
 
         self.score_label = tk.Label(
             self,
             text="Score: 0 - 0",
-            font=("Arial", 11)
+            font=("Arial", 15),
         )
         self.score_label.pack(pady=5)
 
-        self.board_frame = tk.Frame(self)
-        self.board_frame.pack(padx=10, pady=10)
+        self.canvas = tk.Canvas(
+            self,
+            width=board_pixel_size,
+            height=board_pixel_size,
+            bg="white",
+            highlightthickness=0,
+        )
+        self.canvas.pack(padx=self.BOARD_PADDING, pady=20)
+        self.canvas.bind("<Button-1>", self.on_canvas_click)
 
-        self.buttons: list[list[tk.Button]] = []
-        self._create_board()
+        self.controls_frame = tk.Frame(self)
+        self.controls_frame.pack(pady=10)
 
         self.reset_button = tk.Button(
-            self,
+            self.controls_frame,
             text="Reset",
-            command=self.controller.reset
+            font=("Arial", 12),
+            width=10,
+            command=self.controller.reset,
         )
-        self.reset_button.pack(pady=10)
+        self.reset_button.grid(row=0, column=0, padx=10)
 
         self.finish_button = tk.Button(
-            self,
+            self.controls_frame,
             text="Quit",
-            command=self.destroy
+            font=("Arial", 12),
+            width=10,
+            command=self.destroy,
         )
-        self.finish_button.pack(pady=5)
-
-    def _create_board(self) -> None:
-        """Create the board buttons."""
-        for row in range(self.size):
-            button_row: list[tk.Button] = []
-
-            for col in range(self.size):
-                button = tk.Button(
-                    self.board_frame,
-                    text="",
-                    width=self.cell_size,
-                    height=2,
-                    command=lambda r=row, c=col: self.on_cell_click(r, c)
-                )
-                button.grid(row=row, column=col, padx=1, pady=1)
-                button_row.append(button)
-
-            self.buttons.append(button_row)
+        self.finish_button.grid(row=0, column=1, padx=10)
 
     def update_view(self, state: dict) -> None:
         """
@@ -115,16 +115,47 @@ class GameView(tk.Toplevel):
 
         self.status_label.config(text=status)
 
-        for index, cell in enumerate(board_str):
-            row = index // self.size
-            col = index % self.size
-            self.buttons[row][col].config(**self.CELL_STYLES[cell])
+        self.canvas.delete("all")
 
         player1_row, player1_col = state["pos_p1"]
         player2_row, player2_col = state["pos_p2"]
 
-        self.buttons[player1_row][player1_col].config(bg=self.P1_CURRENT_COLOR, text="P1")
-        self.buttons[player2_row][player2_col].config(bg=self.P2_CURRENT_COLOR, text="P2",)
+        for index, cell in enumerate(board_str):
+            row = index // self.size
+            col = index % self.size
+
+            x1 = col * self.CELL_SIZE
+            y1 = row * self.CELL_SIZE
+            x2 = x1 + self.CELL_SIZE
+            y2 = y1 + self.CELL_SIZE
+
+            style = self.CELL_STYLES[cell]
+            bg = style["bg"]
+            text = style["text"]
+
+            if (row, col) == (player1_row, player1_col):
+                bg = self.P1_CURRENT_COLOR
+                text = "P1"
+            elif (row, col) == (player2_row, player2_col):
+                bg = self.P2_CURRENT_COLOR
+                text = "P2"
+
+            self.canvas.create_rectangle(
+                x1,
+                y1,
+                x2,
+                y2,
+                fill=bg,
+                outline="black",
+                width=2,
+            )
+
+            self.canvas.create_text(
+                x1 + self.CELL_SIZE / 2,
+                y1 + self.CELL_SIZE / 2,
+                text=text,
+                font=("Arial", 14, "bold"),
+            )
 
     def end_game(self, message: str, state: dict) -> None:
         """
@@ -137,12 +168,15 @@ class GameView(tk.Toplevel):
         self.update_view(state)
         messagebox.showinfo("Game Over", message)
 
-    def on_cell_click(self, row: int, col: int) -> None:
+    def on_canvas_click(self, event: tk.Event) -> None:
         """
-        Handle a click on a board cell.
+        Handle a click on the board canvas.
 
         Args:
-            row: The clicked row.
-            col: The clicked column.
+            event: Tkinter mouse event.
         """
-        self.controller.handle_cell_click(row, col)
+        row = event.y // self.CELL_SIZE
+        col = event.x // self.CELL_SIZE
+
+        if 0 <= row < self.size and 0 <= col < self.size:
+            self.controller.handle_cell_click(row, col)
