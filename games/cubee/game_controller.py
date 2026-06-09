@@ -8,46 +8,76 @@ if TYPE_CHECKING:
 
 
 class GameController:
-    """Main controller for the Cubee game."""
+    """
+    Controller for the Cubee game.
+
+    The controller connects the graphical interface to the game model.
+    It converts user interactions into model actions, lets AI players play
+    automatically, refreshes the view, and displays the final result.
+    """
+
+    AI_PLAYER_TYPES = (QLearningAgent, RandomAgent)
+
+    CELL_TO_MOVE = {
+        (-1, 0): "up",
+        (1, 0): "down",
+        (0, -1): "left",
+        (0, 1): "right",
+    }
 
     def __init__(self, model: "GameModel", view: "GameView | None" = None) -> None:
         """
         Initialize the controller.
 
         Args:
-            model: The game model.
-            view: The game view. Can be None.
+            model: The Cubee game model controlled by this object.
+            view: The graphical view attached to the controller.
+                It can be None during initialization or tests.
         """
         self.model = model
         self.view = view
 
     def _update_view(self) -> None:
-        """Refresh the view if a view is attached."""
+        """
+        Refresh the graphical view.
+
+        The view can be missing during initialization or tests, so the controller
+        only updates it when it is attached.
+        """
         if self.view is not None:
             self.view.update_view(self.get_state_DTO())
 
     def start(self) -> None:
-        """Start the game and refresh the view."""
+        """
+        Start or resume the game display.
+
+        The view is refreshed first. If the first player is an AI, the controller
+        immediately lets the AI play until a human player has to act or the game ends.
+        """
         self._update_view()
         self.handle_ai_move()
 
     def reset(self) -> None:
-        """Reset the game and refresh the view."""
+        """
+        Reset the model and restart the controller flow.
+
+        After the reset, the board is refreshed and AI players are allowed to play
+        automatically if the first turn belongs to an AI.
+        """
         self.model.reset()
         self.start()
 
     def handle_move(self, move: str) -> bool:
         """
-        Apply a human move.
+        Apply a human move to the model.
 
         Args:
-            move: The move to play.
+            move: Direction chosen by the human player.
 
         Returns:
-            True if the move was handled, False otherwise.
+            True if the move was accepted by the model, False if the move was illegal.
         """
-        success = self.model.step(move)
-        if not success:
+        if not self.model.step(move):
             return False
 
         self._update_view()
@@ -59,69 +89,62 @@ class GameController:
 
         return True
 
-    def handle_ai_move(self) -> bool:
+    def handle_ai_move(self) -> None:
         """
-        Let AI players play until it is no longer their turn.
+        Let AI players play automatically.
 
-        Returns:
-            True if at least one AI move was played, False otherwise.
+        The loop continues while the current player is an AI and the game is not over.
+        Move validation and game-over detection stay in the model/player layer; the
+        controller only triggers AI turns and refreshes the view after each move.
         """
-        has_played = False
-
-        while not self.model.is_game_over and isinstance(
-            self.model.current_player,
-            (QLearningAgent, RandomAgent),
+        while (
+            not self.model.is_game_over
+            and isinstance(self.model.current_player, self.AI_PLAYER_TYPES)
         ):
-            success = self.model.current_player.play()
-            if not success:
-                return has_played
-
-            has_played = True
+            self.model.current_player.play()
             self._update_view()
 
         if self.model.is_game_over:
             self.handle_end_game()
 
-        return has_played
-
     def handle_cell_click(self, row: int, col: int) -> bool:
         """
-        Handle a click on a board cell.
+        Convert a clicked board cell into a move.
 
-        The clicked cell is converted into a move if it is adjacent
-        to the current player's position.
+        Only adjacent cells correspond to valid movement directions. A click on a
+        non-adjacent cell is ignored and returns False.
         """
         state = self.get_state_DTO()
         current_row, current_col = state["pos_p1"] if state["turn"] == 1 else state["pos_p2"]
 
-        moves = {
-            (-1, 0): "up",
-            (1, 0): "down",
-            (0, -1): "left",
-            (0, 1): "right",
-        }
+        row_delta = row - current_row
+        col_delta = col - current_col
 
-        move = moves.get((row - current_row, col - current_col))
-        if not move:
+        move = self.CELL_TO_MOVE.get((row_delta, col_delta))
+
+        if move is None:
             return False
 
         return self.handle_move(move)
 
     def handle_end_game(self) -> None:
-        """Process the end of the game."""
-        final_state = self.get_state_DTO()
-        message = self.get_status_message()
+        """
+        Display the final result when the game is over.
 
+        The model is responsible for computing the winner, the score, and player
+        statistics. The controller only prepares the final message and sends it
+        to the view.
+        """
         if self.view is not None:
-            self.view.end_game(message, final_state)
+            self.view.end_game(self.get_status_message(), self.get_state_DTO())
 
     def get_status_message(self) -> str:
         """
         Build the current game status message.
 
         Returns:
-            A message with the game result or current turn, followed by
-            player statistics.
+            A message containing either the current turn or the final result,
+            followed by both players' statistics.
         """
         p1 = self.model.player1
         p2 = self.model.player2
@@ -147,5 +170,9 @@ class GameController:
         return result + stats
 
     def get_state_DTO(self) -> dict:
-        """Return the current game state."""
+        """
+        Return the current game state as a DTO.
+
+        The DTO is produced by the model and used by the view to render the board.
+        """
         return self.model.get_state_DTO()

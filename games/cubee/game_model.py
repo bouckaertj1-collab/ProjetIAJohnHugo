@@ -217,6 +217,7 @@ class GameModel:
             "size": self.size,
             "board": self.board_to_string(),
             "turn": self.player_turn,
+            "current_player_name": self.current_player.name,
             "pos_p1": self.player1.position,
             "pos_p2": self.player2.position,
             "is_game_over": self.is_game_over,

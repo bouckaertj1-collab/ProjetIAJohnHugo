@@ -7,7 +7,13 @@ if TYPE_CHECKING:
 
 
 class GameView(tk.Toplevel):
-    """Tkinter view for the Cubee game."""
+    """
+    Tkinter view for the Cubee game.
+
+    The view displays the board, the score, and the current game status.
+    It also converts mouse clicks into board coordinates and forwards them
+    to the controller. The view does not apply game rules directly.
+    """
 
     EMPTY_COLOR = "white"
     P1_COLOR = "lightblue"
@@ -18,20 +24,14 @@ class GameView(tk.Toplevel):
     CELL_SIZE = 80
     BOARD_PADDING = 20
 
-    CELL_STYLES: dict[str, dict[str, str]] = {
-        "0": {"text": "", "bg": EMPTY_COLOR},
-        "1": {"text": "1", "bg": P1_COLOR},
-        "2": {"text": "2", "bg": P2_COLOR},
-    }
-
     def __init__(self, parent: tk.Tk, controller: "GameController", size: int) -> None:
         """
-        Initialize the game view.
+        Initialize the Cubee game window.
 
         Args:
-            parent: The parent window.
-            controller: The game controller.
-            size: The board size.
+            parent: Main Tkinter window.
+            controller: Controller used to forward user actions.
+            size: Board size.
         """
         super().__init__(parent)
 
@@ -64,7 +64,7 @@ class GameView(tk.Toplevel):
             self,
             width=board_pixel_size,
             height=board_pixel_size,
-            bg="white",
+            bg=self.EMPTY_COLOR,
             highlightthickness=0,
         )
         self.canvas.pack(padx=self.BOARD_PADDING, pady=20)
@@ -82,43 +82,41 @@ class GameView(tk.Toplevel):
         )
         self.reset_button.grid(row=0, column=0, padx=10)
 
-        self.finish_button = tk.Button(
+        self.quit_button = tk.Button(
             self.controls_frame,
             text="Quit",
             font=("Arial", 12),
             width=10,
             command=self.destroy,
         )
-        self.finish_button.grid(row=0, column=1, padx=10)
+        self.quit_button.grid(row=0, column=1, padx=10)
 
-    def update_view(self, state: dict) -> None:
+    def update_view(self, state_dto: dict) -> None:
         """
-        Update the board and labels from the current game state.
+        Refresh the board, score, and status label.
 
         Args:
-            state: The current game state.
+            state_dto: Current game state provided by the controller.
         """
-        board_str = state["board"]
-        score_p1, score_p2 = state["score"]
+        board_str = state_dto["board"]
+        score_p1, score_p2 = state_dto["score"]
 
         self.score_label.config(text=f"Score: {score_p1} - {score_p2}")
 
-        if state["is_game_over"]:
-            status = "Draw" if not state["winner"] else f"{state['winner']} wins!"
+        if state_dto["is_game_over"]:
+            if not state_dto["winner"]:
+                status = "Draw"
+            else:
+                status = f"{state_dto['winner']} wins!"
         else:
-            current_player = (
-                self.controller.model.player1
-                if state["turn"] == 1
-                else self.controller.model.player2
-            )
-            status = f"{current_player.name}'s turn"
+            status = f"{state_dto['current_player_name']}'s turn"
 
         self.status_label.config(text=status)
 
         self.canvas.delete("all")
 
-        player1_row, player1_col = state["pos_p1"]
-        player2_row, player2_col = state["pos_p2"]
+        player1_row, player1_col = state_dto["pos_p1"]
+        player2_row, player2_col = state_dto["pos_p2"]
 
         for index, cell in enumerate(board_str):
             row = index // self.size
@@ -129,9 +127,15 @@ class GameView(tk.Toplevel):
             x2 = x1 + self.CELL_SIZE
             y2 = y1 + self.CELL_SIZE
 
-            style = self.CELL_STYLES[cell]
-            bg = style["bg"]
-            text = style["text"]
+            if cell == "0":
+                bg = self.EMPTY_COLOR
+                text = ""
+            elif cell == "1":
+                bg = self.P1_COLOR
+                text = "1"
+            else:
+                bg = self.P2_COLOR
+                text = "2"
 
             if (row, col) == (player1_row, player1_col):
                 bg = self.P1_CURRENT_COLOR
@@ -157,23 +161,23 @@ class GameView(tk.Toplevel):
                 font=("Arial", 14, "bold"),
             )
 
-    def end_game(self, message: str, state: dict) -> None:
+    def end_game(self, status_message: str, state_dto: dict) -> None:
         """
-        Show the final game state and display the end message.
+        Display the final board state and show the end-game message.
 
         Args:
-            message: The message to show.
-            state: The final game state.
+            status_message: Final message built by the controller.
+            state_dto: Final game state used to refresh the board.
         """
-        self.update_view(state)
-        messagebox.showinfo("Game Over", message)
+        self.update_view(state_dto)
+        messagebox.showinfo("Game Over", status_message)
 
     def on_canvas_click(self, event: tk.Event) -> None:
         """
-        Handle a click on the board canvas.
+        Convert a mouse click into board coordinates.
 
         Args:
-            event: Tkinter mouse event.
+            event: Tkinter mouse event containing the click position.
         """
         row = event.y // self.CELL_SIZE
         col = event.x // self.CELL_SIZE

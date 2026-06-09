@@ -82,7 +82,7 @@ class LauncherController:
 
         player2.configure_learning(
             learning_enabled=True,
-            auto_save=True,
+            auto_save=False,
             auto_decay=False,
             qtable_filename=qtable_path,
         )

@@ -8,10 +8,10 @@ from games.cubee.player import QLearningAgent
 FINAL_ALPHA = 0.40
 FINAL_GAMMA = 0.80
 FINAL_BOARD_SIZE = 5
-FINAL_SELF_PLAY_GAMES = 300_000
+FINAL_SELF_PLAY_GAMES = 500_000
 
 RESULTS_DIR = Path(__file__).resolve().parent / "training_results"
-FINAL_QTABLE_PATH = Path(__file__).resolve().parent / "cubee_trained_qtable.json"
+FINAL_QTABLE_PATH = Path(__file__).resolve().parent / "cubee_trained_qtableB.json"
 
 
 def play_full_game(model: GameModel) -> None:
