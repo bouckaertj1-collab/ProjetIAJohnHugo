@@ -25,9 +25,13 @@ from pathlib import Path
 import random
 
 from games.pixelKart.dao.Q_table_dao import SessionLocal, init_db
-from games.pixelKart.dao.q_table_service import create_agent, load_q_table, save_q_table
+from games.pixelKart.dao.q_table_service import (
+    get_or_create_agent_for_circuit,
+    load_q_table,
+    save_q_table,
+)
 from games.pixelKart.model.circuit import Circuit
-from games.pixelKart.model.kart_factory import KartFactory
+from games.pixelKart.model.kart import QLearningKart
 from games.pixelKart.model.race import Race
 
 
@@ -79,22 +83,18 @@ def load_all_circuits() -> list[Circuit]:
     return circuits
 
 
-def create_training_kart():
+def create_training_kart() -> QLearningKart:
     """
-    Create a Q-learning kart used during automated training.
+    Create the Q-learning kart used during automated training.
 
     Returns:
-        A QLearningKart instance created by the kart factory.
+        Q-learning kart initialized before being placed on each circuit.
     """
-    return KartFactory.create(
-        kart_type="ql",
-        config={
-            "name": "QL Kart",
-            "color": "red",
-            "position": (0, 0),
-        },
+    return QLearningKart(
+        name="QL Kart",
+        color="red",
+        position=(0, 0),
     )
-
 
 def reset_kart(kart, circuit: Circuit) -> None:
     """
@@ -136,7 +136,7 @@ def get_or_create_agent_id(circuit_name: str) -> int:
     session = SessionLocal()
 
     try:
-        db_agent = create_agent(
+        db_agent = get_or_create_agent_for_circuit(
             session=session,
             circuit_name=circuit_name,
             alpha=0.2,
@@ -159,14 +159,11 @@ def load_agent_q_table(kart, agent_id: int) -> None:
         kart: QLearningKart instance receiving the Q-table.
         agent_id: Database identifier of the agent to load.
     """
-    session = SessionLocal()
-
-    try:
-        load_q_table(kart, agent_id=agent_id, session=session)
-
-    finally:
-        session.close()
-
+    with SessionLocal() as session:
+        kart.q_table = load_q_table(
+            agent_id=agent_id,
+            session=session,
+        )
 
 def save_agent_q_table(kart, agent_id: int) -> None:
     """

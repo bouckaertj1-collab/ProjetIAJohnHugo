@@ -92,12 +92,10 @@ class CircuitEditor(tk.Toplevel):
     def import_circuit(self) -> None:
         """Load the selected circuit into the editor grid."""
         circuit_name = self.circuit_var.get()
-        dto = self.all_circuits.get(circuit_name)
 
-        if dto is None:
-            return
-
-        self.grid_frame.dto_to_grid(dto["grid"])
+        grid = self.all_circuits[circuit_name]
+        self.grid_frame.dto_to_grid(grid)
+        
         self.length_var.set(str(self.grid_frame.cols))
         self.width_var.set(str(self.grid_frame.rows))
 

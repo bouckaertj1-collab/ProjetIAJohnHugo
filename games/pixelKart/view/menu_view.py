@@ -132,13 +132,13 @@ class MenuView(ttk.Frame):
         self.open_editor_button.config(command=editor_callback)
         self.refresh_button.config(command=refresh_callback)
 
-    def get_config(self) -> tuple[int, int, int, int, str]:
+    def get_race_config(self) -> tuple[int, int, int, int, str]:
         """
-        Return the current menu configuration.
+        Return the race settings selected in the menu.
 
         Returns:
-            A tuple containing human players, random AI players,
-            QLearning AI players, laps and circuit name.
+            Human player count, random AI count, Q-learning AI count,
+            lap count and selected circuit name.
         """
         return (
             self.human_players_var.get(),
