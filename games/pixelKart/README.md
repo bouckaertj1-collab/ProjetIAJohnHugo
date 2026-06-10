@@ -85,7 +85,6 @@ games/pixelKart/
 |   |-- circuit.py
 |   |-- dto.py
 |   |-- kart.py
-|   |-- kart_factory.py
 |   └── race.py
 |
 └── view/

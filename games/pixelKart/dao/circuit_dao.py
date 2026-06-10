@@ -8,14 +8,14 @@ from games.pixelKart.model.dto import CircuitDTO
 FILE_PATH = "games/pixelKart/circuits.txt"
 
 
-def get_all() -> dict[str, CircuitDTO]:
+def get_all() -> dict[str, str]:
     """
-    Retrieve all circuits from the file.
+    Retrieve all saved circuits.
 
     Returns:
-        A dictionary mapping circuit names to serialized circuit dictionaries.
+        Dictionary mapping each circuit name to its serialized grid.
     """
-    circuits: dict[str, CircuitDTO] = {}
+    circuits: dict[str, str] = {}
 
     if not os.path.exists(FILE_PATH):
         return circuits
@@ -32,26 +32,9 @@ def get_all() -> dict[str, CircuitDTO]:
             grid = grid.strip()
 
             if name and grid:
-                circuits[name] = {
-                    "name": name,
-                    "grid": grid,
-                }
+                circuits[name] = grid
 
     return circuits
-
-
-def get_by_name(name: str) -> CircuitDTO | None:
-    """
-    Retrieve a circuit by its name.
-
-    Args:
-        name: Circuit name.
-
-    Returns:
-        The matching circuit dictionary, or None if not found.
-    """
-    return get_all().get(name)
-
 
 def save_circuit(name: str, grid: str) -> None:
     """
@@ -64,10 +47,13 @@ def save_circuit(name: str, grid: str) -> None:
     Raises:
         ValueError: If the name or grid is empty, or if the circuit already exists.
     """
-    if not name.strip():
+    name = name.strip()
+    grid = grid.strip()
+
+    if not name:
         raise ValueError("Circuit name cannot be empty.")
 
-    if not grid.strip():
+    if not grid:
         raise ValueError("Circuit grid cannot be empty.")
 
     circuits = get_all()
@@ -75,19 +61,16 @@ def save_circuit(name: str, grid: str) -> None:
     if name in circuits:
         raise ValueError(f"The circuit '{name}' already exists.")
 
-    circuits[name] = {
-        "name": name,
-        "grid": grid,
-    }
+    circuits[name] = grid
     _write_all(circuits)
 
-def _write_all(circuits: dict[str, CircuitDTO]) -> None:
+def _write_all(circuits: dict[str, str]) -> None:
     """
-    Rewrite the full circuits file.
+    Rewrite the circuits file.
 
     Args:
-        circuits: Circuits to persist.
+        circuits: Dictionary mapping circuit names to serialized grids.
     """
     with open(FILE_PATH, "w", encoding="utf-8") as file:
-        lines = [f'{dto["name"]}:{dto["grid"]}' for dto in circuits.values()]
+        lines = [f"{name}:{grid}" for name, grid in circuits.items()]
         file.write("\n".join(lines))

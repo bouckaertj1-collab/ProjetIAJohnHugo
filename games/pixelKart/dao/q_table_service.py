@@ -5,35 +5,61 @@ from sqlalchemy.orm import Session
 from games.pixelKart.dao.Q_table_dao import (
     Agent,
     QValue,
+    SessionLocal,
     deserialize_state,
+    init_db,
     serialize_state,
     set_q_value,
 )
 
 
-def load_q_table(agent, agent_id: int, session: Session) -> dict:
+def load_q_table(agent_id: int, session: Session) -> dict:
     """
-    Load a Q-table into a Q-learning agent.
+    Load a Q-table from the database.
 
     Args:
-        agent: QLearningKart receiving the Q-table.
         agent_id: Database identifier of the trained agent.
         session: Active SQLAlchemy session.
 
     Returns:
-        Loaded Q-table.
+        Q-table loaded from saved state-action values.
     """
+    q_table = {}
     results = session.query(QValue).filter_by(agent_id=agent_id).all()
 
     for q_value in results:
         state = deserialize_state(q_value.state)
 
-        if state not in agent.q_table:
-            agent.q_table[state] = {}
+        if state not in q_table:
+            q_table[state] = {}
 
-        agent.q_table[state][q_value.action] = q_value.value
+        q_table[state][q_value.action] = q_value.value
 
-    return agent.q_table
+    return q_table
+
+
+def load_q_table_for_circuit(circuit_name: str) -> dict:
+    """
+    Load the trained Q-table linked to a circuit.
+
+    Args:
+        circuit_name: Circuit name linked to the trained agent.
+
+    Returns:
+        Q-table saved for the circuit.
+
+    Raises:
+        ValueError: If no trained agent exists for the circuit.
+    """
+    init_db()
+
+    with SessionLocal() as session:
+        agent = get_agent(session=session, circuit_name=circuit_name)
+
+        if agent is None:
+            raise ValueError(f"No trained Q-table found for circuit: {circuit_name}")
+
+        return load_q_table(agent_id=agent.id, session=session)
 
 
 def save_q_table(agent, session: Session, agent_id: int) -> None:
@@ -69,37 +95,31 @@ def get_agent(session: Session, circuit_name: str) -> Agent | None:
         circuit_name: Circuit name.
 
     Returns:
-        Matching agent if found, otherwise None.
+        Trained agent linked to the circuit, or None if it does not exist.
     """
     return session.query(Agent).filter_by(circuit_name=circuit_name).first()
 
 
-def create_agent(
+def get_or_create_agent_for_circuit(
     session: Session,
     circuit_name: str,
     alpha: float = 0.2,
     gamma: float = 0.95,
-    epsilon: float = 1.0,
+    epsilon: float = 0.95,
 ) -> Agent:
     """
-    Retrieve or create the trained agent linked to a circuit.
+    Return the saved Q-learning agent linked to a circuit.
 
     Args:
         session: Active SQLAlchemy session.
-        circuit_name: Circuit name.
-        alpha: Learning rate stored with the agent.
-        gamma: Future reward factor stored with the agent.
-        epsilon: Exploration rate stored with the agent.
+        circuit_name: Circuit name linked to the agent.
+        alpha: Learning rate stored when a new agent is created.
+        gamma: Future reward factor stored when a new agent is created.
+        epsilon: Exploration rate stored when a new agent is created.
 
     Returns:
-        Existing or newly created agent.
-
-    Raises:
-        ValueError: If the circuit name is empty.
+        Existing agent for the circuit, or a newly created one.
     """
-    if not circuit_name.strip():
-        raise ValueError("Circuit name cannot be empty.")
-
     agent = get_agent(session=session, circuit_name=circuit_name)
 
     if agent is not None:
