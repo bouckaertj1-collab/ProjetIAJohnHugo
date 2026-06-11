@@ -327,7 +327,6 @@ def train_agent_on_circuit(
                 old_position=old_position,
                 new_position=kart.position,
                 circuit=circuit,
-                action=action,
                 completed_lap=completed_lap,
             )
 

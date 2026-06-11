@@ -1,3 +1,11 @@
+"""
+Control the PixelKart race screen.
+
+This controller connects the Race model with the RaceView. It handles human
+actions, schedules automatic AI turns, updates the view after each turn, and
+allows the player to return to the menu.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Callable

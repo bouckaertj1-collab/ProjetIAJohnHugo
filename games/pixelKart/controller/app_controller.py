@@ -1,3 +1,18 @@
+"""
+Control the main PixelKart flow.
+
+This module contains the AppController class. It manages the PixelKart window,
+shows the menu, opens the circuit editor, creates a race from the menu choices,
+and switches from the menu screen to the race screen.
+
+It connects the high-level parts of PixelKart:
+- circuit loading;
+- kart creation;
+- Q-table loading for Q-learning karts;
+- race creation;
+- screen changes between menu, editor and race.
+"""
+
 from __future__ import annotations
 
 import tkinter as tk

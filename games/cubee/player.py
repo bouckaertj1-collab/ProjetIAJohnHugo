@@ -192,7 +192,7 @@ class QLearningAgent(Player):
         opponent_gain = new_score[1] - old_score[1]
         reward = my_gain - 1.5 * opponent_gain
 
-        if self.game_model and self.game_model.is_game_over:
+        if self.game_model.is_game_over:
             if self.game_model.winner == self:
                 reward += 10
             elif self.game_model.loser == self:

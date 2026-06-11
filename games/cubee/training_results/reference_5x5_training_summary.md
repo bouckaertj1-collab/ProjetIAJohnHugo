@@ -30,4 +30,4 @@
 | Q-table file size | 1466524.69 KB |
 | Final epsilon agent 1 | 0.0500 |
 | Final epsilon agent 2 | 0.0500 |
-| Shared Q-table | `C:\Users\bouck\OneDrive - Haute Ecole de Namur-Liege-Luxembourg\Documents\CoursHenallux\ProjetConceptionIA\GitHub\ProjetIAJohnHugo\games\cubee\cubee_reference_4x4_qtable.json` |
+| Shared Q-table | `C:\Users\bouck\OneDrive - Haute Ecole de Namur-Liege-Luxembourg\Documents\CoursHenallux\ProjetConceptionIA\GitHub\ProjetIAJohnHugo\games\cubee\cubee_reference_5x5_qtable.json` |

@@ -1,3 +1,16 @@
+"""
+Provide persistence services for PixelKart Q-learning tables.
+
+This module converts Q-learning data between the in-memory Python structure used
+by QLearningKart and the SQLAlchemy models stored in the SQLite database.
+
+It is responsible for:
+- loading a saved Q-table from database rows;
+- saving the current Q-table after training;
+- retrieving the trained agent linked to a circuit;
+- creating a new trained agent entry when no saved agent exists yet.
+"""
+
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
@@ -64,7 +77,7 @@ def load_q_table_for_circuit(circuit_name: str) -> dict:
 
 def save_q_table(agent, session: Session, agent_id: int) -> None:
     """
-    Save a Q-learning agent Q-table.
+    Save a Q-learning agent Q-table in the database.
 
     Args:
         agent: QLearningKart containing the Q-table.
@@ -108,7 +121,7 @@ def get_or_create_agent_for_circuit(
     epsilon: float = 0.95,
 ) -> Agent:
     """
-    Return the saved Q-learning agent linked to a circuit.
+    Return the saved Q-learning agent linked to a circuit. used in training.
 
     Args:
         session: Active SQLAlchemy session.
