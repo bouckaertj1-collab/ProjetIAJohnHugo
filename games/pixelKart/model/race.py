@@ -1,3 +1,16 @@
+"""
+Manage a PixelKart race.
+
+This module contains the Race class. It keeps the current state of the race and
+updates it after each turn.
+
+It manages the current kart, the played actions, the kart movements, crashes,
+laps, finish detection, and AI turns.
+
+It also contains helper methods used by Q-learning karts to know which actions
+are allowed by the race rules.
+"""
+
 from __future__ import annotations
 
 from games.pixelKart.model.circuit import Circuit
@@ -20,11 +33,6 @@ class Race:
         Raises:
             ValueError: If there are no karts or if total_laps is invalid.
         """
-        if not karts:
-            raise ValueError("A race must contain at least one kart.")
-        if total_laps <= 0:
-            raise ValueError("The number of laps must be strictly positive.")
-
         self.circuit = circuit
         self.karts = karts
         self.total_laps = total_laps
@@ -62,6 +70,9 @@ class Race:
     def play_current_turn(self, action: str) -> None:
         """
         Play one turn for the current kart.
+
+        The method applies the chosen action, moves the kart, updates laps,
+        checks if the race is finished, and selects the next player.
 
         Args:
             action: Action chosen by the current kart.
@@ -104,9 +115,6 @@ class Race:
         """
         kart = self.get_current_kart()
 
-        if not kart.is_ai:
-            raise ValueError("The current kart is not AI-controlled.")
-
         if isinstance(kart, QLearningKart):
             state = kart.get_state(self.circuit)
             allowed_actions = self.get_allowed_actions(kart)
@@ -118,14 +126,13 @@ class Race:
 
     def get_allowed_actions(self, kart: Kart) -> list[str]:
         """
-        Return the actions allowed for a kart.
+        Return the actions allowed for a Q-learning kart.
 
         Args:
             kart: Kart for which actions are checked.
 
         Returns:
-            Actions that do not immediately crash and do not violate
-            the training turn restriction.
+            Actions that do not immediately crash and do not turn at maximum speed.
         """
         allowed_actions = []
 
@@ -165,7 +172,7 @@ class Race:
             action: Action to simulate.
 
         Returns:
-            True if the simulated movement would crash immediately.
+            True if the simulated movement would leave the circuit or hit a wall.
         """
         speed, direction = kart.simulate_action(action)
 
@@ -201,6 +208,9 @@ class Race:
     def apply_movement(self, kart: Kart) -> list[tuple[int, int]]:
         """
         Move a kart according to its current speed and direction.
+
+        The movement stops if the kart leaves the circuit, hits another kart,
+        hits a wall, or tries to cross the finish line westward.
 
         Args:
             kart: Kart to move.
@@ -238,7 +248,8 @@ class Race:
             if self.is_position_occupied(next_position):
                 kart.reset_speed()
                 return traversed_positions
-
+            
+            # Prevent crossing the finish line in the wrong direction.
             if col_step == -1 and (
                 self.circuit.is_finish(kart.position)
                 or self.circuit.is_finish(next_position)

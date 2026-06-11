@@ -1,8 +1,22 @@
+"""
+Define the karts used in PixelKart.
+
+This module contains the base Kart class and the different kart types used in
+the game: human karts, random AI karts, and Q-learning karts.
+
+The base Kart class manages common data and actions such as speed, direction,
+movement actions, lap state, and DTO conversion.
+
+QLearningKart adds the Q-table, epsilon-greedy action selection, state creation,
+reward calculation, and Q-value update used during training.
+"""
+
 from __future__ import annotations
 
 import random
 
 from games.pixelKart.model.dto import KartDTO
+from games.pixelKart.model.circuit import Circuit
 
 
 class Kart:
@@ -259,7 +273,7 @@ class QLearningKart(Kart):
 
     def exploit(self, state: tuple, allowed_actions: list[str]) -> str:
         """
-        Choose the best known action for a state.
+        Choose the best known action for a state. use in choose_action.
 
         Args:
             state: Current Q-learning state.
@@ -284,7 +298,7 @@ class QLearningKart(Kart):
         allowed_actions: list[str],
     ) -> str:
         """
-        Choose an action with an epsilon-greedy policy.
+        Choose an action with an epsilon-greedy policy. used in Race.play_current_ai_turn() and training.
 
         Args:
             state: Current Q-learning state.
@@ -308,7 +322,7 @@ class QLearningKart(Kart):
         next_state: tuple | None,
     ) -> None:
         """
-        Update one Q-value after a training action.
+        Update one Q-value after a training action. Use in training.
 
         Args:
             state: State before the action.
@@ -338,12 +352,11 @@ class QLearningKart(Kart):
         has_finished: bool,
         old_position: tuple[int, int],
         new_position: tuple[int, int],
-        circuit,
-        action: str | None = None,
+        circuit: Circuit,
         completed_lap: bool = False,
     ) -> float:
         """
-        Compute the reward received by the Q-learning agent after one action.
+        Compute the reward received by the Q-learning agent after one action. Use in training
 
         Args:
             has_crashed: True if the kart was eliminated during this turn.
@@ -365,9 +378,6 @@ class QLearningKart(Kart):
             - A useless non-pass action receives an extra penalty when the kart does not move.
             - Ending on grass gives a penalty because grass slows the kart.
             - Completing a lap gives an intermediate positive reward before the race is fully won.
-
-            Remarques Mme Smal:
-            récompenser vitesse 2?
         """
         if has_crashed:
             return -1000.0
@@ -390,7 +400,7 @@ class QLearningKart(Kart):
 
         return reward
         
-    def get_state(self, circuit) -> tuple:
+    def get_state(self, circuit: Circuit) -> tuple:
         """
         Build the state used by the Q-learning agent.
 
@@ -407,14 +417,8 @@ class QLearningKart(Kart):
         )
 
         front_distance, front_terrain = self.scan_direction(circuit, current_direction)
-        left_distance, left_terrain = self.scan_direction(
-            circuit,
-            self.LEFT_TURN[current_direction],
-        )
-        right_distance, right_terrain = self.scan_direction(
-            circuit,
-            self.RIGHT_TURN[current_direction],
-        )
+        left_distance, left_terrain = self.scan_direction(circuit, self.LEFT_TURN[current_direction])
+        right_distance, right_terrain = self.scan_direction(circuit,self.RIGHT_TURN[current_direction])
 
         return (
             self.position[0],
@@ -427,10 +431,10 @@ class QLearningKart(Kart):
             right_terrain,
             self.DIRECTIONS.index(self.direction),
             self.speed,
-            self.get_current_terrain_code(circuit),
+            self.get_terrain_code(circuit, self.position),
         )
 
-    def scan_direction(self, circuit, direction: str) -> tuple[int, int]:
+    def scan_direction(self, circuit: Circuit, direction: str) -> tuple[int, int]:
         """
         Scan the terrain in one direction from the kart position.
 
@@ -480,36 +484,19 @@ class QLearningKart(Kart):
             return 2
         return 3
 
-    def get_terrain_code(
-        self,
-        circuit,
-        position: tuple[int, int] | None = None,
-    ) -> int:
+    def get_terrain_code(self, circuit: Circuit, position: tuple[int, int]) -> int:
         """
         Return the terrain code at a circuit position.
 
         Args:
             circuit: Circuit to inspect.
-            position: Position to inspect. Uses the kart position if omitted.
+            position: Position to inspect.
 
         Returns:
             Terrain code used in the Q-learning state.
         """
-        target_position = self.position if position is None else position
-        cell = circuit.get_cell_type(target_position)
+        cell = circuit.get_cell_type(position)
         return self.TERRAIN_CODES[cell]
-
-    def get_current_terrain_code(self, circuit) -> int:
-        """
-        Return the terrain code under the kart.
-
-        Args:
-            circuit: Circuit to inspect.
-
-        Returns:
-            Terrain code at the current kart position.
-        """
-        return self.get_terrain_code(circuit, self.position)
 
     def next_epsilon(
         self,

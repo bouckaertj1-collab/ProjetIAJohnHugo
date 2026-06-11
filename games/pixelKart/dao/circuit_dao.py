@@ -1,3 +1,16 @@
+"""
+Provide file-based persistence for PixelKart circuits.
+
+This module reads and writes saved circuits from the circuits.txt file.
+Each circuit is stored with a name and a serialized grid, using the CircuitDTO
+format shared between the DAO and the model.
+
+It is responsible for:
+- loading all saved circuits;
+- saving a new circuit created in the editor;
+- rewriting the circuits file after a change.
+"""
+
 from __future__ import annotations
 
 import os
@@ -36,9 +49,24 @@ def get_all() -> dict[str, str]:
 
     return circuits
 
+def get_by_name(name: str) -> CircuitDTO:
+    """
+    Retrieve a saved circuit by name.
+
+    Args:
+        name: Circuit name.
+
+    Returns:
+        CircuitDTO containing the circuit name and serialized grid.
+    """
+    return {
+        "name": name,
+        "grid": get_all()[name],
+    }
+
 def save_circuit(name: str, grid: str) -> None:
     """
-    Save a new circuit.
+    Save a new circuit. use in circuit editor.
 
     Args:
         name: Circuit name.

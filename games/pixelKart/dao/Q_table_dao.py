@@ -1,3 +1,16 @@
+"""
+Define the SQLAlchemy persistence layer for PixelKart Q-learning data.
+
+This module configures the SQLite database used to store trained Q-learning
+agents and their Q-values. It defines the ORM models and class, the database session
+factory, and small helper functions used to serialize states and insert or
+update Q-values.
+
+Database structure:
+- Agent represents one trained Q-learning agent linked to one circuit.
+- QValue represents one learned value for one state-action pair.
+"""
+
 import ast
 from pathlib import Path
 
