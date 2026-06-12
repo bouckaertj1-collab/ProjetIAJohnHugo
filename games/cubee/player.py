@@ -119,16 +119,14 @@ class QLearningAgent(Player):
         if qtable_filename is not None:
             self.qtable_filename = qtable_filename
 
-    def play(self) -> bool:
+    def play(self) -> None:
         """
         Play one move and learn from the previous full transition.
 
-        When the agent gets the hand back, it updates the Q-table from the
-        previously stored state, action and score. It then chooses a new
-        action, stores the current transition, and plays its move.
-
-        Returns:
-            True if a move was played, False otherwise.
+        If learning is enabled and a previous transition is stored, the agent
+        first updates its in-memory Q-table from the previously stored state,
+        action and score. It then chooses a new action, stores the current
+        transition, and applies the move to the model.
         """
         if self.previous_state and self.previous_action and self.previous_score:
             if self.learning_enabled:
@@ -140,6 +138,7 @@ class QLearningAgent(Player):
                 self.ensure_state_exists(next_state, legal_moves)
 
                 self.learn(self.previous_state, self.previous_action, reward, next_state)
+
             self.reset_memory()
 
         state = build_state_key(self.game_model, self)
@@ -153,7 +152,6 @@ class QLearningAgent(Player):
         self.previous_score = self.get_scores_from_agent_view()
 
         self.game_model.step(action)
-        return True
     
     def exploit(self, state: str, legal_moves: list[str]) -> str:
         """

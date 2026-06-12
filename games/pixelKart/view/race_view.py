@@ -99,15 +99,6 @@ class RaceView(ttk.Frame):
         self.back_to_menu_button = ttk.Button(game_frame, text="Back to menu", width=18)
         self.back_to_menu_button.grid(row=0, column=0, pady=5)
 
-    def bind_action(self, callback: Callable[[str], None]) -> None:
-        """
-        Store the callback used when an action button is clicked.
-
-        Args:
-            callback: Function receiving the selected action.
-        """
-        self.action_callback = callback
-
     def bind_back_to_menu(self, callback) -> None:
         """
         Bind the back-to-menu button.
@@ -328,3 +319,12 @@ class RaceView(ttk.Frame):
         """
         if self.action_callback is not None:
             self.action_callback(action)
+            
+    def bind_action(self, callback: Callable[[str], None]) -> None:
+        """
+        Store the callback used when an action button is clicked.
+
+        Args:
+            callback: Function receiving the selected action.
+        """
+        self.action_callback = callback
