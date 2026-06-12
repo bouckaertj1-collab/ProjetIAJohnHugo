@@ -1,6 +1,19 @@
 PROJET IA – PYTHON / TKINTER
 ============================
 
+SUPPORT DE PRÉSENTATION
+-----------------------
+
+Le support de présentation demandé pour l’oral ne se trouve pas à la racine du projet, mais dans le dossier Cubee :
+
+    games/cubee/parameter_tuning_presentation.ipynb
+
+Ce notebook détaille le parameter tuning réalisé pour l’agent Q-learning de Cubee. Il compare plusieurs combinaisons de paramètres alpha et gamma, analyse les résultats obtenus aux différents checkpoints, puis justifie le choix des paramètres choisis pour l’entraînement final.
+
+Les fichiers de résultats utilisés par le notebook se trouvent dans le dossier suivant :
+
+    games/cubee/training_results/
+
 1. DESCRIPTION
 -----------
 Ce projet est une application Python contenant plusieurs jeux implémentés
